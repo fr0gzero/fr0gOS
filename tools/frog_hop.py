@@ -101,23 +101,33 @@ def hop(c, r, direction):
     sit(c + direction, r, 70, LAND)
 
 
+
+
+def ledge(row, right):
+    """the frog's ledge on `row`: the inner edge of the readout directly under it (stops over its first letter)"""
+    below = (RIGHT if right else LEFT).get(row + 1, "")
+    n = len(below) or 5
+    return COLS - n if right else n - 1
+
+
 # the tour: ledge on the left (above the power group) -> wrap -> ledge on the right (above the performance group)
-sit(4, 6, 900)
-sit(4, 6, 140, BLINK)
-sit(4, 6, 700)
-for c in range(4, 0, -1):          # hop out along the empty row to the screen edge
+L_LEDGE, R_LEDGE = ledge(6, False), ledge(11, True)
+sit(L_LEDGE, 6, 900)
+sit(L_LEDGE, 6, 140, BLINK)
+sit(L_LEDGE, 6, 700)
+for c in range(L_LEDGE, 0, -1):    # hop out along the empty row to the screen edge
     hop(c, 6, -1)
 hop(0, 6, -1)                       # off the left edge...
 frame([], 250)
 hop(50, 11, -1)                     # ...and in from the right edge, one row group further down
-for c in range(49, 45, -1):
+for c in range(49, R_LEDGE, -1):
     hop(c, 11, -1)
-sit(45, 11, 800)
+sit(R_LEDGE, 11, 800)
 # mode change: a little hop in place on the ledge
 for f, ms in ((CROUCH, 60), (scale(IDLE, 0.94, 1.08), 60), (IDLE.transform(IDLE.size, Image.AFFINE, (1, 0, 0, 0, 1, 5)), 90), (LAND, 60)):
-    sit(45, 11, ms, f)
-sit(45, 11, 600, SMILE)
-sit(45, 11, 1200, SLEEPY)
+    sit(R_LEDGE, 11, ms, f)
+sit(R_LEDGE, 11, 600, SMILE)
+sit(R_LEDGE, 11, 1200, SLEEPY)
 
 out = sys.argv[1]
 os.makedirs(out, exist_ok=True)
