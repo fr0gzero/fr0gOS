@@ -7,7 +7,7 @@ All builds are on Betaflight 2026.6.2.
 - Camera mode on the OSD: `osd_custom_msg0`-`3` text and positions can now be set from the CLI, and unset lines show nothing (stock showed `CUSTOM_MSG1`). MK5-1 shows `540P` / `90FPS` / `CROP` middle left.
 - VTX power has its own element, `osd_frog_vtxpwr_pos` (`200MW`). The VTX channel element is now just band and channel (`R8`).
 - Shared HDZero block in `tools/make_hd_cli.py` gains the camera lines and VTX power. MK5-1 and MK4-2 CLIs regenerated from it.
-- MK4-2 camera lines `ECO` / `720P` / `60FPS` (HDZero Eco, stock mode).
+- MK4-2 camera lines `720P` / `60FPS` / `4:3` (HDZero Eco set to 4:3).
 - MK4-1 (analog) gets the camera block (`ANT` / `NTSC` / `16:9`) and VTX `R8` / `200MW`. Its layout is respaced to fit rows 0-11.
 
 ## v1.1 r01 - 2026-11-07 (hacker)
