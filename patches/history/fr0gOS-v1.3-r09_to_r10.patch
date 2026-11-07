@@ -1,0 +1,43 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 9c5215f..d200917 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -511,7 +511,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R09"
++#define FROGOS_VERSION   "V1.3 R10"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 9c4e37b..3ebd3d0 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1293,8 +1293,8 @@ static void osdElementEscRpmValue(osdElementParms_t *element)
+     const int32_t avg = count ? sum / count : 0;
+     // the whole number (38214), no K: every digit moves
+     tfp_sprintf(element->buff, "%d", (int)MIN(avg, 99999));
+-    // heat, scaled to this quad's own best RPM: green cruising, amber from 60%, red from 85%,
+-    // red/amber flicker at 97%+ (at or past your record)
++    // heat, scaled to this quad's own best RPM: green almost always, amber only from 90%,
++    // red from 97%, red/amber flicker only when it beats your record
+     if (!frogHdFont(element->osdDisplayPort) || avg <= 0) {
+         return;
+     }
+@@ -1309,11 +1309,11 @@ static void osdElementEscRpmValue(osdElementParms_t *element)
+     const timeMs_t now = millis();
+     for (int i = 0; element->buff[i]; i++) {
+         uint8_t sev = DISPLAYPORT_SEVERITY_NORMAL;
+-        if (pct >= 97) {
++        if (pct >= 100) {
+             sev = ((i + now / 80) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
+-        } else if (pct >= 85) {
++        } else if (pct >= 97) {
+             sev = DISPLAYPORT_SEVERITY_CRITICAL;
+-        } else if (pct >= 60) {
++        } else if (pct >= 90) {
+             sev = DISPLAYPORT_SEVERITY_WARNING;
+         }
+         element->buff[i] = (char)frogColourChar((uint8_t)element->buff[i], sev);

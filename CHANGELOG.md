@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r10 - 2026-11-08 (MK4-2 test build)
+- RPM stays green almost all the time. Amber only from 90% of your best RPM (was 60%), red from 97% (was 85%), red/amber flicker only when it beats your record (was 97%).
+- Same settings and goggle font as r09: flash without Full chip erase, no CLI needed.
+
 ## v1.3 r09 - 2026-11-08 (MK4-2 test build)
 - Renamed FrogOS to **fr0gOS** everywhere (boot header `FR0GOS V1.3 R09`, default craft name `FR0GOS`).
 - **The full Big Eyes frog set** in the goggle font: 80 glyphs, taking the retired boot logo (0xA0-0xCF) and symbols a whoop never draws (GPS, compass, AH, units). Full-resolution motion, DOS pixels at rest. Built by `tools/frog_glyphs.py`, which also writes `src/main/osd/frog_anim.h` (the animation tables the firmware plays).
