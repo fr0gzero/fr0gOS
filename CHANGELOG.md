@@ -4,6 +4,22 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r09 - 2026-11-08 (MK4-2 test build)
+- Renamed FrogOS to **fr0gOS** everywhere (boot header `FR0GOS V1.3 R09`, default craft name `FR0GOS`).
+- **The full Big Eyes frog set** in the goggle font: 80 glyphs, taking the retired boot logo (0xA0-0xCF) and symbols a whoop never draws (GPS, compass, AH, units). Full-resolution motion, DOS pixels at rest. Built by `tools/frog_glyphs.py`, which also writes `src/main/osd/frog_anim.h` (the animation tables the firmware plays).
+- **Ledges and hops.** The frog sits on the free row above a group of readouts, over the inner edge of the readout below (the `T` of `THR`, the `V` of `3.71V`). Ledges come from the live layout. It moves one cell at a time with a proper hop (crouch, arc across two cells, land). To change row or side it hops off the outer edge of the screen and comes back in from the edge on the new row. The old glyph-puff teleport is gone.
+- What it does, most important first:
+  - Upside down (turtle, or inverted for 0.4 s+, so a quick flip trick doesn't count): spins onto its back, holds at least 1 s looking around and kicking, spins back.
+  - Pulling 2.5 G+: squashes flat, holds, springs back.
+  - Feed events: `ARMED` snaps to attention, `SAFE` closes its eyes and keeps them closed until the next arm, mode / air changes hop-dance, `PUNCH` speed lines, `FLIP` / `ROLL` roll over and back, `SPIN` front-side-back-side, `CRASH` splat and dizzy stars, `RECRD` star eyes and gold sparkle. A stronger reaction cuts in over a weaker one.
+  - Low battery (LOW and below): goes to the voltage ledge and jumps there, arms up, red `!`.
+  - Otherwise: rests (blink, look left / right / up, smile), sometimes peekaboo, and wanders to another ledge every 15-20 s.
+  - Croak, signal glitch, sweat and the `3.6G!` reaction are gone.
+- **Boot:** the logo is gone. The frog powers on like an old CRT at the start of the header, hops along it and stops on the last letter of the version, fills any spare time with random little animations (a different mix every boot), then celebrates (spin, star eyes, smile) once the checks are done. The boot screen holds about 7.5 s (sticks still skip it).
+- `HISCORE.EXE`: the frogs either side of `NEW HIGH SCORE` have star eyes.
+- The visual beeper's `* * * *` no longer shows in the warnings or the event log.
+- **Needs the r09 goggle font.** Older fr0gOS builds still run on it, but their frog and boot logo will show the wrong glyphs (MK5-1 until it gets r09).
+
 ## v1.3 r08 - 2026-11-08 (MK4-2 test build)
 - Layout C (corners) chosen. Left: frog row 0, event log rows 1-5, power 7-9, links 13-16. Right: name 0, time 1, warnings 2, ARMED / mode / AIR 3-5, THR + RPM + G cluster in the bottom corner 12-16.
 - Event log is 5 lines. A new message pops in at the top and pushes the older ones down. Each disintegrates into glyphs 4 s after it appears, then disappears.

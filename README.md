@@ -14,7 +14,7 @@ fr0gOS is a set of patches on top of **Betaflight 2026.6.2**.
 | Craft | Quad | Board target | Video | Current build |
 |---|---|---|---|---|
 | MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.2 r03 |
-| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.3 r08 (test) |
+| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.3 r09 (test) |
 | MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.2 r03 |
 
 ## What fr0gOS changes
@@ -41,16 +41,16 @@ fr0gOS is a set of patches on top of **Betaflight 2026.6.2**.
 **HDZero with the hacker font** (`osd_frog_hd_font = ON`)
 - IBM VGA 8x16 DOS font in phosphor green with a black outline.
 - Per-character colour: normal is green, warning is amber, critical is red. HDZero only gives Betaflight one 256-glyph bank, so the font carries amber and red copies of the alphabet.
-- `FR0G` with a blinking cursor top left, and an animated frog next to the craft name top right. It blinks now and then, croaks while a warning is up, sweats on low battery, flips whenever the quad is upside down, squashes flat above 2.5 G, and hops along the top bar when you arm.
+- The frog (80 glyphs of it) lives on ledges above the readout groups and hops between them, off the screen edge and back in on the new row. It reacts to what you do (arm, disarm, mode changes, punch-outs, flips, rolls, spins, crashes, new records), rolls onto its back when the quad is upside down, squashes under high G, and runs to the voltage to jump up and down on low battery. See `CHANGELOG.md` (v1.3 r09).
 - Battery bar glyph after the %, and a `SCAN` spinner until the receiver links.
-- Boot logo `> fr0gzero_` in big DOS letters.
+- Boot: the frog powers on like an old CRT and hops along the boot header while the checks run, then celebrates.
 
 New CLI settings: `osd_frog_tag_pos`, `osd_frog_craft_pos`, `osd_frog_air_pos`, `osd_frog_rate_pos`, `osd_frog_batt_pos`, `osd_frog_vtxpwr_pos`, `osd_frog_noise_pos`, `osd_frog_hd_font`, and `osd_custom_msg0`-`3` with `osd_custom_msg0_pos`-`3_pos`.
 Configurator doesn't know these elements, so position them from the CLI.
 
 ## Flashing a quad
 
-1. **HDZero quads only:** copy `fonts/hdzero-hacker/BTFL_000.bmp` and `BTFL_FHD_000.bmp` to `resource/OSD/FC/` on the goggle SD card. The v1.2 font adds frog and noise glyphs; older fr0gOS builds still work with it.
+1. **HDZero quads only:** copy `fonts/hdzero-hacker/BTFL_000.bmp` and `BTFL_FHD_000.bmp` to `resource/OSD/FC/` on the goggle SD card. The r09 font carries the full frog set in place of the boot logo; fr0gOS builds before v1.3 r09 still run on it but show the wrong frog and logo glyphs.
 2. Save a `diff all` backup first.
 3. Flash `builds/<quad>/<hex>` with **Full chip erase** ticked (Firmware Flasher, Load Firmware [Local]).
 4. Paste `quads/<quad>/fr0gOS_cli_*.txt` into the CLI.
@@ -64,7 +64,7 @@ The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or s
 git clone --branch 2026.6.2 --depth 1 https://github.com/betaflight/betaflight.git
 cd betaflight
 git submodule update --init --depth 1 src/config
-git apply ../patches/fr0gOS-v1.3-r08_betaflight-2026.6.2.patch
+git apply ../patches/fr0gOS-v1.3-r09_betaflight-2026.6.2.patch
 make arm_sdk_install            # or point ARM_SDK_DIR at GCC 13.3.1
 make CONFIG=CRAZYBEE473
 make CONFIG=BETAFPVG473_V2
