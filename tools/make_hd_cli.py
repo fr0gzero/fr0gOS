@@ -60,6 +60,8 @@ FROGOS_HD_BLOCK = "\n".join([
     "# battery noise in the black bars (SAG green, LOW amber, LAND red, DEAD red flood)",
     "set osd_frog_noise_pos = 2048",
     "set osd_custom_msg3 = HDZRO",
+    "# core temp warning at 75C",
+    "set osd_core_temp_alarm = 75",
 ] + [k if v is None else f"set {k} = {v}" for k, v in LAYOUT])
 
 SKIP_PREFIX = ("mcu_id", "signature", "# version", "# Betaflight", "# config rev", "# start the command",
@@ -87,7 +89,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.3 r01 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.3 r02 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",

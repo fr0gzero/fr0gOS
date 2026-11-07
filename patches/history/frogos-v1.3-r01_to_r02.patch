@@ -1,0 +1,157 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 3dbb1b3..13aeb4f 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -387,7 +387,7 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
+     osdConfig->esc_temp_alarm = ESC_TEMP_ALARM_OFF; // off by default
+     osdConfig->esc_rpm_alarm = ESC_RPM_ALARM_OFF; // off by default
+     osdConfig->esc_current_alarm = ESC_CURRENT_ALARM_OFF; // off by default
+-    osdConfig->core_temp_alarm = 70; // a temperature above 70C should produce a warning, lockups have been reported above 80C
++    osdConfig->core_temp_alarm = 75; // FrogOS: warn at 75C (lockups have been reported above 80C)
+ 
+     osdConfig->ahMaxPitch = 20; // 20 degrees
+     osdConfig->ahMaxRoll = 40; // 40 degrees
+@@ -505,7 +505,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- FrogOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R01"
++#define FROGOS_VERSION   "V1.3 R02"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+@@ -1646,6 +1646,7 @@ static bool __attribute__((unused)) osdRefreshStatsStock(void)
+ #define FROG_ARMFX_TOTAL_HD_US (900 * 1000)   // HD: + the frog hopping home along the top bar
+ #define FROG_ARMFX_HOP_MS 480
+ static bool frogArmFxActive = false;
++static bool frogArmFxFlip = false;     // armed into crash flip: red sweep travels up, flip text glitches in
+ static timeUs_t frogArmFxStartUs = 0;
+ 
+ static void frogDrawArmFx(timeUs_t now)
+@@ -1659,13 +1660,16 @@ static void frogDrawArmFx(timeUs_t now)
+     displayClearScreen(osdDisplayPort, DISPLAY_CLEAR_NONE);
+     if (hd && ms < FROG_ARMFX_SWEEP_MS) {
+         // a two-row band of noise sweeps top to bottom, plus a few strays (HD only: analog just decodes [ARM])
+-        const int band = (int)((ms * rows) / FROG_ARMFX_SWEEP_MS);
++        int band = (int)((ms * rows) / FROG_ARMFX_SWEEP_MS);
++        if (frogArmFxFlip) {
++            band = rows - band;                                       // crash flip: the sweep goes UP the screen
++        }
+         for (int r = band - 1; r <= band; r++) {
+             if (r < 0 || r >= rows) {
+                 continue;
+             }
+             for (int c = 0; c < cols; c++) {
+-                line[c] = (frogRand() % 4 == 0) ? ' ' : (char)frogNoiseChar(hd);
++                line[c] = (frogRand() % 4 == 0) ? ' ' : (char)(frogArmFxFlip ? frogFlipNoiseChar(hd) : frogNoiseChar(hd));
+             }
+             line[cols] = '\0';
+             // MSP displayport caps one write at 30 chars, so send the row in chunks
+@@ -1678,7 +1682,7 @@ static void frogDrawArmFx(timeUs_t now)
+             }
+         }
+         for (int i = 0; i < 6; i++) {
+-            const char g[2] = { (char)frogNoiseChar(hd), '\0' };
++            const char g[2] = { (char)(frogArmFxFlip ? frogFlipNoiseChar(hd) : frogNoiseChar(hd)), '\0' };
+             displayWrite(osdDisplayPort, frogRand() % cols, frogRand() % rows, DISPLAYPORT_SEVERITY_NORMAL, g);
+         }
+     }
+@@ -1691,6 +1695,27 @@ static void frogDrawArmFx(timeUs_t now)
+     out[sizeof(text) - 1] = '\0';
+     displayWrite(osdDisplayPort, osdDisplayPort->cols / 2 - 2, rows / 2, DISPLAYPORT_SEVERITY_NORMAL, out);
+ 
++    if (frogArmFxFlip) {
++        // crash flip text decodes in under [ARM] from red noise, then keeps glitching in red/amber
++        char flip[24];
++        const unsigned flipLen = MIN(strlen(CRASHFLIP_WARNING), sizeof(flip) - 1);
++        const uint32_t start = FROG_ARMFX_SWEEP_MS / 2 + 150;
++        for (unsigned i = 0; i < flipLen; i++) {
++            const char c = CRASHFLIP_WARNING[i];
++            uint8_t g;
++            if (ms < start + i * 35 || (frogRand() % 9) == 0) {
++                g = (c == ' ') ? ' ' : frogFlipNoiseChar(hd);
++            } else if (hd) {
++                g = frogColourChar((uint8_t)c, ((i + ms / 90) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING);
++            } else {
++                g = (uint8_t)c;
++            }
++            flip[i] = (char)g;
++        }
++        flip[flipLen] = '\0';
++        displayWrite(osdDisplayPort, osdDisplayPort->cols / 2 - (int)(strlen(CRASHFLIP_WARNING) / 2), rows / 2 + 1, DISPLAYPORT_SEVERITY_NORMAL, flip);
++        return;
++    }
+     // HD: after the sweep the frog hops along the top bar from the left and lands next to the craft name
+     if (hd && ms >= FROG_ARMFX_SWEEP_MS) {
+         char name[MAX_NAME_LENGTH + 1];
+@@ -1730,10 +1755,9 @@ static timeDelta_t osdShowArmed(void)
+         ret = osdConfig()->logo_on_arming_duration * 100 * 1000; // convert to microseconds
+     } else {
+         ret = frogHdFont(osdDisplayPort) ? FROG_ARMFX_TOTAL_HD_US : FROG_ARMFX_TOTAL_US;   // FrogOS: glitch sweep (+ frog hop on HD)
+-        if (!isCrashFlipModeActive()) {
+-            frogArmFxActive = true;
+-            frogArmFxStartUs = micros();
+-        }
++        frogArmFxFlip = isCrashFlipModeActive();
++        frogArmFxActive = true;
++        frogArmFxStartUs = micros();
+     }
+     displayWrite(osdDisplayPort, midCol - (strlen("[ARM]") / 2), midRow, DISPLAYPORT_SEVERITY_NORMAL, "[ARM]"); // FrogOS
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 90de2ec..ea1bd91 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1559,6 +1559,18 @@ static void osdElementFrogVtxPower(osdElementParms_t *element)
+     strcpy(element->buff, "--");
+ }
+ // Red noise for the power side: a red block on HD, plain noise on analog
++uint8_t frogFlipNoiseChar(bool hd)
++{
++    // crash-flip noise: red blocks and red/amber characters on HD, plain noise on analog
++    if (!hd) {
++        return frogNoiseChar(false);
++    }
++    const uint32_t r = frogRand();
++    if (r & 1) {
++        return FROG_GLYPH_RSCRAMBLE1 + (r >> 1) % 3;
++    }
++    return frogColourNoiseChar((r & 2) ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_CRITICAL);
++}
+ static uint8_t frogRedNoiseChar(bool hd)
+ {
+     const uint32_t r = frogRand();
+@@ -2605,6 +2617,24 @@ static void osdElementWarnings(osdElementParms_t *element)
+     renderOsdWarning(element->buff, &elementBlinking, &element->attr);
+     frogShortenWarning(element->buff);
+     frogDecodeWarning(element);
++    if (strcmp(element->buff, "TURTL") == 0) {
++        // crash flip: no blinking, the text glitches instead. HD: red/amber chase with scrambles.
++        // Analog: one character of the text scrambles now and then, nothing outside it.
++        elementBlinking = false;
++        const bool hd = frogHdFont(element->osdDisplayPort);
++        const timeMs_t now = millis();
++        const uint32_t r = frogRand();
++        const int glitchAt = ((r & 3) == 0) ? (int)((r >> 2) % 5) : -1;
++        for (int i = 0; element->buff[i]; i++) {
++            const uint8_t sev = ((i + now / 90) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
++            if (i == glitchAt) {
++                element->buff[i] = hd ? (char)frogColourNoiseChar(sev) : (char)frogNoiseChar(false);
++            } else if (hd) {
++                element->buff[i] = (char)frogColourChar((uint8_t)element->buff[i], sev);
++            }
++        }
++        element->attr = DISPLAYPORT_SEVERITY_NORMAL;
++    }
+     if (elementBlinking) {
+         SET_BLINK(OSD_WARNINGS);
+     } else {
+diff --git a/src/main/osd/osd_elements.h b/src/main/osd/osd_elements.h
+index 6590551..6728025 100644
+--- a/src/main/osd/osd_elements.h
++++ b/src/main/osd/osd_elements.h
+@@ -86,3 +86,4 @@ void frogColourise(char *s, uint8_t severity);
+ uint8_t frogNoiseChar(bool hd);
+ extern bool frogIdleShimmer;
+ void frogAppearReset(void);
++uint8_t frogFlipNoiseChar(bool hd);

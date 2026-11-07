@@ -2,6 +2,7 @@
 """FrogOS tone pack for EdgeTX: replaces every English voice file with a tone, same filename.
 
 The tones follow one grammar so they read without words:
+Sound: soft deadmau5-style synth plucks in F minor (detuned saws + sub, filter pluck, dotted-eighth echo).
   rising       = on / active / connected / recovered
   falling      = off / disabled / lost
   3 rising     = ARMED            3 falling = DISARMED
@@ -23,25 +24,85 @@ import numpy as np
 
 SRC, OUT = sys.argv[1:3]
 RATE = 32000
-AMP = 0.5                       # about -6 dBFS
-C5, E5, G5, C6, E6, G6 = 523, 659, 784, 1047, 1319, 1568
+AMP = 0.42                      # softer than v1 (about -8 dBFS peak after normalising)
 
 
-def tone(f, ms, f2=None, shape="square"):
-    n = int(RATE * ms / 1000)
-    freq = np.linspace(f, f2 if f2 else f, n)
-    phase = 2 * np.pi * np.cumsum(freq) / RATE
-    if shape == "square":
-        # soft square: fundamental + 3rd + 5th, cuts through motor noise better than a sine
-        w = np.sin(phase) + np.sin(3 * phase) / 3 + np.sin(5 * phase) / 5
-        w /= 1.2
+# ---- synth: deadmau5-style pluck ----
+# two slightly detuned band-limited saws + a sine sub, through a resonant low-pass whose cutoff
+# snaps open and closes (the pluck), soft attack, then a dotted-eighth echo tail. F minor.
+BPM = 128
+ECHO_S = 60 / BPM * 0.75            # dotted eighth
+F4, Ab4, Bb4, C5, Eb5, F5, G5, Ab5, C6, Eb6, F6 = 349.2, 415.3, 466.2, 523.3, 622.3, 698.5, 784.0, 830.6, 1046.5, 1244.5, 1396.9
+
+
+def saw(f, n):
+    t = np.arange(n) / RATE
+    out = np.zeros(n)
+    k = 1
+    while k * f < RATE / 2 * 0.9 and k <= 40:
+        out += np.sin(2 * np.pi * k * f * t) / k
+        k += 1
+    return out * 0.55
+
+
+def lowpass_env(x, fc0, fc1, tau, q=0.35, opening=False):
+    """state-variable low-pass, cutoff gliding from fc0 to fc1 with time constant tau (s);
+    opening=True sweeps linearly from fc1 up to fc0 over the whole sound (a riser)"""
+    n = len(x)
+    t = np.arange(n) / RATE
+    if opening:
+        fc = fc1 + (fc0 - fc1) * (t / t[-1]) ** 2
     else:
-        w = np.sin(phase)
-    fade = min(n // 4, int(RATE * 0.006))
-    if fade:
-        w[:fade] *= np.linspace(0, 1, fade)
-        w[-fade:] *= np.linspace(1, 0, fade)
-    return w
+        fc = fc1 + (fc0 - fc1) * np.exp(-t / tau)
+    fcoef = 2 * np.sin(np.pi * np.minimum(fc, RATE / 6) / RATE)
+    low = band = 0.0
+    y = np.empty(n)
+    damp = q
+    for i in range(n):
+        f = fcoef[i]
+        low += f * band
+        high = x[i] - low - damp * band
+        band += f * high
+        y[i] = low
+    return y
+
+
+def pluck(f, ms=180, bright=8.0, decay=0.16, level=1.0):
+    n = int(RATE * ms / 1000)
+    x = saw(f * 1.0035, n) + saw(f / 1.0035, n) + 0.6 * np.sin(2 * np.pi * (f / 2) * np.arange(n) / RATE)
+    y = lowpass_env(x, f * bright, f * 1.2, decay * 0.5)
+    t = np.arange(n) / RATE
+    env = np.minimum(1, t / 0.004) * np.exp(-t / decay)
+    rel = min(n // 3, int(RATE * 0.02))
+    env[-rel:] *= np.linspace(1, 0, rel)
+    return y * env * level
+
+
+def place(parts, total_ms=None):
+    """parts: list of (start_ms, samples)"""
+    end = max(int(RATE * st / 1000) + len(sm) for st, sm in parts)
+    if total_ms:
+        end = max(end, int(RATE * total_ms / 1000))
+    out = np.zeros(end)
+    for st, sm in parts:
+        i = int(RATE * st / 1000)
+        out[i:i + len(sm)] += sm
+    return out
+
+
+def echo(x, repeats=3, fb=0.38):
+    d = int(RATE * ECHO_S)
+    out = np.zeros(len(x) + d * repeats)
+    out[:len(x)] += x
+    y = x.copy()
+    for r in range(1, repeats + 1):
+        y = np.convolve(y, np.ones(6) / 6, mode="same")   # each repeat a bit darker
+        out[d * r:d * r + len(y)] += y * (fb ** r)
+    return out
+
+
+def arp(notes, step=95, **kw):
+    return echo(place([(i * step, pluck(f, **kw)) for i, f in enumerate(notes)]))
 
 
 def gap(ms):
@@ -52,21 +113,34 @@ def seq(*parts):
     return np.concatenate(parts)
 
 
-# ---- the vocabulary ----
-def up():          return seq(tone(E5, 70), gap(25), tone(C6, 110))
-def down():        return seq(tone(C6, 70), gap(25), tone(E5, 110))
-def armed():       return seq(tone(C5, 60), gap(20), tone(G5, 60), gap(20), tone(C6, 140))
-def disarmed():    return seq(tone(C6, 60), gap(20), tone(G5, 60), gap(20), tone(C5, 140))
-def warning():     return seq(*(x for _ in range(3) for x in (tone(1200, 60), gap(50))))
-def critical():    return seq(tone(1700, 220, 750), gap(40), tone(1700, 220, 750))
-def blip():        return tone(880, 60, shape="sine")
+# ---- the vocabulary (same grammar, softer sound) ----
+def up():          return arp([C5, F5])
+def down():        return arp([F5, C5])
+def armed():       return arp([F4, Ab4, C5, F5], step=80)
+def disarmed():    return arp([F5, C5, Ab4, F4], step=80)
+def warning():     return echo(place([(i * 110, pluck(Eb5, ms=110, bright=10, decay=0.07)) for i in range(3)]), repeats=1)
+def critical():
+    # dark minor fall, twice, with a slower filter: unmistakable but not harsh
+    one = place([(0, pluck(Ab5, ms=220, bright=6, decay=0.2, level=1.1)), (150, pluck(F5, ms=260, bright=5, decay=0.25, level=1.1)),
+                 (300, pluck(Bb4, ms=320, bright=4, decay=0.3, level=1.1))])
+    return echo(seq(one, gap(120), one), repeats=1, fb=0.3)
+def blip():        return echo(pluck(C5, ms=120, bright=4, decay=0.08, level=0.6), repeats=1)
 def tick(n=1, f=1000):
-    return seq(*(x for _ in range(n) for x in (tone(f, 35), gap(55))))
+    return echo(place([(i * 90, pluck(f, ms=60, bright=5, decay=0.03, level=0.7)) for i in range(n)]), repeats=1, fb=0.25)
 def silent():      return gap(20)
-def hello():       return seq(tone(C5, 70), gap(15), tone(E5, 70), gap(15), tone(G5, 70), gap(15), tone(C6, 160))
-def timer_done():  return seq(tone(G5, 350, shape="sine"), gap(60), tone(G5, 80, shape="sine"))
-def mode(f, n=1):  return seq(*(x for _ in range(n) for x in (tone(f, 50), gap(45))))
-def turtle_on():   return seq(tone(400, 90, 900), gap(30), tone(900, 90, 400), gap(30), up())
+def hello():
+    # F minor add9 rolled up, deadmau5-style stab with a long tail
+    return echo(place([(i * 70, pluck(f, ms=420, bright=7, decay=0.3, level=0.8)) for i, f in enumerate([F4, Ab4, C5, G5, C6])]), repeats=4, fb=0.4)
+def timer_done():
+    chord = sum(pluck(f, ms=600, bright=3, decay=0.45, level=0.6) for f in (F4, Ab4, C5))
+    return echo(place([(0, chord), (420, pluck(F5, ms=160))]), repeats=2)
+def mode(f, n=1):  return echo(place([(i * 85, pluck(f, ms=110, decay=0.07)) for i in range(n)]), repeats=2, fb=0.3)
+def turtle_on():
+    n = int(RATE * 0.35)
+    x = saw(F4, n) + saw(F4 * 1.005, n)
+    riser = lowpass_env(x, F4 * 12, F4 * 1.2, 0.0, q=0.2, opening=True)   # filter opens instead of closing
+    riser *= np.linspace(0.2, 0.9, n)
+    return seq(riser * 0.6, up())
 
 
 UNIT_WORDS = {"volt", "amp", "mamp", "knot", "mps", "fps", "kph", "mph", "meter", "foot", "celsius", "fahr", "percent",
@@ -82,6 +156,13 @@ POSITIVE = {"telemok", "telemco", "trainok", "trainco", "good", "ready", "start"
 NEGATIVE = {"off", "disabl", "deact", "stop", "close", "locked", "bad"}
 ARMED = {"armed", "motarm", "engarm", "thract", "thren"}
 DISARMED = {"disarm", "engdrm", "thrcut", "thrdis"}
+
+
+import functools
+for _fn in ('up','down','armed','disarmed','warning','critical','blip','silent','hello','timer_done','turtle_on'):
+    globals()[_fn] = functools.lru_cache(maxsize=None)(globals()[_fn])
+mode = functools.lru_cache(maxsize=None)(mode)
+tick = functools.lru_cache(maxsize=None)(tick)
 
 
 def classify(name):
@@ -102,44 +183,53 @@ def classify(name):
     if base.startswith("timovr"):
         return timer_done()
     if base.startswith("timrs"):
-        return tick(1, 1500)
+        return tick(1, F6)
     if base == "midtrim":
-        return tick(1, 1500)
+        return tick(1, F6)
     if base == "maxtrim":
-        return tick(2, 2000)
+        return tick(2, F6)
     if base == "mintrim":
-        return tick(2, 600)
+        return tick(2, F5)
     if base == "turton":
         return turtle_on()
     # flight modes: pitch says which (angle low, horizon mid, acro high), like the OSD
     if base in ("angmod", "fm-ang", "anglmd", "stabmo", "fm-stb", "stbmod", "lvlmod"):
-        return mode(C5, 2)
+        return mode(F4, 2)
     if base in ("hznmod", "fm-hor", "hrznmd"):
-        return mode(G5, 2)
+        return mode(C5, 2)
     if base in ("acrmod", "fm-acr", "acro", "acromd", "ratmod", "actnmd"):
-        return mode(C6, 2)
+        return mode(F5, 2)
     if base in ("airmon", "airmod"):
-        return seq(mode(E6, 1), up())
+        return arp([Ab5, C5, F5], step=85)
     if base == "airmof":
-        return seq(mode(E6, 1), down())
+        return arp([Ab5, F5, C5], step=85)
     m = re.search(r"(\d+)$", base)
     if m and any(base.startswith(p) for p in ("fm-", "rates", "osd", "bank-", "flp", "expo", "idleu", "fm-id")):
-        return mode(E6, max(1, min(8, int(m.group(1)) or 1)))
+        return mode(Eb6, max(1, min(8, int(m.group(1)) or 1)))
     if base.startswith("vtx"):
-        return mode(G6, 1)
+        return mode(G5, 1)
     # generic on / off by suffix (crowon / crowof, gpson / gpsoff, ...)
     if base in POSITIVE or base.endswith("on") or base.endswith("act") or base.endswith("en"):
         return up()
     if base in NEGATIVE or base.endswith("of") or base.endswith("off") or base.endswith("dis") or base.endswith("db"):
         return down()
     if base.startswith("fm-") or base.endswith("mod") or base.endswith("md"):
-        return mode(E6, 1)
+        return mode(Eb6, 1)
     return blip()
 
 
 def write(path, samples):
     os.makedirs(os.path.dirname(path), exist_ok=True)
-    pcm = np.clip(samples * AMP, -1, 1)
+    peak = np.max(np.abs(samples)) or 1.0
+    # trim the quiet end of the echo tail (below 3% of peak) so queued alerts don't stack up
+    loud = np.nonzero(np.abs(samples) > 0.03 * peak)[0]
+    if len(loud):
+        end = min(len(samples), loud[-1] + int(RATE * 0.03))
+        samples = samples[:end].copy()
+        fade = min(len(samples) // 4, int(RATE * 0.03))
+        if fade:
+            samples[-fade:] *= np.linspace(1, 0, fade)
+    pcm = np.clip(samples / peak * AMP, -1, 1)
     data = (pcm * 32767).astype("<i2").tobytes()
     with wave.open(path, "wb") as w:
         w.setnchannels(1)

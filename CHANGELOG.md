@@ -2,6 +2,14 @@
 
 All builds are on Betaflight 2026.6.2.
 
+Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice).
+
+## v1.3 r02 - 2026-11-07 (MK4-2 test build)
+- Crash flip gets the glitch treatment. Arming into crash flip plays a red sweep that travels up the screen. `[ARM]` decodes in, then the crash flip text decodes in from red noise and keeps glitching red/amber.
+- The `TURTL` warning no longer blinks. On HD it chases red/amber with scrambles; on analog, one character of its own text scrambles now and then.
+- Core temp warning at 75 C (`osd_core_temp_alarm = 75`, was 70).
+- Test flight note: if the upside-down frog shows as an `E`, the goggles still have the v1.1 font. Copy the current `BTFL_000.bmp` / `BTFL_FHD_000.bmp` to the SD card.
+
 ## v1.3 r01 - 2026-11-07 (MK4-2 test build)
 - **New layout**, ordered by what matters in flight (see `fonts/hdzero-hacker/frogos_layout_v13_proposal.png`):
   - Left column: power top, then links (LQ, dBm, packet rate, VTX channel and power), then video (`HDZRO` + camera mode) at the bottom.

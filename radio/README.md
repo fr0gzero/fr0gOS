@@ -2,19 +2,21 @@
 
 Every English voice file on the radio is replaced by a tone with the same filename. Every event still makes a sound, just no voice.
 
+The sound is soft and deadmau5-style: detuned saw plucks with a sine sub, a filter that snaps shut, and a dotted-eighth echo at 128 BPM, all in F minor.
+
 | Sound | Means |
 |---|---|
-| 4-note rising arpeggio | radio start |
+| rolled F minor add9 stab | radio start |
 | 3 notes rising | ARMED |
 | 3 notes falling | DISARMED |
 | 2 notes rising | on / active / connected / recovered |
 | 2 notes falling | off / disabled / lost |
 | 3 quick beeps | warning (signal low, battery low, throttle or switch warning) |
-| falling siren x2 | critical (telemetry lost, signal critical, failsafe) |
-| 2 short chirps, low / mid / high | angle / horizon / acro (low to high, like the OSD) |
-| high chirp + rising / falling | air mode on / off |
-| wobble + rising | turtle on |
-| long + short tone | timer elapsed |
+| dark 3-note fall, twice | critical (telemetry lost, signal critical, failsafe) |
+| 2 short plucks, low / mid / high | angle / horizon / acro (low to high, like the OSD) |
+| high note + rising / falling | air mode on / off |
+| filter riser + rising | turtle on |
+| soft F minor chord + pluck | timer elapsed |
 | silence | numbers and units, so spoken values disappear |
 
 ## Install
