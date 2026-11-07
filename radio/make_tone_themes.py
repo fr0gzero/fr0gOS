@@ -387,6 +387,7 @@ class Lounge(Theme):
 
 
 class Pond(Theme):
+    LEVELS = {"warning": 0.5}        # crickets are high and dense: half level to match the rest
     name, desc = "pond", "FrogOS mascot: ribbits and croaks, cricket chirps, water drops and a splash. Not music at all."
     def ribbit(self, f=420, ms=180, pulses=4):
         t = T(ms)
@@ -485,6 +486,10 @@ def render(theme, ev):
     return getattr(theme, kind)(*args)
 
 
+def level(theme, ev):
+    return getattr(theme, "LEVELS", {}).get(ev[0], 1.0)
+
+
 def finish(samples):
     samples = np.asarray(samples, dtype=float)
     peak = np.max(np.abs(samples)) or 1.0
@@ -497,13 +502,13 @@ def finish(samples):
     return np.clip(samples / peak * AMP, -1, 1)
 
 
-def write(path, samples):
+def write(path, samples, gain=1.0):
     os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
     with wave.open(path, "wb") as w:
         w.setnchannels(1)
         w.setsampwidth(2)
         w.setframerate(RATE)
-        w.writeframes((finish(samples) * 32767).astype("<i2").tobytes())
+        w.writeframes((finish(samples) * gain * 32767).astype("<i2").tobytes())
 
 
 AUDITION = [("hello",), ("armed",), ("disarmed",), ("mode", 0, 1), ("mode", 1, 1), ("mode", 2, 1), ("air", True), ("air", False),
@@ -532,6 +537,6 @@ if __name__ == "__main__":
                 ev = event(f[:-4].lower())
                 if ev not in cache:
                     cache[ev] = render(th, ev)
-                write(os.path.join(out, "SOUNDS", "en", os.path.relpath(os.path.join(root, f), src)), cache[ev])
+                write(os.path.join(out, "SOUNDS", "en", os.path.relpath(os.path.join(root, f), src)), cache[ev], level(th, ev))
                 n += 1
         print("wrote", n, "files for", name)
