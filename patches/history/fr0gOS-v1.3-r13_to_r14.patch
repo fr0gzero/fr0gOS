@@ -1,0 +1,62 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index f7a0ae5..c3ee6ef 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R13"
++#define FROGOS_VERSION   "V1.3 R14"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 947da80..9a66248 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1799,6 +1799,35 @@ static bool frogUpsideDown(timeMs_t now)
+     return isCrashFlipModeActive() || (frog.invertedSince && now - frog.invertedSince >= FROG_INVERT_MS);
+ }
+ 
++// the frog only runs to the voltage when it's getting real: 3.44 V a cell or less for 1.5 s (a punch that sags
++// it for a moment doesn't count); it stays there until the pack is back above 3.52 V for 3 s
++#define FROG_BATT_GO_CV      344
++#define FROG_BATT_GO_MS      1500
++#define FROG_BATT_BACK_CV    352
++#define FROG_BATT_BACK_MS    3000
++static bool frogBattLowForFrog(timeMs_t now)
++{
++    static bool low = false;
++    static timeMs_t since = 0;
++    const batteryState_e state = getBatteryState();
++    const uint16_t cell = getBatteryAverageCellVoltage();
++    if (state == BATTERY_NOT_PRESENT || state == BATTERY_INIT || cell == 0) {
++        low = false;
++        since = 0;
++        return false;
++    }
++    const bool crossing = low ? cell >= FROG_BATT_BACK_CV : cell <= FROG_BATT_GO_CV;
++    if (!crossing) {
++        since = 0;
++    } else if (!since) {
++        since = now ? now : 1;
++    } else if (now - since >= (low ? FROG_BATT_BACK_MS : FROG_BATT_GO_MS)) {
++        low = !low;
++        since = 0;
++    }
++    return low;
++}
++
+ static void frogStartHop(int dir, timeMs_t now)
+ {
+     frog.dir = dir;
+@@ -1827,7 +1856,7 @@ static int frogTick(timeMs_t now, int *cx, uint8_t *cg)
+     const bool armed = ARMING_FLAG(ARMED);
+     const bool upside = frogUpsideDown(now);
+     const bool squashing = armed && osdGForce >= FROG_HIGH_G;
+-    const bool lowBatt = frogBattStage() >= FROG_BATT_LOW;
++    const bool lowBatt = frogBattLowForFrog(now);
+     const bool offscreen = frog.x < 0 || frog.x >= frogCols;
+     const uint32_t cr = FROG_HOP_CROUCH, st = FROG_HOP_STEP, la = FROG_HOP_LAND;
+ 

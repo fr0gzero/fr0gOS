@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r14 - 2026-11-08 (MK4-2, MK5-1)
+- The frog only runs to the voltage when it's getting real: average cell 3.44 V or less for 1.5 s (a punch that sags it for a moment doesn't count). It goes back to wandering once the pack is above 3.52 V for 3 s. The voltage colours and warnings are unchanged (3.50 V / 3.35 V).
+- Same settings and goggle font as r13: flash without Full chip erase (or with it, then paste the r13 CLI).
+
 ## v1.3 r13 - 2026-11-08 (MK4-2, MK5-1)
 - **Fix: no HDZero video at power-up, or the VTX coming up on channel 1.** The MSP displayport has no flow control, and Betaflight silently drops any MSP frame that doesn't fit in the UART TX buffer, including the one message that gives the VTX its band, channel and power (and it never resends it). fr0gOS's busier OSD could fill the 115200 link: on MK5-1 from r10 (the G474 draws fast), on MK4-2 once r12 sped the OSD up. That is also why the r11 DVR only showed the OSD changing about twice a second (most writes were being dropped).
   - The OSD waits for the TX buffer to mostly drain (900 of 1280 bytes free) before it starts a frame, and the boot screen redraws the same way. The link never fills, so there's always room for the VTX's messages.
