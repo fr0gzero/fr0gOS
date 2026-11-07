@@ -1,0 +1,85 @@
+diff --git a/src/main/io/vtx_msp.c b/src/main/io/vtx_msp.c
+index 557a8d3..8309ad4 100644
+--- a/src/main/io/vtx_msp.c
++++ b/src/main/io/vtx_msp.c
+@@ -196,14 +196,17 @@ static void vtxMspProcess(vtxDevice_t *vtxDevice, timeUs_t currentTimeUs)
+ 
+             prepareMspFrame(frame);
+ 
++            bool sent = true;
+             if (isCrsfPortConfig(portConfig)) {
+                 mspCrsfPush(MSP_VTX_CONFIG, frame, sizeof(frame));
+             } else {
+-                mspSerialPush(portConfig->identifier, MSP_VTX_CONFIG, frame, sizeof(frame), MSP_DIRECTION_REPLY, MSP_V2_NATIVE);
++                // fr0gOS: mspSerialPush drops the frame when the TX buffer is full (busy OSD); if it did, keep
++                // the config marked as changed and try again next period, or the VTX never gets its channel
++                sent = mspSerialPush(portConfig->identifier, MSP_VTX_CONFIG, frame, sizeof(frame), MSP_DIRECTION_REPLY, MSP_V2_NATIVE) > 0;
+             }
+             packetCounter++;
+             mspVtxLastTimeUs = currentTimeUs;
+-            mspVtxConfigChanged = false;
++            mspVtxConfigChanged = !sent;
+ 
+ #ifdef USE_CMS
+             mspCmsUpdateStatusString();
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index e96e5c0..f7a0ae5 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -87,6 +87,7 @@
+ #include "osd/osd_elements.h"
+ #include "osd/frog_charmap.h"
+ #include "osd/frog_anim.h"
++#include "msp/msp_serial.h"
+ #include "osd/osd_warnings.h"
+ 
+ #include "pg/motor.h"
+@@ -154,6 +155,20 @@ static uint8_t osdProfile = 1;
+ #endif
+ static displayPort_t *osdDisplayPort;
+ static osdDisplayPortDevice_e osdDisplayPortDeviceType;
++
++// fr0gOS: never flood the HDZero link. The MSP displayport has no flow control (it reports "never busy"), and
++// Betaflight drops any MSP frame that doesn't fit in the UART TX buffer, including the one that tells the VTX
++// its channel and power. At 115200 baud a busy fr0gOS frame can outrun the link, so wait until the buffer has
++// mostly drained before starting another frame (and before each boot-screen redraw).
++#define FROG_MSP_TX_RESERVE 900
++static bool frogMspLinkBusy(void)
++{
++#if defined(USE_MSP_DISPLAYPORT)
++    return osdDisplayPortDeviceType == OSD_DISPLAYPORT_DEVICE_MSP && mspSerialTxBytesFree() < FROG_MSP_TX_RESERVE;
++#else
++    return false;
++#endif
++}
+ static bool osdIsReady;
+ 
+ static bool suppressStatsDisplay = false;
+@@ -511,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R12"
++#define FROGOS_VERSION   "V1.3 R13"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+@@ -1938,7 +1953,7 @@ static void osdProcessStats2(timeUs_t currentTimeUs)
+             }
+             // fr0gOS: keep the boot checks live while the boot screen is up
+             // (the frog row at 25 fps, the checks at half that)
+-            if (frogBootActive && !ARMING_FLAG(ARMED) && cmp32(currentTimeUs, frogBootNextDrawUs) >= 0) {
++            if (frogBootActive && !ARMING_FLAG(ARMED) && cmp32(currentTimeUs, frogBootNextDrawUs) >= 0 && !frogMspLinkBusy()) {
+                 if ((frogBootTick++ & 1) == 0) {
+                     osdFrogDrawBootStatus();
+                 }
+@@ -2032,6 +2047,9 @@ bool osdUpdateCheck(timeUs_t currentTimeUs, timeDelta_t currentDeltaTimeUs)
+     if ((osdState == OSD_STATE_CHECK || osdState == OSD_STATE_TRANSFER) && displayIsTransferInProgress(osdDisplayPort)) {
+         return false;
+     }
++    if (osdState == OSD_STATE_CHECK && frogMspLinkBusy()) {
++        return false;
++    }
+ 
+     return (osdState != OSD_STATE_IDLE);
+ }

@@ -4,6 +4,11 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r13 - 2026-11-08 (MK4-2, MK5-1)
+- **Fix: no HDZero video at power-up, or the VTX coming up on channel 1.** The MSP displayport has no flow control, and Betaflight silently drops any MSP frame that doesn't fit in the UART TX buffer, including the one message that gives the VTX its band, channel and power (and it never resends it). fr0gOS's busier OSD could fill the 115200 link: on MK5-1 from r10 (the G474 draws fast), on MK4-2 once r12 sped the OSD up. That is also why the r11 DVR only showed the OSD changing about twice a second (most writes were being dropped).
+  - The OSD waits for the TX buffer to mostly drain (900 of 1280 bytes free) before it starts a frame, and the boot screen redraws the same way. The link never fills, so there's always room for the VTX's messages.
+  - The VTX config is retried every 200 ms until it actually goes out, instead of being marked sent when it was dropped.
+
 ## v1.3 r12 - 2026-11-08 (MK4-2, MK5-1)
 - **OSD frame rate fix.** The MK5-1 DVR showed the whole OSD only refreshing about twice a second (so the hop, RPM and throttle all stepped). Cause: Betaflight schedules each OSD element by the longest time it has ever taken, and only decays that by a hair per draw. The frog's ledge search was slow (it checked every element against every other) and ran every second, so the feed / frog element looked slow forever and had to wait its turn six times a frame.
   - Ledges are now one pass over the layout, and only worked out on the ground (the layout doesn't change in flight).
