@@ -38,10 +38,10 @@ LAYOUT = [
     ("osd_tim_2_pos", a(R, 2)), ("osd_warnings_pos", a(R, 3)),
     ("# STATE, middle right: what the switches say", None),
     ("osd_disarmed_pos", a(R, 5)), ("osd_flymode_pos", a(R, 6)), ("osd_frog_air_pos", a(R, 7)),
-    ("# PERFORMANCE, lower right: throttle to 0.1% and full RPM, both moving all the time; G", None),
-    ("osd_throttle_pos", a(R, 9)), ("osd_esc_rpm_pos", a(R, 10)), ("osd_g_force_pos", a(R, 11)),
+    ("# PERFORMANCE, lower right: THR label + throttle to 0.1% (rows 9-10), RPM label + full RPM (11-12), G (13)", None),
+    ("osd_throttle_pos", a(R, 9)), ("osd_esc_rpm_pos", a(R, 11)), ("osd_g_force_pos", a(R, 13)),
     ("# SYSTEM, bottom right: slow, glance when curious", None),
-    ("osd_esc_tmp_pos", a(R, 13)), ("osd_core_temp_pos", a(R, 14)), ("osd_total_flights_pos", a(R, 16)),
+    ("osd_esc_tmp_pos", a(R, 14)), ("osd_core_temp_pos", a(R, 15)), ("osd_total_flights_pos", a(R, 16)),
 ]
 FROGOS_HD_BLOCK = "\n".join([
     "# ---- FrogOS HDZero hacker layout (identical on every HD quad) ----",
@@ -100,7 +100,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.3 r05 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.3 r06 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",

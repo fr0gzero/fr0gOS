@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice).
 
+## v1.3 r06 - 2026-11-08 (MK4-2 test build)
+- `THR` label above throttle and `RPM` label above RPM. Each readout draws its own label on its row and the value on the row below.
+- Right column: THR 9, throttle 10, RPM 11, RPM value 12, G 13, ESC temp 14, core temp 15, flights 16.
+
 ## v1.3 r05 - 2026-11-08 (MK4-2 test build)
 - Activity feed lines glyph away 5 s after they appear, like chat history.
 - The frog moves top left (row 0) with the feed under it (rows 1-2). The arm hop goes right to left and lands it there. The craft name is plain `MK4-2`.
