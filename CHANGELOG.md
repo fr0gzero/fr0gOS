@@ -4,6 +4,14 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice).
 
+## v1.3 r05 - 2026-11-08 (MK4-2 test build)
+- Activity feed lines glyph away 5 s after they appear, like chat history.
+- The frog moves top left (row 0) with the feed under it (rows 1-2). The arm hop goes right to left and lands it there. The craft name is plain `MK4-2`.
+- `FLOAT` and `CHOP` removed. `ROLL` / `FLIP` / `SPIN` only fire on a full 360 on that axis (gyro integrated while it keeps turning one way).
+- Throttle to a tenth of a percent (`45.3%`), no icon, heat colours (amber 80%+, red 95%+). RPM as the whole number (`38214`), still heat-coloured.
+- `ARMED` instead of `[ARM]` (readout and arm screen).
+- Battery % retired (the voltage carries the stage colours). The left column moves down: power rows 4-6, links 8-12, video 13-16.
+
 ## v1.3 r04 - 2026-11-08 (MK4-2 test build)
 - **Activity feed**, top left, two lines (`osd_frog_feed_pos`, replaces `osd_frog_tag_pos`). It shows what the pilot is doing, for the viewer. The newest event types in through glyphs and stays; the previous one drops to line 2.
   - Switches: `ANGLE` `HORZN` `ACRO`, `AIR` `NOAIR`, `ARMED` `SAFE`, `TURTL`, `BEEP`, packet rate and VTX power changes.

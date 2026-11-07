@@ -23,13 +23,14 @@ LAYOUT = [
     # v1.3 layout. How high something sits = how much it matters in flight. Fast-moving numbers are
     # grouped away from the critical ones, static reference goes to the bottom corners, and colour
     # only appears when something needs you.
-    ("# top left: activity feed, 2 lines (what the pilot is doing) | top right: craft name, frog as the dash", None),
+    ("# top left: frog (row 0) + activity feed (rows 1-2, each line glyphs away after 5 s) | top right: craft name", None),
     ("osd_frog_feed_pos", a(L, 0)), ("osd_frog_craft_pos", a(R, 0)),
-    ("# POWER, top left (eye line): the number a whoop pilot reads most", None),
-    ("osd_vbat_pos", a(L, 2)), ("osd_frog_batt_pos", a(L, 3)), ("osd_mah_drawn_pos", a(L, 4)), ("osd_current_pos", a(L, 5)),
+    ("# POWER, left under the feed: voltage carries the battery stage colours (battery % retired)", None),
+    ("osd_frog_batt_pos", 0),
+    ("osd_vbat_pos", a(L, 4)), ("osd_mah_drawn_pos", a(L, 5)), ("osd_current_pos", a(L, 6)),
     ("# LINKS, middle left: control link, then video link", None),
-    ("osd_link_quality_pos", a(L, 7)), ("osd_rssi_dbm_pos", a(L, 8)), ("osd_frog_rate_pos", a(L, 9)),
-    ("osd_vtx_channel_pos", a(L, 10)), ("osd_frog_vtxpwr_pos", a(L, 11)),
+    ("osd_link_quality_pos", a(L, 8)), ("osd_rssi_dbm_pos", a(L, 9)), ("osd_frog_rate_pos", a(L, 10)),
+    ("osd_vtx_channel_pos", a(L, 11)), ("osd_frog_vtxpwr_pos", a(L, 12)),
     ("# VIDEO, bottom left: HDZRO + camera mode (osd_custom_msg0-2 per quad, blank if unset)", None),
     ("osd_custom_msg3_pos", a(L, 13)),
     ("osd_custom_msg0_pos", a(L, 14)), ("osd_custom_msg1_pos", a(L, 15)), ("osd_custom_msg2_pos", a(L, 16)),
@@ -37,7 +38,7 @@ LAYOUT = [
     ("osd_tim_2_pos", a(R, 2)), ("osd_warnings_pos", a(R, 3)),
     ("# STATE, middle right: what the switches say", None),
     ("osd_disarmed_pos", a(R, 5)), ("osd_flymode_pos", a(R, 6)), ("osd_frog_air_pos", a(R, 7)),
-    ("# PERFORMANCE, lower right: the fast-moving numbers, kept together", None),
+    ("# PERFORMANCE, lower right: throttle to 0.1% and full RPM, both moving all the time; G", None),
     ("osd_throttle_pos", a(R, 9)), ("osd_esc_rpm_pos", a(R, 10)), ("osd_g_force_pos", a(R, 11)),
     ("# SYSTEM, bottom right: slow, glance when curious", None),
     ("osd_esc_tmp_pos", a(R, 13)), ("osd_core_temp_pos", a(R, 14)), ("osd_total_flights_pos", a(R, 16)),
@@ -99,7 +100,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.3 r04 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.3 r05 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",
