@@ -51,3 +51,5 @@ Each audition in `themes/` plays: startup, armed, disarmed, angle, horizon, acro
 
 To build the SD-card pack for one theme: `python3 make_tone_themes.py pack <theme> <edgetx-sdcard-sounds/SOUNDS/en> <out>`.
 All original sounds; no theme tunes are copied.
+
+**In use: pond** (`frogos_tonepack_pond_edgetx_en.zip`), chosen 2026-11-08.
