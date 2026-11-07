@@ -1,3 +1,4 @@
 # personal files (ELRS binding UID etc) - kept on your computer, never pushed
 private/
 radio/pack/
+__pycache__/
