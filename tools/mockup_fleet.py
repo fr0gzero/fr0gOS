@@ -95,12 +95,11 @@ def hd_quad(name, cam):
           (R, 13, g("C52"), True, False), (R, 14, g("R8"), True, False), (R, 15, g("200MW"), True, False)]
     it += [(L, 13 + i, g(t), False, False) for i, t in enumerate(cam)]
     # optional extras, grey
-    it += [(R, 4, g("2:10"), True, True),     # flight time left estimate
-           (R, 5, g("38K"), True, True),      # average motor RPM
-           (R, 10, g("2.1G"), True, True),    # g-force
-           (R, 12, g("E48"), True, True),     # ESC temperature
-           (L, 11, g("P2R1"), False, True),   # PID / rate profile
-           (L, 16, g("#127"), False, True)]   # total flights
+    it += [(R, 4, g("02:10"), True, False),   # flight time left estimate
+           (R, 5, g("38K"), True, False),     # average motor RPM
+           (R, 10, g("2.1G"), True, False),   # g-force
+           (R, 12, g("E48"), True, False),    # ESC temperature
+           (L, 16, g("#127"), False, False)]  # total flights
     return hd_panel(it)
 
 
@@ -114,7 +113,7 @@ p41 = analog_panel([
     (29, 1, "01:23", True, False), (29, 2, "45%", True, False),
     (29, 4, "SAFE", True, False), (29, 5, "ACRO", True, False), (29, 6, "NOAIR", True, False),
     (29, 8, "C41", True, False), (29, 9, "R8", True, False), (29, 10, "200MW", True, False), (29, 11, "LOWV", True, False),
-    (29, 3, "2:10", True, True), (0, 7, "38K", False, True), (0, 3, "P1R0", False, True)])
+    (29, 3, "02:10", True, False), (0, 3, "38K", False, False), (29, 7, "2.1G", True, False), (0, 7, "#127", False, False)])
 
 W = 1100
 panels = [("MK51  HDZero  540P90 crop", p51), ("MK42  HDZero  720P60 4:3", p42), ("MK41  analog  NTSC 16:9 (font approximate)", p41)]
@@ -127,6 +126,6 @@ for t, im in scaled:
     d.text((20, y), t, fill=(230, 230, 230))
     sheet.paste(im, (20, y + 18))
     y += im.height + 34
-d.text((20, y - 6), "grey = optional extras: 2:10 time left, 38K motor RPM, 2.1G g-force, E48 ESC temp, P2R1 profiles, #127 flight count", fill=(170, 170, 170))
+d.text((20, y - 6), "FrogOS v1.1 r03", fill=(170, 170, 170))
 sheet.save(OUT)
 print("ok", sheet.size)

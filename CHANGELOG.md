@@ -2,6 +2,11 @@
 
 All builds are on Betaflight 2026.6.2.
 
+## v1.1 r03 - 2026-11-07
+- New on every quad: flight time left (`02:10`, estimated from mAh used against `osd_cap_alarm`), average motor RPM (`38K`, one line, from bidirectional DShot), g-force (`2.1G`), and lifetime flight count (`#127`; a flight counts once armed for 15 s, `stats_min_armed_time_s = 15`). Flight count restarts at 0 after a full chip erase.
+- HDZero quads also show ESC temperature (`E48`, the hottest ESC; `E--` if the ESC doesn't report it). Left off MK4-1, whose ESC firmware doesn't report temperature.
+- `osd_cap_alarm` set to about 80% of the pack: MK5-1 440 (550 mAh). MK4-1 and MK4-2 assume a 300 mAh 1S (240).
+
 ## v1.1 r02 - 2026-11-07
 - Top bar tag is `FR0G` (DOS-font zero, matching the other zeros).
 - Camera mode on the OSD: `osd_custom_msg0`-`3` text and positions can now be set from the CLI, and unset lines show nothing (stock showed `CUSTOM_MSG1`). MK5-1 shows `540P` / `90FPS` / `CROP` middle left.

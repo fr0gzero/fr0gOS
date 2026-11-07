@@ -28,12 +28,15 @@ LAYOUT = [
     ("osd_link_quality_pos", a(L, 7)), ("osd_rssi_dbm_pos", a(L, 8)), ("osd_frog_rate_pos", a(L, 9)),
     ("# camera / video format, bottom left (text from osd_custom_msg0-2, blank if unset)", None),
     ("osd_custom_msg0_pos", a(L, 13)), ("osd_custom_msg1_pos", a(L, 14)), ("osd_custom_msg2_pos", a(L, 15)),
+    ("osd_total_flights_pos", a(L, 16)),
     ("# time, top right", None),
     ("osd_tim_2_pos", a(R, 2)), ("osd_throttle_pos", a(R, 3)),
+    ("osd_remaining_time_estimate_pos", a(R, 4)), ("osd_esc_rpm_pos", a(R, 5)),
     ("# state, middle right", None),
     ("osd_disarmed_pos", a(R, 7)), ("osd_flymode_pos", a(R, 8)), ("osd_frog_air_pos", a(R, 9)),
+    ("osd_g_force_pos", a(R, 10)),
     ("# system, bottom right", None),
-    ("osd_core_temp_pos", a(R, 13)), ("osd_vtx_channel_pos", a(R, 14)), ("osd_frog_vtxpwr_pos", a(R, 15)),
+    ("osd_esc_tmp_pos", a(R, 12)), ("osd_core_temp_pos", a(R, 13)), ("osd_vtx_channel_pos", a(R, 14)), ("osd_frog_vtxpwr_pos", a(R, 15)),
     ("osd_warnings_pos", a(R, 16)),
 ]
 FROGOS_HD_BLOCK = "\n".join([
@@ -47,6 +50,8 @@ FROGOS_HD_BLOCK = "\n".join([
     "set osd_canvas_height = 18",
     "set osd_frog_hd_font = ON",
     "set osd_warn_bitmask = 794623",
+    "# count a flight when armed 15 s or more (flight counter, saved on disarm)",
+    "set stats_min_armed_time_s = 15",
 ] + [k if v is None else f"set {k} = {v}" for k, v in LAYOUT])
 
 SKIP_PREFIX = ("mcu_id", "signature", "# version", "# Betaflight", "# config rev", "# start the command",
@@ -74,7 +79,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.1 r02 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.1 r03 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",

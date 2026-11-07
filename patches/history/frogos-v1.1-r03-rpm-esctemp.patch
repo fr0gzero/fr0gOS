@@ -1,0 +1,80 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index fdf105b..f03ac61 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -502,7 +502,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- FrogOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.1 R02"
++#define FROGOS_VERSION   "V1.1 R03"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  7
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 6fad669..da303c7 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1230,33 +1230,46 @@ static void osdElementOsdProfileName(osdElementParms_t *element)
+ 
+ static void osdElementEscTemperature(osdElementParms_t *element)
+ {
+-#if defined(USE_ESC_SENSOR)
+-    if (featureIsEnabled(FEATURE_ESC_SENSOR)) {
+-        tfp_sprintf(element->buff, "E%c%3d%c", SYM_TEMPERATURE, osdConvertTemperatureToSelectedUnit(osdEscDataCombined->temperature), osdGetTemperatureSymbolForSelectedUnit());
+-    } else
+-#endif
++    // FrogOS: hottest ESC as E48; E-- when the ESC doesn't report temperature
+ #if defined(USE_DSHOT_TELEMETRY)
+-    {
+-        uint32_t osdEleIx = tfp_sprintf(element->buff, "E%c", SYM_TEMPERATURE);
+-
++    if (!featureIsEnabled(FEATURE_ESC_SENSOR)) {
++        int hottest = -1;
+         for (uint8_t k = 0; k < getMotorCount(); k++) {
+             if ((dshotTelemetryState.motorState[k].telemetryTypes & (1 << DSHOT_TELEMETRY_TYPE_TEMPERATURE)) != 0) {
+-                osdEleIx += tfp_sprintf(element->buff + osdEleIx, "%3d%c",
+-                    osdConvertTemperatureToSelectedUnit(dshotTelemetryState.motorState[k].telemetryData[DSHOT_TELEMETRY_TYPE_TEMPERATURE]),
+-                    osdGetTemperatureSymbolForSelectedUnit());
+-            } else {
+-                osdEleIx += tfp_sprintf(element->buff + osdEleIx, "  0%c", osdGetTemperatureSymbolForSelectedUnit());
++                hottest = MAX(hottest, (int)dshotTelemetryState.motorState[k].telemetryData[DSHOT_TELEMETRY_TYPE_TEMPERATURE]);
+             }
+         }
++        if (hottest < 0) {
++            strcpy(element->buff, "E--");
++        } else {
++            tfp_sprintf(element->buff, "E%d", osdConvertTemperatureToSelectedUnit(hottest));
++        }
++        return;
++    }
++#endif
++#if defined(USE_ESC_SENSOR)
++    if (featureIsEnabled(FEATURE_ESC_SENSOR)) {
++        tfp_sprintf(element->buff, "E%d", osdConvertTemperatureToSelectedUnit(osdEscDataCombined->temperature));
++        return;
+     }
+-#else
+-    {}
+ #endif
++    strcpy(element->buff, "E--");
+ }
+ 
+ static void osdElementEscRpm(osdElementParms_t *element)
+ {
+-    renderOsdEscRpmOrFreq(&getEscRpm,element);
++    // FrogOS: one line, average of all motors, e.g. 38K / 9.5K
++    const uint8_t count = getMotorCount();
++    int32_t sum = 0;
++    for (uint8_t i = 0; i < count; i++) {
++        sum += getEscRpm(i);
++    }
++    const int32_t avg = count ? sum / count : 0;
++    if (avg >= 10000) {
++        tfp_sprintf(element->buff, "%dK", (int)(avg / 1000));
++    } else {
++        tfp_sprintf(element->buff, "%d.%dK", (int)(avg / 1000), (int)((avg % 1000) / 100));
++    }
+ }
+ 
+ static void osdElementEscRpmFreq(osdElementParms_t *element)
