@@ -63,7 +63,7 @@ for f, ms in A.ANIMS["boot"][1][:8]:
     frame([(X0, FROG_ROW, f)], max(60, ms // 2))
 # 2. hop right along the top while the checks type in
 c = X0
-end = X0 + len(LINES[1]) - 1
+end = X0 + len(LINES[0].rstrip()) - 1          # stop over the last letter of the header, never past the text
 while c < end:
     frame([(c, FROG_ROW, HP.CROUCH)], 40)
     for a, b in HP.HOP_R:
@@ -72,9 +72,22 @@ while c < end:
     c += 1
     if c % 6 == 0:                                           # a little look around now and then
         frame([(c, FROG_ROW, A.LOOK_L)], 160)
-# 3. all OK: celebrate at the far end
-while clock[0] < len(LINES) * 520 + 400:
-    frame([(c, FROG_ROW, A.IDLE)], 120)
+# 3. early? fill the wait with random little animations (a different mix every boot)
+import random  # noqa: E402
+FILLERS = [
+    [(A.BLINK, 140), (A.IDLE, 300)],
+    [(A.LOOK_L, 500), (A.IDLE, 200)],
+    [(A.LOOK_R, 500), (A.IDLE, 200)],
+    [(A.LOOK_UP, 500), (A.IDLE, 200)],
+    [(A.SMILE, 600), (A.IDLE, 200)],
+    E.EVENTS["mode"][1][1:],
+]
+rng = random.Random()
+boot_done = len(LINES) * 520 + 400
+while clock[0] < boot_done:
+    for f, ms in rng.choice(FILLERS):
+        frame([(c, FROG_ROW, f)], ms)
+# 4. all OK: celebrate where it stands
 for f, ms in E.EVENTS["trick_spin"][1][1:-1]:
     frame([(c, FROG_ROW, f)], ms)
 for f, ms in E.EVENTS["record"][1][1:-1]:
