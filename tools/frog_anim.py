@@ -67,6 +67,24 @@ def peek(t, look=None):
     return im
 
 
+def crt(t):
+    """CRT power-on: a bright line at the frog's middle opens up to reveal it"""
+    im = Image.new("RGBA", (W, H), (0, 0, 0, 0))
+    s_, d_ = IDLE.load(), im.load()
+    mid, half = 27, int(t * 16)
+    for y in range(H):
+        for x in range(W):
+            if abs(y - mid) <= half and s_[x, y][3]:
+                d_[x, y] = s_[x, y]
+    if t < 1:
+        dr = ImageDraw.Draw(im)
+        w = int(17 * min(1.0, 0.15 + t * 3))
+        dr.line([18 - w, mid, 17 + w, mid], fill=WHITE)
+        if t < 0.08:
+            dr.point((18, mid), fill=WHITE)
+    return im
+
+
 def croak_a(k):
     """A: eyes squeeze shut, body swells, mouth pops open and a light ring bursts out"""
     if k == 0:
@@ -112,11 +130,12 @@ ANIMS = {
              [(rot(FLIPPED, 12), 110), (rot(FLIPPED, -9), 110), (rot(FLIPPED, 5), 110), (FLIPPED, 500), (FLIP_L, 450), (FLIP_R, 450),
               (KICK, 150), (FLIPPED, 150), (KICK, 150), (FLIPPED, 600)]),
     "low_battery": ("LOW BATTERY  - crouch, launch, arms waving at the top with a pulsing red !, squash landing, bounce (loops)",
-                    [(bang(ARMS, False), 220), (bang(scale(ARMS, 1.06, 0.9), False), 80), (bang(scale(ARMS, 1.12, 0.8), False), 80),
-                     (bang(scale(ARMS, 0.9, 1.15), False), 60), (bang(shift(scale(ARMS, 0.94, 1.08), -4), False), 60),
-                     (bang(shift(ARMS_L, -8), True), 70), (bang(shift(ARMS, -11), True), 90), (bang(shift(ARMS_R, -11), True), 90),
-                     (bang(shift(ARMS_L, -8), True), 70), (bang(shift(scale(ARMS, 0.94, 1.08), -4), False), 60),
-                     (bang(scale(ARMS, 1.15, 0.78), False), 90), (bang(shift(scale(ARMS, 1.05, 0.95), -1), False), 80)]),
+                    [(bang(shift(ARMS, 8), False), 220), (bang(shift(scale(ARMS, 1.06, 0.9), 8), False), 80),
+                     (bang(shift(scale(ARMS, 1.12, 0.8), 8), False), 80), (bang(shift(scale(ARMS, 0.9, 1.15), 8), False), 60),
+                     (bang(shift(scale(ARMS, 0.94, 1.08), 4), False), 60), (bang(shift(ARMS_L, 1), True), 70),
+                     (bang(shift(ARMS, -2), True), 90), (bang(shift(ARMS_R, -2), True), 90), (bang(shift(ARMS_L, 1), True), 70),
+                     (bang(shift(scale(ARMS, 0.94, 1.08), 4), False), 60), (bang(shift(scale(ARMS, 1.15, 0.78), 8), False), 90),
+                     (bang(shift(scale(ARMS, 1.05, 0.95), 7), False), 80)]),
     "squash": ("SQUASH  - pulling high G: flattens, holds, springs back",
                [(IDLE, 400), (scale(IDLE, 1.1, 0.85), 60), (scale(IDLE, 1.2, 0.7), 60), (scale(IDLE, 1.24, 0.64), 500),
                 (scale(IDLE, 1.1, 0.88), 60), (scale(IDLE, 0.94, 1.08), 60), (IDLE, 500)]),
@@ -126,10 +145,9 @@ ANIMS = {
     "peekaboo": ("PEEKABOO  - idle: slides out of the edge, looks around, ducks back",
                  [(peek(0.0), 400), (peek(0.25), 120), (peek(0.5), 120), (peek(0.75, LOOK_L), 400), (peek(1.0, LOOK_R), 500),
                   (peek(1.0, IDLE), 300), (peek(0.75), 120), (peek(0.5), 120), (peek(0.2), 120), (peek(0.0), 600)]),
-    "croak_a": ("CROAK option A  - eyes squeeze, body swells, mouth pops open, a light ring bursts out",
-                [(croak_a(k), ms) for k, ms in ((0, 600), (1, 120), (2, 140), (3, 90), (4, 90), (5, 90), (2, 100), (0, 600))]),
-    "croak_b": ("CROAK option B  - a throat sac inflates under the chin on the DOS grid, then pops",
-                [(croak_b(k), ms) for k, ms in ((0, 600), (1, 160), (2, 160), (3, 400), (4, 120), (5, 600))]),
+    "boot": ("BOOT  - the frog does the boot: a white line opens out like an old CRT turning on, the frog appears and blinks",
+             [(crt(t), ms) for t, ms in ((0.0, 300), (0.04, 80), (0.1, 80), (0.2, 80), (0.35, 80), (0.55, 80), (0.8, 80), (1.0, 500))] +
+             [(BLINK, 140), (IDLE, 300), (SMILE, 900)]),
 }
 
 
