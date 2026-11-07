@@ -19,30 +19,40 @@ def a(x, y):
 
 
 L, R = 0, 49
-LAYOUT = [
-    # v1.3 layout. How high something sits = how much it matters in flight. Fast-moving numbers are
-    # grouped away from the critical ones, static reference goes to the bottom corners, and colour
-    # only appears when something needs you.
-    ("# top left: frog (row 0) + activity feed (rows 1-2, each line glyphs away after 5 s) | top right: craft name", None),
-    ("osd_frog_feed_pos", a(L, 0)), ("osd_frog_craft_pos", a(R, 0)),
-    ("# POWER, left under the feed: voltage carries the battery stage colours (battery % retired)", None),
-    ("osd_frog_batt_pos", 0),
-    ("osd_vbat_pos", a(L, 4)), ("osd_mah_drawn_pos", a(L, 5)), ("osd_current_pos", a(L, 6)),
-    ("# LINKS, middle left: control link, then video link", None),
-    ("osd_link_quality_pos", a(L, 8)), ("osd_rssi_dbm_pos", a(L, 9)), ("osd_frog_rate_pos", a(L, 10)),
-    ("osd_vtx_channel_pos", a(L, 11)), ("osd_frog_vtxpwr_pos", a(L, 12)),
-    ("# VIDEO, bottom left: HDZRO + camera mode (osd_custom_msg0-2 per quad, blank if unset)", None),
-    ("osd_custom_msg3_pos", a(L, 13)),
-    ("osd_custom_msg0_pos", a(L, 14)), ("osd_custom_msg1_pos", a(L, 15)), ("osd_custom_msg2_pos", a(L, 16)),
-    ("# TIME + ALERTS, top right (eye line): warnings are empty until something is wrong", None),
-    ("osd_tim_2_pos", a(R, 2)), ("osd_warnings_pos", a(R, 3)),
-    ("# STATE, middle right: what the switches say", None),
-    ("osd_disarmed_pos", a(R, 5)), ("osd_flymode_pos", a(R, 6)), ("osd_frog_air_pos", a(R, 7)),
-    ("# PERFORMANCE, lower right: THR label + throttle to 0.1% (rows 9-10), RPM label + full RPM (11-12), G (13)", None),
-    ("osd_throttle_pos", a(R, 9)), ("osd_esc_rpm_pos", a(R, 11)), ("osd_g_force_pos", a(R, 13)),
-    ("# SYSTEM, bottom right: slow, glance when curious", None),
-    ("osd_esc_tmp_pos", a(R, 14)), ("osd_core_temp_pos", a(R, 15)), ("osd_total_flights_pos", a(R, 16)),
-]
+# v1.3 r07 layout options (same elements, different spacing). A is the default.
+HIDDEN = ["osd_frog_batt_pos", "osd_rssi_dbm_pos", "osd_esc_tmp_pos",
+          "osd_custom_msg0_pos", "osd_custom_msg1_pos", "osd_custom_msg2_pos", "osd_custom_msg3_pos"]
+OPTIONS = {
+    # A MIRRORED: both sides share one grid, groups start on rows 0 / 4 / 9 / 13
+    "A": dict(left=dict(osd_frog_feed_pos=0, osd_vbat_pos=4, osd_mah_drawn_pos=5, osd_current_pos=6,
+                        osd_link_quality_pos=9, osd_frog_rate_pos=10, osd_vtx_channel_pos=13, osd_frog_vtxpwr_pos=14),
+              right=dict(osd_frog_craft_pos=0, osd_tim_2_pos=1, osd_warnings_pos=2, osd_disarmed_pos=4,
+                         osd_flymode_pos=5, osd_frog_air_pos=6, osd_throttle_pos=9, osd_esc_rpm_pos=11,
+                         osd_g_force_pos=13, osd_core_temp_pos=14, osd_total_flights_pos=15)),
+    # B EYE LINE: the numbers you read sit in the middle third, corners stay quiet
+    "B": dict(left=dict(osd_frog_feed_pos=0, osd_vbat_pos=6, osd_mah_drawn_pos=7, osd_current_pos=8,
+                        osd_link_quality_pos=10, osd_frog_rate_pos=11, osd_vtx_channel_pos=13, osd_frog_vtxpwr_pos=14),
+              right=dict(osd_frog_craft_pos=0, osd_tim_2_pos=2, osd_warnings_pos=3, osd_disarmed_pos=5,
+                         osd_flymode_pos=6, osd_frog_air_pos=7, osd_throttle_pos=9, osd_esc_rpm_pos=11,
+                         osd_g_force_pos=13, osd_core_temp_pos=15, osd_total_flights_pos=16)),
+    # C CORNERS: groups anchored to the four corners, the middle of the bars open for the frog
+    "C": dict(left=dict(osd_frog_feed_pos=0, osd_vbat_pos=3, osd_mah_drawn_pos=4, osd_current_pos=5,
+                        osd_link_quality_pos=13, osd_frog_rate_pos=14, osd_vtx_channel_pos=15, osd_frog_vtxpwr_pos=16),
+              right=dict(osd_frog_craft_pos=0, osd_tim_2_pos=1, osd_warnings_pos=2, osd_disarmed_pos=3,
+                         osd_flymode_pos=4, osd_frog_air_pos=5, osd_throttle_pos=9, osd_esc_rpm_pos=11,
+                         osd_g_force_pos=13, osd_core_temp_pos=15, osd_total_flights_pos=16)),
+}
+
+
+def layout(opt):
+    out = [("# layout option %s: frog + activity feed top left (frog hops around the bars), craft name top right" % opt, None)]
+    out += [(k, a(L, y)) for k, y in OPTIONS[opt]["left"].items()]
+    out += [(k, a(R, y)) for k, y in OPTIONS[opt]["right"].items()]
+    out += [("# hidden: battery %, RSSI dBm, ESC temp, camera / HDZRO lines", None)] + [(k, 0) for k in HIDDEN]
+    return out
+
+
+LAYOUT = layout("A")
 FROGOS_HD_BLOCK = "\n".join([
     "# ---- FrogOS HDZero hacker layout (identical on every HD quad) ----",
     "# 50x18 canvas; x=0 left-justified, x=49 right-justified; everything else hidden",
@@ -100,7 +110,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.3 r06 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.3 r07 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",

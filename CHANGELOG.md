@@ -4,6 +4,12 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice).
 
+## v1.3 r07 - 2026-11-08 (MK4-2 test build)
+- No more glyphs across the picture. The arm screen is a centre message only: `ARMED` (plus the crash flip text when flipping) glyphs in for 0.4 s, holds, then glyphs out (1.6 s total). The noise sweep, strays, Matrix rain / shimmer screensaver and HISCORE fireworks are gone. Glyphs stay on side-column changes (feed, mode changes, appear/vanish).
+- The frog hops around the black bars. On events (arm, crash flip, mode / air changes, tricks, warnings) it jumps to a random free spot worked out from the live layout. Never sooner than 12 s after the last hop, 50/50 between 12 and 20 s, certain after that, so roughly every 15-20 s of flying. A hop is a glyph puff where it was, a puff where it lands, then the frog.
+- Removed from the layout: RSSI dBm, ESC temp, `HDZRO` and the camera lines (and battery % from r05).
+- Three layout options (`fonts/hdzero-hacker/frogos_layout_v14_options.png`): A mirrored (default), B eye line, C corners. `quads/mk4-2/layouts/layout_A|B|C.txt` swap between them without reflashing.
+
 ## v1.3 r06 - 2026-11-08 (MK4-2 test build)
 - `THR` label above throttle and `RPM` label above RPM. Each readout draws its own label on its row and the value on the row below.
 - Right column: THR 9, throttle 10, RPM 11, RPM value 12, G 13, ESC temp 14, core temp 15, flights 16.

@@ -1,0 +1,30 @@
+# FrogOS MK4-2 layout option C (paste into the CLI, no reflash)
+# layout option C: frog + activity feed top left (frog hops around the bars), craft name top right
+set osd_frog_feed_pos = 2048
+set osd_vbat_pos = 2144
+set osd_mah_drawn_pos = 2176
+set osd_current_pos = 2208
+set osd_link_quality_pos = 2464
+set osd_frog_rate_pos = 2496
+set osd_vtx_channel_pos = 2528
+set osd_frog_vtxpwr_pos = 2560
+set osd_frog_craft_pos = 3089
+set osd_tim_2_pos = 3121
+set osd_warnings_pos = 3153
+set osd_disarmed_pos = 3185
+set osd_flymode_pos = 3217
+set osd_frog_air_pos = 3249
+set osd_throttle_pos = 3377
+set osd_esc_rpm_pos = 3441
+set osd_g_force_pos = 3505
+set osd_core_temp_pos = 3569
+set osd_total_flights_pos = 3601
+# hidden: battery %, RSSI dBm, ESC temp, camera / HDZRO lines
+set osd_frog_batt_pos = 0
+set osd_rssi_dbm_pos = 0
+set osd_esc_tmp_pos = 0
+set osd_custom_msg0_pos = 0
+set osd_custom_msg1_pos = 0
+set osd_custom_msg2_pos = 0
+set osd_custom_msg3_pos = 0
+save
