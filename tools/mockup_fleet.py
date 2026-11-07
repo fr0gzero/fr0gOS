@@ -67,8 +67,17 @@ def analog_panel(items):
             x = x + 1 - len(text)
         colour = GHOST if ghost else (240, 240, 240)
         for i, c in enumerate(text):
-            rows16 = vga[ord(c)]
             ox, oy = (x + i) * cw + 2, y * ch + 1
+            if ord(c) < 0x20:   # Betaflight symbol: borrow it from the HD font, shrunk to the analog cell
+                sym = font.crop(((ord(c) % 16) * GW, (ord(c) // 16) * GH, (ord(c) % 16 + 1) * GW, (ord(c) // 16 + 1) * GH)).resize((cw - 2, ch - 2), Image.NEAREST)
+                sp = sym.load()
+                for yy in range(sym.height):
+                    for xx in range(sym.width):
+                        q = sp[xx, yy]
+                        if q != TRANS:
+                            px[ox - 1 + xx, oy + yy] = (0, 0, 0) if q == (0, 0, 0) else colour
+                continue
+            rows16 = vga[ord(c)]
             on = {(xx, yy) for yy in range(16) for xx in range(8) if (rows16[yy] >> (7 - xx)) & 1}
             for (xx, yy) in on:
                 for dx in (-1, 0, 1):
@@ -90,13 +99,12 @@ def hd_quad(name, cam):
           (L, 2, g("3.98V"), False, False), (L, 3, g("4.32A"), False, False), (L, 4, g("212") + [MAH], False, False),
           (L, 5, g("62%") + [BATT + 2], False, False),
           (L, 7, g("LQ100"), False, False), (L, 8, g("-41"), False, False), (L, 9, g("F1000"), False, False),
-          (R, 2, g("01:47"), True, False), (R, 3, g("38%"), True, False),
+          (R, 2, g("01:47"), True, False), (R, 3, [0x04] + g("38%"), True, False),
           (R, 7, g("[ARM]"), True, False), (R, 8, g("ACRO"), True, False), (R, 9, g("AIRON"), True, False),
           (R, 13, g("C52"), True, False), (R, 14, g("R8"), True, False), (R, 15, g("200MW"), True, False)]
     it += [(L, 13 + i, g(t), False, False) for i, t in enumerate(cam)]
     # optional extras, grey
-    it += [(R, 4, g("02:10"), True, False),   # flight time left estimate
-           (R, 5, g("38K"), True, False),     # average motor RPM
+    it += [(R, 4, g("38K"), True, False),     # average motor RPM
            (R, 10, g("2.1G"), True, False),   # g-force
            (R, 12, g("E48"), True, False),    # ESC temperature
            (L, 16, g("#127"), False, False)]  # total flights
@@ -110,10 +118,10 @@ p41 = analog_panel([
     (0, 1, "3.82V", False, False), (0, 2, "78%", False, False),
     (0, 4, "LQ99", False, False), (0, 5, "F1000", False, False),
     (0, 9, "ANT", False, False), (0, 10, "NTSC", False, False), (0, 11, "16:9", False, False),
-    (29, 1, "01:23", True, False), (29, 2, "45%", True, False),
+    (29, 1, "01:23", True, False), (29, 2, "\x04" + "45%", True, False),
     (29, 4, "SAFE", True, False), (29, 5, "ACRO", True, False), (29, 6, "NOAIR", True, False),
     (29, 8, "C41", True, False), (29, 9, "R8", True, False), (29, 10, "200MW", True, False), (29, 11, "LOWV", True, False),
-    (29, 3, "02:10", True, False), (0, 3, "38K", False, False), (29, 7, "2.1G", True, False), (0, 7, "#127", False, False)])
+    (0, 3, "38K", False, False), (29, 7, "2.1G", True, False), (0, 7, "#127", False, False)])
 
 W = 1100
 panels = [("MK51  HDZero  540P90 crop", p51), ("MK42  HDZero  720P60 4:3", p42), ("MK41  analog  NTSC 16:9 (font approximate)", p41)]
@@ -126,6 +134,6 @@ for t, im in scaled:
     d.text((20, y), t, fill=(230, 230, 230))
     sheet.paste(im, (20, y + 18))
     y += im.height + 34
-d.text((20, y - 6), "FrogOS v1.1 r03", fill=(170, 170, 170))
+d.text((20, y - 6), "FrogOS v1.1 r04", fill=(170, 170, 170))
 sheet.save(OUT)
 print("ok", sheet.size)

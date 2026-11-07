@@ -2,6 +2,10 @@
 
 All builds are on Betaflight 2026.6.2.
 
+## v1.1 r04 - 2026-11-07
+- Throttle readout gets the throttle icon back (icon + `45%`) so it can't be mistaken for battery %.
+- Flight-time-left estimate removed. `osd_cap_alarm` back to its previous values. Motor RPM moves up into the gap.
+
 ## v1.1 r03 - 2026-11-07
 - New on every quad: flight time left (`02:10`, estimated from mAh used against `osd_cap_alarm`), average motor RPM (`38K`, one line, from bidirectional DShot), g-force (`2.1G`), and lifetime flight count (`#127`; a flight counts once armed for 15 s, `stats_min_armed_time_s = 15`). Flight count restarts at 0 after a full chip erase.
 - HDZero quads also show ESC temperature (`E48`, the hottest ESC; `E--` if the ESC doesn't report it). Left off MK4-1, whose ESC firmware doesn't report temperature.

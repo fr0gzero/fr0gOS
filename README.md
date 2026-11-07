@@ -11,17 +11,17 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 
 | Craft | Quad | Board target | Video | Current build |
 |---|---|---|---|---|
-| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.1 r03 |
-| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.1 r03 |
-| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.1 r03 |
+| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.1 r04 |
+| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.1 r04 |
+| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.1 r04 |
 
 ## What FrogOS changes
 
 **Every quad**
 - Telemetry in two 5-character columns at the screen edges, grouped by category: power top left, link middle left, camera bottom left, time top right, state middle right, system bottom right.
 - Column 0 is left-justified and the last column right-justified, whatever canvas width the FC assumes.
-- No icons or unit glyphs: `4.09V`, `2.16A`, `LQ100`, `-33`, `45%`, `R8`, `200MW`, `C52`.
-- Flight time left (`02:10`), average motor RPM (`38K`), g-force (`2.1G`), ESC temp (`E48`) and lifetime flight count (`#127`).
+- No icons or unit glyphs: `4.09V`, `2.16A`, `LQ100`, `-33`, throttle icon + `45%`, `R8`, `200MW`, `C52`.
+- Average motor RPM (`38K`), g-force (`2.1G`), ESC temp (`E48`) and lifetime flight count (`#127`).
 - Camera mode as plain text lines, set per quad from the CLI (`osd_custom_msg0`-`3`, e.g. `540P` / `90FPS` / `CROP`). Unset lines show nothing.
 - New elements: live ELRS packet rate (`F1000`, `D500`...), battery %, air mode (`AIRON` / `NOAIR`) on its own line, separate flight mode (`ACRO` / `ANGLE` / `HORZN`).
 - `[ARM]` / `SAFE` always shown. Every warning fits 5 characters (`LOWV`, `LAND!`, `FSAFE`, `RXLOS`, `TURTL`, `HOT70`...).
@@ -56,7 +56,7 @@ The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or s
 git clone --branch 2026.6.2 --depth 1 https://github.com/betaflight/betaflight.git
 cd betaflight
 git submodule update --init --depth 1 src/config
-git apply ../patches/frogos-v1.1-r03_betaflight-2026.6.2.patch
+git apply ../patches/frogos-v1.1-r04_betaflight-2026.6.2.patch
 make arm_sdk_install            # or point ARM_SDK_DIR at GCC 13.3.1
 make CONFIG=CRAZYBEE473
 make CONFIG=BETAFPVG473_V2

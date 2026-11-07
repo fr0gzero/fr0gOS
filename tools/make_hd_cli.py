@@ -31,7 +31,7 @@ LAYOUT = [
     ("osd_total_flights_pos", a(L, 16)),
     ("# time, top right", None),
     ("osd_tim_2_pos", a(R, 2)), ("osd_throttle_pos", a(R, 3)),
-    ("osd_remaining_time_estimate_pos", a(R, 4)), ("osd_esc_rpm_pos", a(R, 5)),
+    ("osd_esc_rpm_pos", a(R, 4)),
     ("# state, middle right", None),
     ("osd_disarmed_pos", a(R, 7)), ("osd_flymode_pos", a(R, 8)), ("osd_frog_air_pos", a(R, 9)),
     ("osd_g_force_pos", a(R, 10)),
@@ -79,7 +79,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.1 r03 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.1 r04 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",
