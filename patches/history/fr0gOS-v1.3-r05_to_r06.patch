@@ -1,0 +1,83 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index ee626ad..51c4494 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -505,7 +505,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FR0GOS_VERSION   "V1.3 R05"
++#define FR0GOS_VERSION   "V1.3 R06"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 612fa3d..dc6ef17 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1280,7 +1280,7 @@ static void osdElementEscTemperature(osdElementParms_t *element)
+     strcpy(element->buff, "E--");
+ }
+ 
+-static void osdElementEscRpm(osdElementParms_t *element)
++static void osdElementEscRpmValue(osdElementParms_t *element)
+ {
+     // fr0gOS: one line, average of all motors, e.g. 38K / 9.5K
+     const uint8_t count = getMotorCount();
+@@ -2694,7 +2694,7 @@ static void osdElementStickOverlay(osdElementParms_t *element)
+ }
+ #endif // USE_OSD_STICK_OVERLAY
+ 
+-static void osdElementThrottlePosition(osdElementParms_t *element)
++static void osdElementThrottleValue(osdElementParms_t *element)
+ {
+     // fr0gOS: throttle to a tenth of a percent (45.3%), straight from the stick so it moves constantly.
+     // No icon: with battery % gone, the only % on screen is throttle. HD heat: amber 80%+, red 95%+.
+@@ -2713,6 +2713,38 @@ static void osdElementThrottlePosition(osdElementParms_t *element)
+     }
+ }
+ 
++// fr0gOS labelled readouts: a label on the element's row, the value on the row below
++static bool frogLabelled(osdElementParms_t *element, const char *label, void (*value)(osdElementParms_t *))
++{
++    static uint8_t lastItem = 0xFF;
++    static bool second = false;
++    if (lastItem != element->item) {
++        lastItem = element->item;
++        second = false;
++    }
++    if (!second) {
++        strcpy(element->buff, label);
++        second = true;
++        element->rendered = false;              // come back for the value
++        return true;
++    }
++    second = false;
++    lastItem = 0xFF;
++    element->elemOffsetY = 1;
++    value(element);
++    return false;
++}
++
++static void osdElementThrottlePosition(osdElementParms_t *element)
++{
++    frogLabelled(element, "THR", osdElementThrottleValue);
++}
++
++static void osdElementEscRpm(osdElementParms_t *element)
++{
++    frogLabelled(element, "RPM", osdElementEscRpmValue);
++}
++
+ static void osdElementTimer(osdElementParms_t *element)
+ {
+     for (int i = 0; i < OSD_TIMER_COUNT; i++) {
+@@ -3088,7 +3120,7 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
+     [OSD_CUSTOM_MSG1]             = osdElementCustomMsg,
+     [OSD_CUSTOM_MSG2]             = osdElementCustomMsg,
+     [OSD_CUSTOM_MSG3]             = osdElementCustomMsg,
+-    [OSD_THROTTLE_POS]            = osdElementThrottlePosition,
++    [OSD_THROTTLE_POS]            = osdElementThrottlePosition,  // fr0gOS: THR label + value
+ #ifdef USE_VTX_COMMON
+     [OSD_VTX_CHANNEL]             = osdElementVtxChannel,
+ #endif

@@ -1,0 +1,39 @@
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 665ed26..49ad61e 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -288,16 +288,21 @@ static int osdDisplayWrite(osdElementParms_t *element, uint8_t x, uint8_t y, uin
+     return displayWrite(element->osdDisplayPort, x, y, attr, s);
+ }
+ 
+-// fr0gOS: an element placed in column 0 is left-justified (padding stripped);
+-// an element placed in the last column is right-justified to the screen edge.
++// fr0gOS edge justification, anchored to the element's own column so it works
++// whatever canvas width the FC believes it has:
++//  - element in the left 8 columns: padding stripped, text starts at its column
++//  - element in the right 8 columns: padding stripped, text ENDS at its column
++#define FROG_EDGE_ZONE 8
+ static void osdFrogWriteJustified(osdElementParms_t *element, uint8_t x, uint8_t y, uint8_t attr, const char *s)
+ {
+     const uint8_t cols = element->osdDisplayPort->cols;
+-    if (cols && (x == 0 || x >= cols - 1)) {
++    const bool leftZone = x < FROG_EDGE_ZONE;
++    const bool rightZone = cols > FROG_EDGE_ZONE * 2 && x >= cols - FROG_EDGE_ZONE;
++    if (leftZone || rightZone) {
+         while (*s == ' ') {
+             s++;
+         }
+-        if (x >= cols - 1) {
++        if (rightZone) {
+             char tmp[OSD_ELEMENT_BUFFER_LENGTH];
+             int len = strlen(s);
+             while (len > 0 && s[len - 1] == ' ') {
+@@ -308,7 +313,7 @@ static void osdFrogWriteJustified(osdElementParms_t *element, uint8_t x, uint8_t
+             }
+             memcpy(tmp, s, len);
+             tmp[len] = '\0';
+-            const int nx = (int)cols - len;
++            const int nx = (int)x + 1 - len;
+             osdDisplayWrite(element, nx < 0 ? 0 : nx, y, attr, tmp);
+             return;
+         }

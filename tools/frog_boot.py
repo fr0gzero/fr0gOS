@@ -13,7 +13,7 @@ import frog_anim as A  # noqa: E402
 import frog_events as E  # noqa: E402
 import frog_hop as HP  # noqa: E402
 
-LINES = ["FROGOS V1.3 R09",
+LINES = ["FR0GOS V1.3 R09",
          "CPU   F411 168MHZ    OK",
          "GYRO                 OK",
          "RX    F1000          OK",

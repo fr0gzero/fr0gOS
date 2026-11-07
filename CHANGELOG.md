@@ -14,7 +14,7 @@ Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth to
 - No more glyphs across the picture. The arm screen is a centre message only: `ARMED` (plus the crash flip text when flipping) glyphs in for 0.4 s, holds, then glyphs out (1.6 s total). The noise sweep, strays, Matrix rain / shimmer screensaver and HISCORE fireworks are gone. Glyphs stay on side-column changes (feed, mode changes, appear/vanish).
 - The frog hops around the black bars. On events (arm, crash flip, mode / air changes, tricks, warnings) it jumps to a random free spot worked out from the live layout. Never sooner than 12 s after the last hop, 50/50 between 12 and 20 s, certain after that, so roughly every 15-20 s of flying. A hop is a glyph puff where it was, a puff where it lands, then the frog.
 - Removed from the layout: RSSI dBm, ESC temp, `HDZRO` and the camera lines (and battery % from r05).
-- Three layout options (`fonts/hdzero-hacker/frogos_layout_v14_options.png`): A mirrored (default), B eye line, C corners. `quads/mk4-2/layouts/layout_A|B|C.txt` swap between them without reflashing.
+- Three layout options (`fonts/hdzero-hacker/fr0gOS_layout_v14_options.png`): A mirrored (default), B eye line, C corners. `quads/mk4-2/layouts/layout_A|B|C.txt` swap between them without reflashing.
 
 ## v1.3 r06 - 2026-11-08 (MK4-2 test build)
 - `THR` label above throttle and `RPM` label above RPM. Each readout draws its own label on its row and the value on the row below.
@@ -60,7 +60,7 @@ Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth to
 - Test flight note: if the upside-down frog shows as an `E`, the goggles still have the v1.1 font. Copy the current `BTFL_000.bmp` / `BTFL_FHD_000.bmp` to the SD card.
 
 ## v1.3 r01 - 2026-11-07 (MK4-2 test build)
-- **New layout**, ordered by what matters in flight (see `fonts/hdzero-hacker/frogos_layout_v13_proposal.png`):
+- **New layout**, ordered by what matters in flight (see `fonts/hdzero-hacker/fr0gOS_layout_v13_proposal.png`):
   - Left column: power top, then links (LQ, dBm, packet rate, VTX channel and power), then video (`HDZRO` + camera mode) at the bottom.
   - Right column: time and warnings top (warnings moved up from the bottom, empty until something's wrong), then state (ARM, mode, AIR), then performance (throttle, RPM, G), then system (ESC and core temp, flights).
 - G meter heats up: green, amber from 1.5 G, red from 2.5 G, red/amber flicker with glitches from 3.5 G. Holds the peak 0.5 s. Shows `!` and a colour chase while beating your all-time best G.
@@ -136,6 +136,6 @@ Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth to
 - MK4-2 canvas 50x18. Layout grouped by category top to bottom.
 
 ## v1.0 r01 - 2026-11-06
-- First FrogOS build for MK4-1 and MK4-2.
+- First fr0gOS build for MK4-1 and MK4-2.
 - Live boot status block. ARM / SAFE. Separate flight mode and air mode. ELRS 4 packet rate. Battery %. LQ as `LQ99`. CPU temp as `C45`. Edge justification. Default rates baked in.
 - MK4-2 built with `-DUSE_ELRSV4` for its SPI receiver.

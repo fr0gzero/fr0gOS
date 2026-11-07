@@ -1,4 +1,4 @@
-# FrogOS MK4-2 layout option C (paste into the CLI, no reflash)
+# fr0gOS MK4-2 layout option C (paste into the CLI, no reflash)
 # layout option C: frog + activity feed top left (frog hops around the bars), craft name top right
 set osd_frog_feed_pos = 2048
 set osd_vbat_pos = 2144

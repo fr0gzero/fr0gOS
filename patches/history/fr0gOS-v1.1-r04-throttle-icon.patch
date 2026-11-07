@@ -1,0 +1,26 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index f03ac61..70506a2 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -502,7 +502,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FR0GOS_VERSION   "V1.1 R03"
++#define FR0GOS_VERSION   "V1.1 R04"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  7
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index da303c7..54138e5 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -2188,7 +2188,7 @@ static void osdElementStickOverlay(osdElementParms_t *element)
+ 
+ static void osdElementThrottlePosition(osdElementParms_t *element)
+ {
+-    tfp_sprintf(element->buff, "%d%%", calculateThrottlePercent()); // fr0gOS
++    tfp_sprintf(element->buff, "%c%d%%", SYM_THR, calculateThrottlePercent()); // fr0gOS: throttle icon + 45%
+ }
+ 
+ static void osdElementTimer(osdElementParms_t *element)

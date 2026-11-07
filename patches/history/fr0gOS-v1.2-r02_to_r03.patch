@@ -1,0 +1,134 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 7d82751..ca6343f 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -505,7 +505,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FR0GOS_VERSION   "V1.2 R02"
++#define FR0GOS_VERSION   "V1.2 R03"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  8
+ 
+diff --git a/src/main/osd/osd.h b/src/main/osd/osd.h
+index c0a4c15..c653741 100644
+--- a/src/main/osd/osd.h
++++ b/src/main/osd/osd.h
+@@ -230,7 +230,7 @@ typedef enum {
+ #endif
+ 
+     // fr0gOS elements
+-    OSD_FROG_AIRMODE,           // AIRON / AIROF, always shown
++    OSD_FROG_AIRMODE,           // AIR when on, blank when off
+     OSD_FROG_RFRATE,            // live ELRS packet rate, e.g. F1000
+     OSD_FROG_BATTPCT,           // battery remaining, e.g. 78%
+     OSD_FROG_TAG,               // pilot name + blinking cursor
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index a350591..d1791a7 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1281,6 +1281,54 @@ static void osdElementEscRpmFreq(osdElementParms_t *element)
+ 
+ #endif
+ 
++// noise characters that have amber and red copies in the hacker font
++static uint8_t frogColourNoiseChar(uint8_t severity)
++{
++    static const char set[] = "%!0123456789XZAEKQ";
++    return frogColourChar((uint8_t)set[frogRand() % (sizeof(set) - 1)], severity);
++}
++// Mode-change reaction: when a switch-driven readout changes (flight mode, air mode, packet rate,
++// VTX power) the new text decodes in from colourful noise, then green/amber/red chase along it
++// before it settles. Only for readouts that change when you flip a switch, never live numbers.
++#define FROG_MODEFX_MS 800
++typedef struct {
++    char last[OSD_ELEMENT_BUFFER_LENGTH];
++    timeMs_t changedAt;
++    bool seen;
++} frogModeFx_t;
++
++static void frogModeFx(frogModeFx_t *st, osdElementParms_t *element)
++{
++    const timeMs_t now = millis();
++    if (strcmp(st->last, element->buff) != 0) {
++        if (st->seen && element->buff[0]) {            // not on first draw, and nothing to animate when it goes blank
++            st->changedAt = now ? now : 1;
++        }
++        strncpy(st->last, element->buff, sizeof(st->last) - 1);
++        st->last[sizeof(st->last) - 1] = '\0';
++        st->seen = true;
++    }
++    if (st->changedAt == 0) {
++        return;
++    }
++    const uint32_t t = now - st->changedAt;
++    if (t >= FROG_MODEFX_MS) {
++        st->changedAt = 0;
++        return;
++    }
++    const bool hd = frogHdFont(element->osdDisplayPort);
++    static const uint8_t chase[3] = { DISPLAYPORT_SEVERITY_NORMAL, DISPLAYPORT_SEVERITY_WARNING, DISPLAYPORT_SEVERITY_CRITICAL };
++    for (unsigned i = 0; element->buff[i]; i++) {
++        const uint8_t c = (uint8_t)element->buff[i];
++        if (t < 60 * i + 180) {
++            // still decoding: coloured noise on HD, plain noise on analog
++            element->buff[i] = hd ? (char)frogColourNoiseChar(chase[frogRand() % 3]) : (char)frogNoiseChar(false);
++        } else if (hd) {
++            element->buff[i] = (char)frogColourChar(c, chase[(i + t / 70) % 3]);
++        }
++    }
++}
++
+ static void osdElementFlymode(osdElementParms_t *element)
+ {
+     // Note that flight mode display has precedence in what to display, FS first, ACRO last
+@@ -1318,12 +1366,17 @@ static void osdElementFlymode(osdElementParms_t *element)
+         // fr0gOS: air mode has its own element, flight mode never shows AIR
+         strcpy(element->buff, "ACRO");
+     }
++    static frogModeFx_t fx;
++    frogModeFx(&fx, element);
+ }
+ 
+ // ---- fr0gOS elements ----
+ static void osdElementFrogAirMode(osdElementParms_t *element)
+ {
+-    strcpy(element->buff, isAirmodeEnabled() ? "AIRON" : "NOAIR");
++    // AIR when on, blank when off
++    strcpy(element->buff, isAirmodeEnabled() ? "AIR" : "");
++    static frogModeFx_t fx;
++    frogModeFx(&fx, element);
+ }
+ 
+ #ifdef USE_RX_LINK_QUALITY_INFO
+@@ -1372,6 +1425,8 @@ static void osdElementFrogRfRate(osdElementParms_t *element)
+         } else {
+             tfp_sprintf(element->buff, "RF%u", rfMode);
+         }
++        static frogModeFx_t fx;
++        frogModeFx(&fx, element);
+         return;
+     }
+ #endif
+@@ -1468,18 +1523,14 @@ static void osdElementFrogVtxPower(osdElementParms_t *element)
+         } else {
+             tfp_sprintf(element->buff, "%s", label ? label : "--");
+         }
++        static frogModeFx_t fx;
++        frogModeFx(&fx, element);
+         return;
+     }
+ #endif
+     strcpy(element->buff, "--");
+ }
+ // Red noise for the power side: a red block on HD, plain noise on analog
+-// noise characters that have amber and red copies in the hacker font
+-static uint8_t frogColourNoiseChar(uint8_t severity)
+-{
+-    static const char set[] = "%!0123456789XZAEKQ";
+-    return frogColourChar((uint8_t)set[frogRand() % (sizeof(set) - 1)], severity);
+-}
+ static uint8_t frogRedNoiseChar(bool hd)
+ {
+     const uint32_t r = frogRand();

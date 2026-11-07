@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
-"""Build a FrogOS HDZero CLI file from a quad's pre-FrogOS diff all.
+"""Build a fr0gOS HDZero CLI file from a quad's pre-fr0gOS diff all.
 
-Every HDZero quad gets exactly the same OSD block (FROGOS_HD_BLOCK below);
+Every HDZero quad gets exactly the same OSD block (FR0GOS_HD_BLOCK below);
 only the hardware, tune, rates and names come from the quad's own diff.
 
 usage: make_hd_cli.py <diff_all.txt> <out.txt> <craft name> <hex name> [extra command ...]
@@ -54,8 +54,8 @@ def layout(opt):
 
 
 LAYOUT = layout("C")
-FROGOS_HD_BLOCK = "\n".join([
-    "# ---- FrogOS HDZero hacker layout (identical on every HD quad) ----",
+FR0GOS_HD_BLOCK = "\n".join([
+    "# ---- fr0gOS HDZero hacker layout (identical on every HD quad) ----",
     "# 50x18 canvas; x=0 left-justified, x=49 right-justified; everything else hidden",
     "set pilot_name = FR0G",
     f"set craft_name = {CRAFT}",
@@ -109,9 +109,9 @@ if AUX_EXTRA:
     body[last_aux + 1:last_aux + 1] = AUX_EXTRA
     first_profile += len(AUX_EXTRA)
 # everything else (per-quad overrides) goes straight after the shared block
-body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
+body[first_profile:first_profile] = ["", FR0GOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.3 r08 (hacker) - {CRAFT}",
+head = [f"# fr0gOS v1.3 r08 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",

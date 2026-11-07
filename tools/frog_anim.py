@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FrogOS frog animations on the chosen base (BIGGER EYES). DOS pixels at rest, full resolution in motion.
+"""fr0gOS frog animations on the chosen base (BIGGER EYES). DOS pixels at rest, full resolution in motion.
 Writes one animated GIF per animation (real timing, 4x) plus a contact sheet.
 
 usage: frog_anim.py <out dir>

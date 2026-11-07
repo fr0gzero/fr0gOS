@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Render what the goggles should show, using the real font BMP and the FrogOS charmap.
+"""Render what the goggles should show, using the real font BMP and the fr0gOS charmap.
 
 usage: preview_osd.py <BTFL_000.bmp> <out.png>
 """
@@ -86,7 +86,7 @@ frames = [
 ]
 
 boot = [(13, 4, list(range(0xA0, 0xB8)), False), (13, 5, list(range(0xB8, 0xD0)), False),
-        (14, 7, g("FROGOS V1.1 R02   MK51"), False),
+        (14, 7, g("FR0GOS V1.1 R02   MK51"), False),
         (14, 8, g("CPU  G474 C41 ..... OK"), False),
         (14, 9, g("GYRO .............. OK"), False),
         (14, 10, g("RX   ............") + amber("WAIT"), False),

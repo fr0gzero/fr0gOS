@@ -1,0 +1,117 @@
+diff --git a/src/main/cli/settings.c b/src/main/cli/settings.c
+index 743f3a0..e3e34ea 100644
+--- a/src/main/cli/settings.c
++++ b/src/main/cli/settings.c
+@@ -1626,6 +1626,11 @@ const clivalue_t valueTable[] = {
+     { "osd_frog_rate_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_RFRATE]) },
+     { "osd_frog_tag_pos",           VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_TAG]) },
+     { "osd_frog_craft_pos",         VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_CRAFT]) },
++    { "osd_frog_vtxpwr_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_VTXPWR]) },
++    { "osd_custom_msg0_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CUSTOM_MSG0]) },
++    { "osd_custom_msg1_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CUSTOM_MSG1]) },
++    { "osd_custom_msg2_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CUSTOM_MSG2]) },
++    { "osd_custom_msg3_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CUSTOM_MSG3]) },
+     { "osd_frog_hd_font",           VAR_UINT8   | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_OSD_CONFIG, offsetof(osdConfig_t, frog_hd_font) },
+     { "osd_frog_batt_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_BATTPCT]) },
+ #ifdef USE_ADC_INTERNAL
+@@ -2002,6 +2007,11 @@ const clivalue_t valueTable[] = {
+     { "craft_name",   VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, craftName) },
+ #ifdef USE_OSD
+     { "pilot_name",   VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, pilotName) },
++    // fr0gOS: custom OSD text lines (also settable over MSP), used for camera mode
++    { "osd_custom_msg0", VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, message[0]) },
++    { "osd_custom_msg1", VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, message[1]) },
++    { "osd_custom_msg2", VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, message[2]) },
++    { "osd_custom_msg3", VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, message[3]) },
+ #endif
+ 
+ // PG_POSITION
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 8857785..fdf105b 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -502,7 +502,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FR0GOS_VERSION   "V1.1 R01"
++#define FR0GOS_VERSION   "V1.1 R02"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  7
+ 
+diff --git a/src/main/osd/osd.h b/src/main/osd/osd.h
+index 7b32574..ebdf1bb 100644
+--- a/src/main/osd/osd.h
++++ b/src/main/osd/osd.h
+@@ -235,6 +235,7 @@ typedef enum {
+     OSD_FROG_BATTPCT,           // battery remaining, e.g. 78%
+     OSD_FROG_TAG,               // pilot name + blinking cursor
+     OSD_FROG_CRAFT,             // animated frog + craft name
++    OSD_FROG_VTXPWR,            // VTX transmit power, e.g. 200MW
+ 
+     OSD_ITEM_COUNT // MUST BE LAST
+ } osd_items_e;
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 0cf3ba9..6fad669 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1027,7 +1027,7 @@ static void osdElementCustomMsg(osdElementParms_t *element)
+ {
+     int msgIndex = element->item - OSD_CUSTOM_MSG0;
+     if (msgIndex < 0 || msgIndex >= OSD_CUSTOM_MSG_COUNT || pilotConfig()->message[msgIndex][0] == '\0') {
+-        tfp_sprintf(element->buff, "CUSTOM_MSG%d", msgIndex + 1);
++        element->buff[0] = '\0';   // fr0gOS: unset line shows nothing
+     } else {
+         strncpy(element->buff, pilotConfig()->message[msgIndex], MAX_NAME_LENGTH);
+         element->buff[MAX_NAME_LENGTH] = 0;   // terminate maximum-length string
+@@ -1418,6 +1418,25 @@ static void osdElementFrogCraft(osdElementParms_t *element)
+     element->buff[0] = (char)frog;
+     strcpy(&element->buff[1], name);
+ }
++// VTX transmit power in mW, e.g. 200MW (labels that aren't numbers, like PIT, shown as is)
++static void osdElementFrogVtxPower(osdElementParms_t *element)
++{
++#ifdef USE_VTX_COMMON
++    const vtxDevice_t *vtx = vtxCommonDevice();
++    if (vtx && vtxCommonDeviceIsReady(vtx)) {
++        uint8_t level = 0;
++        vtxCommonGetPowerIndex(vtx, &level);
++        const char *label = vtxCommonLookupPowerName(vtx, level);
++        if (label && label[0] >= '0' && label[0] <= '9') {
++            tfp_sprintf(element->buff, "%sMW", label);
++        } else {
++            tfp_sprintf(element->buff, "%s", label ? label : "--");
++        }
++        return;
++    }
++#endif
++    strcpy(element->buff, "--");
++}
+ // ---- end fr0gOS elements ----
+ 
+ static void osdElementReadyMode(osdElementParms_t *element)
+@@ -2214,7 +2233,7 @@ switch (element->type) {
+         } else if (vtxStatusIndicator) {
+             tfp_sprintf(element->buff, "%c%s%c", vtxBandLetter, vtxChannelName, vtxStatusIndicator); // fr0gOS: R8P / R8D
+         } else {
+-            tfp_sprintf(element->buff, "%c%s%s", vtxBandLetter, vtxChannelName, vtxPowerLabel); // fr0gOS: R8200
++            tfp_sprintf(element->buff, "%c%s", vtxBandLetter, vtxChannelName); // fr0gOS: R8 (power is osd_frog_vtxpwr_pos)
+         }
+         break;
+     }
+@@ -2376,6 +2395,7 @@ static const uint8_t osdElementDisplayOrder[] = {
+     OSD_FROG_BATTPCT,
+     OSD_FROG_TAG,
+     OSD_FROG_CRAFT,
++    OSD_FROG_VTXPWR,
+     OSD_THROTTLE_POS,
+     OSD_VTX_CHANNEL,
+     OSD_CURRENT_DRAW,
+@@ -2498,6 +2518,7 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
+     [OSD_FROG_BATTPCT]            = osdElementFrogBattPct,
+     [OSD_FROG_TAG]                = osdElementFrogTag,
+     [OSD_FROG_CRAFT]              = osdElementFrogCraft,
++    [OSD_FROG_VTXPWR]             = osdElementFrogVtxPower,
+     [OSD_CRAFT_NAME]              = NULL,  // only has background
+     [OSD_CUSTOM_MSG0]             = osdElementCustomMsg,
+     [OSD_CUSTOM_MSG1]             = osdElementCustomMsg,

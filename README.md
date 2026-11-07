@@ -1,13 +1,13 @@
-# FrogOS
+# fr0gOS
 
 Custom Betaflight firmware and a unified OSD for the **fr0gzero** FPV fleet.
 Strictly business by default, with a calm DOS-terminal look on HDZero: telemetry lives in the black bars, warnings decode in and climb from green to amber to red, and a little frog keeps an eye on things.
 
-![FrogOS hacker OSD preview](fonts/hdzero-hacker/frogos_hacker_osd_preview.png)
+![fr0gOS hacker OSD preview](fonts/hdzero-hacker/fr0gOS_hacker_osd_preview.png)
 
-![FrogOS v1.2: HISCORE.EXE, battery noise, Matrix rain, frog moods](fonts/hdzero-hacker/frogos_v12_preview.png)
+![fr0gOS v1.2: HISCORE.EXE, battery noise, Matrix rain, frog moods](fonts/hdzero-hacker/fr0gOS_v12_preview.png)
 
-FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
+fr0gOS is a set of patches on top of **Betaflight 2026.6.2**.
 
 ## Fleet
 
@@ -17,7 +17,7 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 | MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.3 r08 (test) |
 | MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.2 r03 |
 
-## What FrogOS changes
+## What fr0gOS changes
 
 **Every quad**
 - Telemetry in two 5-character columns at the screen edges, grouped by category: power top left, link middle left, camera bottom left, time top right, state middle right, system bottom right.
@@ -50,10 +50,10 @@ Configurator doesn't know these elements, so position them from the CLI.
 
 ## Flashing a quad
 
-1. **HDZero quads only:** copy `fonts/hdzero-hacker/BTFL_000.bmp` and `BTFL_FHD_000.bmp` to `resource/OSD/FC/` on the goggle SD card. The v1.2 font adds frog and noise glyphs; older FrogOS builds still work with it.
+1. **HDZero quads only:** copy `fonts/hdzero-hacker/BTFL_000.bmp` and `BTFL_FHD_000.bmp` to `resource/OSD/FC/` on the goggle SD card. The v1.2 font adds frog and noise glyphs; older fr0gOS builds still work with it.
 2. Save a `diff all` backup first.
 3. Flash `builds/<quad>/<hex>` with **Full chip erase** ticked (Firmware Flasher, Load Firmware [Local]).
-4. Paste `quads/<quad>/frogos_cli_*.txt` into the CLI.
+4. Paste `quads/<quad>/fr0gOS_cli_*.txt` into the CLI.
 5. Recalibrate the accelerometer.
 
 The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or set your own binding UID.
@@ -64,20 +64,20 @@ The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or s
 git clone --branch 2026.6.2 --depth 1 https://github.com/betaflight/betaflight.git
 cd betaflight
 git submodule update --init --depth 1 src/config
-git apply ../patches/frogos-v1.3-r08_betaflight-2026.6.2.patch
+git apply ../patches/fr0gOS-v1.3-r08_betaflight-2026.6.2.patch
 make arm_sdk_install            # or point ARM_SDK_DIR at GCC 13.3.1
 make CONFIG=CRAZYBEE473
 make CONFIG=BETAFPVG473_V2
 make CONFIG=CRAZYBEEF4SX1280 EXTRA_FLAGS=-DUSE_ELRSV4   # built-in SPI receiver must speak ELRS 4
 ```
 
-`patches/history/` keeps the step-by-step patches. Regenerate the HDZero font and its firmware charmap with `tools/build_hacker_font.py`. `tools/make_hd_cli.py` turns a quad's `diff all` into a FrogOS HDZero CLI with the shared OSD block. `tools/preview_osd.py` and `tools/preview_v12.py` render what the goggles should show.
+`patches/history/` keeps the step-by-step patches. Regenerate the HDZero font and its firmware charmap with `tools/build_hacker_font.py`. `tools/make_hd_cli.py` turns a quad's `diff all` into a fr0gOS HDZero CLI with the shared OSD block. `tools/preview_osd.py` and `tools/preview_v12.py` render what the goggles should show.
 
 ## Layout
 
 ```
 builds/<quad>/        hex files (old/ = superseded)
-quads/<quad>/         diff all backups and FrogOS CLI files
+quads/<quad>/         diff all backups and fr0gOS CLI files
 patches/              cumulative patch against Betaflight 2026.6.2 (+ history/)
 fonts/hdzero-hacker/  HDZero hacker goggle font (v1.2)
 fonts/hdzero/         earlier HDZero font with the two-line logo (v1.0)

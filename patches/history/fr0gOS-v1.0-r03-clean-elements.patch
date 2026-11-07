@@ -1,0 +1,156 @@
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 49ad61e..f049b8d 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1094,7 +1094,7 @@ static void osdElementCrosshairs(osdElementParms_t *element)
+ static void osdElementCurrentDraw(osdElementParms_t *element)
+ {
+     const float amperage = fabsf(getAmperage() / 100.0f);
+-    osdPrintFloat(element->buff, SYM_NONE, amperage, "%3u", 2, false, SYM_AMP);
++    osdPrintFloat(element->buff, SYM_NONE, amperage, "%u", (amperage >= 10.0f) ? 1 : 2, false, 'A'); // fr0gOS
+ }
+ 
+ static void osdElementDebug(osdElementParms_t *element)
+@@ -1245,7 +1245,7 @@ static void osdElementFlymode(osdElementParms_t *element)
+ // ---- fr0gOS elements ----
+ static void osdElementFrogAirMode(osdElementParms_t *element)
+ {
+-    strcpy(element->buff, isAirmodeEnabled() ? "AIRON" : "AIROF");
++    strcpy(element->buff, isAirmodeEnabled() ? "AIRON" : "NOAIR");
+ }
+ 
+ #ifdef USE_RX_LINK_QUALITY_INFO
+@@ -1681,7 +1681,7 @@ static void osdElementMahDrawn(osdElementParms_t *element)
+         element->attr = DISPLAYPORT_SEVERITY_CRITICAL;
+     }
+ 
+-    tfp_sprintf(element->buff, "%4d%c", mAhDrawn, SYM_MAH);
++    tfp_sprintf(element->buff, "%d%c", mAhDrawn, SYM_MAH); // fr0gOS
+ }
+ 
+ static void osdElementWattHoursDrawn(osdElementParms_t *element)
+@@ -1809,7 +1809,7 @@ static void osdElementMainBatteryVoltage(osdElementParms_t *element)
+     } else {
+         decimalPlaces = 2;
+     }
+-    osdPrintFloat(element->buff, osdGetBatterySymbol(getBatteryAverageCellVoltage()), batteryVoltage, "", decimalPlaces, true, SYM_VOLT);
++    osdPrintFloat(element->buff, SYM_NONE, batteryVoltage, "", decimalPlaces, true, 'V'); // fr0gOS
+ }
+ 
+ static void osdElementMotorDiagnostics(osdElementParms_t *element)
+@@ -1962,9 +1962,9 @@ static void osdElementRssiDbm(osdElementParms_t *element)
+ 
+     if (antenna || diversity) {
+         diversity = true;
+-        tfp_sprintf(element->buff, "%c%3d:%d", SYM_RSSI, osdRssiDbm, antenna + 1);
++        tfp_sprintf(element->buff, "%d:%d", osdRssiDbm, antenna + 1); // fr0gOS
+     } else {
+-        tfp_sprintf(element->buff, "%c%3d", SYM_RSSI, osdRssiDbm);
++        tfp_sprintf(element->buff, "%d", osdRssiDbm); // fr0gOS
+     }
+ }
+ #endif // USE_RX_RSSI_DBM
+@@ -2039,7 +2039,7 @@ static void osdElementStickOverlay(osdElementParms_t *element)
+ 
+ static void osdElementThrottlePosition(osdElementParms_t *element)
+ {
+-    tfp_sprintf(element->buff, "%c%3d", SYM_THR, calculateThrottlePercent());
++    tfp_sprintf(element->buff, "%d%%", calculateThrottlePercent()); // fr0gOS
+ }
+ 
+ static void osdElementTimer(osdElementParms_t *element)
+@@ -2053,7 +2053,7 @@ static void osdElementTimer(osdElementParms_t *element)
+         }
+     }
+ 
+-    osdFormatTimer(element->buff, true, true, element->item - OSD_ITEM_TIMER_1);
++    osdFormatTimer(element->buff, false, true, element->item - OSD_ITEM_TIMER_1); // fr0gOS
+ }
+ 
+ #ifdef USE_VTX_COMMON
+@@ -2095,9 +2095,9 @@ switch (element->type) {
+         if (vtxStatus & VTX_STATUS_LOCKED) {
+             tfp_sprintf(element->buff, "-:-:-:L");
+         } else if (vtxStatusIndicator) {
+-            tfp_sprintf(element->buff, "%c:%s:%s:%c", vtxBandLetter, vtxChannelName, vtxPowerLabel, vtxStatusIndicator);
++            tfp_sprintf(element->buff, "%c%s%c", vtxBandLetter, vtxChannelName, vtxStatusIndicator); // fr0gOS: R8P / R8D
+         } else {
+-            tfp_sprintf(element->buff, "%c:%s:%s", vtxBandLetter, vtxChannelName, vtxPowerLabel);
++            tfp_sprintf(element->buff, "%c%s%s", vtxBandLetter, vtxChannelName, vtxPowerLabel); // fr0gOS: R8200
+         }
+         break;
+     }
+@@ -2109,10 +2109,51 @@ static void osdElementAuxValue(osdElementParms_t *element)
+     tfp_sprintf(element->buff, "%c%d", osdConfig()->aux_symbol, osdAuxValue);
+ }
+ 
++// fr0gOS: every warning fits the 5-character side bar
++static void frogShortenWarning(char *buff)
++{
++    static const struct { const char *from; const char *to; } map[] = {
++        { "LOW BATTERY",  "LOWV"  },
++        { "LAND NOW",     "LAND!" },
++        { "FAIL SAFE",    "FSAFE" },
++        { "LINK QUALITY", "LQ!"   },
++        { "RSSI LOW",     "RSSI!" },
++        { "RSSI DBM",     "DBM!"  },
++        { "RSNR LOW",     "SNR!"  },
++        { "CPU OVERLOAD", "CPU!"  },
++        { "CRASHFLIP SW", "FLPSW" },
++        { CRASHFLIP_WARNING, "TURTL" },
++        { "HEADFREE",     "HFREE" },
++        { "OVER CAP",     "OVCAP" },
++        { "BATTERY CONT", "BCONT" },
++        { "BATT < FULL",  "!FULL" },
++        { "BEACON ON",    "BEACN" },
++        { "RESCUE FAIL",  "RESC!" },
++        { "RESCUE N/A",   "NORSC" },
++    };
++    const char *s = buff;
++    while (*s == ' ') {
++        s++;
++    }
++    for (unsigned i = 0; i < ARRAYLEN(map); i++) {
++        if (strcmp(s, map[i].from) == 0) {
++            strcpy(buff, map[i].to);
++            return;
++        }
++    }
++    if (s != buff) {
++        memmove(buff, s, strlen(s) + 1);
++    }
++    if (strlen(buff) > 5) {
++        buff[5] = '\0';   // arming flags etc: THROT, RXLOS, NOGYR, ARMSW...
++    }
++}
++
+ static void osdElementWarnings(osdElementParms_t *element)
+ {
+     bool elementBlinking = false;
+     renderOsdWarning(element->buff, &elementBlinking, &element->attr);
++    frogShortenWarning(element->buff);
+     if (elementBlinking) {
+         SET_BLINK(OSD_WARNINGS);
+     } else {
+diff --git a/src/main/osd/osd_warnings.c b/src/main/osd/osd_warnings.c
+index 4442b37..341fd4e 100644
+--- a/src/main/osd/osd_warnings.c
++++ b/src/main/osd/osd_warnings.c
+@@ -237,7 +237,7 @@ void renderOsdWarning(char *warningText, bool *blinking, uint8_t *displayAttr)
+         if (beaconGuard < 500 * 1000) {   // first 0.5s since beacon
+             tfp_sprintf(warningText, " BEACON ON");
+         } else {
+-            tfp_sprintf(warningText, "ARM IN %d.%d", armingDelayTime / 10, armingDelayTime % 10);
++            tfp_sprintf(warningText, "A%d.%d", armingDelayTime / 10, armingDelayTime % 10); // fr0gOS
+         }
+         *displayAttr = DISPLAYPORT_SEVERITY_INFO;
+         return;
+@@ -473,7 +473,7 @@ void renderOsdWarning(char *warningText, bool *blinking, uint8_t *displayAttr)
+ #ifdef USE_ADC_INTERNAL
+     const int16_t coreTemperature = getCoreTemperatureCelsius();
+     if (osdWarnGetState(OSD_WARNING_CORE_TEMPERATURE) && coreTemperature >= osdConfig()->core_temp_alarm) {
+-        tfp_sprintf(warningText, "CORE %c: %3d%c", SYM_TEMPERATURE, osdConvertTemperatureToSelectedUnit(coreTemperature), osdGetTemperatureSymbolForSelectedUnit());
++        tfp_sprintf(warningText, "HOT%d", osdConvertTemperatureToSelectedUnit(coreTemperature)); // fr0gOS
+         *displayAttr = DISPLAYPORT_SEVERITY_WARNING;
+         *blinking = true;
+         return;

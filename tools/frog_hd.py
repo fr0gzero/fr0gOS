@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FrogOS frog at full goggle resolution (FHD font cell 36x54), built from parts so every frame
+"""fr0gOS frog at full goggle resolution (FHD font cell 36x54), built from parts so every frame
 matches. Crisp pixel drawing (no anti-aliasing) plus a 1-pixel black outline, like the font.
 
 usage: frog_hd.py sheet <out.png>

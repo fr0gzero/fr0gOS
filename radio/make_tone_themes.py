@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FrogOS radio sound themes for EdgeTX: ten wildly different tone packs with the same vocabulary.
+"""fr0gOS radio sound themes for EdgeTX: ten wildly different tone packs with the same vocabulary.
 
 Every theme answers the same events (so any of them can replace the voice pack):
   hello, armed, disarmed, up (on / connected), down (off / lost), warning, critical, timer,
@@ -322,7 +322,7 @@ class Zen(Theme):
 
 
 class DialUp(Theme):
-    name, desc = "dialup", "90s computer (fits the FrogOS hacker look): DTMF keypad tones, PC-speaker beeps, floppy clicks, modem screech for critical."
+    name, desc = "dialup", "90s computer (fits the fr0gOS hacker look): DTMF keypad tones, PC-speaker beeps, floppy clicks, modem screech for critical."
     DTMF = {"1": (697, 1209), "2": (697, 1336), "3": (697, 1477), "4": (770, 1209), "5": (770, 1336), "6": (770, 1477),
             "7": (852, 1209), "8": (852, 1336), "9": (852, 1477), "*": (941, 1209), "0": (941, 1336), "#": (941, 1477)}
     def key(self, k, ms=80):
@@ -388,7 +388,7 @@ class Lounge(Theme):
 
 class Pond(Theme):
     LEVELS = {"warning": 0.5}        # crickets are high and dense: half level to match the rest
-    name, desc = "pond", "FrogOS mascot: ribbits and croaks, cricket chirps, water drops and a splash. Not music at all."
+    name, desc = "pond", "fr0gOS mascot: ribbits and croaks, cricket chirps, water drops and a splash. Not music at all."
     def ribbit(self, f=420, ms=180, pulses=4):
         t = T(ms)
         am = (np.sin(2 * np.pi * pulses / (ms / 1000) * t) > 0).astype(float)

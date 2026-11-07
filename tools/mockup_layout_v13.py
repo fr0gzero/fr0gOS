@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FrogOS layout proposal (v1.3): priority-ordered layout for MK51, MK42 (HDZero) and MK41 (analog).
+"""fr0gOS layout proposal (v1.3): priority-ordered layout for MK51, MK42 (HDZero) and MK41 (analog).
 
 usage: mockup_layout_v13.py <BTFL_000.bmp> <frog_charmap.h> <pcface fontmap.js> <out.png>
 """
@@ -152,6 +152,6 @@ for t, im in scaled:
     d.text((20, y), t, fill=(230, 230, 230))
     sheet.paste(im, (20, y + 18))
     y += im.height + 34
-d.text((20, y - 6), "FrogOS v1.3 layout proposal. Grey = warning slot (empty until something is wrong). 2.1G shown amber: G heat colours.", fill=(170, 170, 170))
+d.text((20, y - 6), "fr0gOS v1.3 layout proposal. Grey = warning slot (empty until something is wrong). 2.1G shown amber: G heat colours.", fill=(170, 170, 170))
 sheet.save(OUT)
 print("ok", sheet.size)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FrogOS tone pack for EdgeTX: replaces every English voice file with a tone, same filename.
+"""fr0gOS tone pack for EdgeTX: replaces every English voice file with a tone, same filename.
 
 The tones follow one grammar so they read without words:
 Sound: soft deadmau5-style synth plucks in F minor (detuned saws + sub, filter pluck, dotted-eighth echo).

@@ -1,4 +1,4 @@
-"""FrogOS frog pixel art (8 wide, up to 16 tall). Shared by the font builder and the previews.
+"""fr0gOS frog pixel art (8 wide, up to 16 tall). Shared by the font builder and the previews.
 
 Palette letters: G green, D dark green, L light green, W eye white, K black, C cyan flash,
 B blue, P pink, R red, Y yellow, . transparent

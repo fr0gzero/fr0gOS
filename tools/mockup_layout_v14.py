@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FrogOS v1.3 r07 layout options for MK4-2 (HDZero 50x18): three ways to space the same elements.
+"""fr0gOS v1.3 r07 layout options for MK4-2 (HDZero 50x18): three ways to space the same elements.
 
 usage: mockup_layout_v14.py <BTFL_000.bmp> <frog_charmap.h> <out.png>
 """

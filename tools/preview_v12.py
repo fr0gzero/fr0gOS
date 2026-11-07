@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""FrogOS v1.2 preview sheet: HISCORE.EXE, battery noise stages, Matrix rain, frog moods, arm hop.
+"""fr0gOS v1.2 preview sheet: HISCORE.EXE, battery noise stages, Matrix rain, frog moods, arm hop.
 
 Mirrors the firmware layouts (osd.c / osd_elements.c) with the real HDZero hacker font.
 usage: preview_v12.py <BTFL_000.bmp> <frog_charmap.h> <out.png>

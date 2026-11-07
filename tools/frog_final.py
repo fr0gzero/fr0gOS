@@ -58,7 +58,7 @@ if __name__ == "__main__":
     rowh = H * 2 + 12
     sheet = Image.new("RGB", (900, len(SET) * rowh + 60), (16, 16, 16))
     d = ImageDraw.Draw(sheet)
-    d.text((20, 14), f"FROGOS FROG - FINAL SET   ({len(uniq)} glyphs in the goggle font, about 104 free once the boot logo goes)", fill=(230, 230, 230))
+    d.text((20, 14), f"FR0GOS FROG - FINAL SET   ({len(uniq)} glyphs in the goggle font, about 104 free once the boot logo goes)", fill=(230, 230, 230))
     y = 44
     for name, why, fr in SET:
         key = fr[len(fr) // 2][0] if name not in ("REST", "SAFE", "ARMED") else fr[-1][0] if name != "REST" else fr[0][0]

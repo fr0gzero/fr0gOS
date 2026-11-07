@@ -134,6 +134,6 @@ for t, im in scaled:
     d.text((20, y), t, fill=(230, 230, 230))
     sheet.paste(im, (20, y + 18))
     y += im.height + 34
-d.text((20, y - 6), "FrogOS v1.1 r04", fill=(170, 170, 170))
+d.text((20, y - 6), "fr0gOS v1.1 r04", fill=(170, 170, 170))
 sheet.save(OUT)
 print("ok", sheet.size)
