@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r11 - 2026-11-08 (MK4-2, MK5-1)
+- Slower, smoother hop. Each phase of a hop (crouch, three arc frames, land) now lasts 100 ms, two OSD frames at 20 fps, so every frame is actually shown. One cell takes 0.5 s (was 0.32 s, which skipped frames and looked jerky).
+- Same settings and goggle font as r10: flash without Full chip erase, no CLI needed.
+
 ## v1.3 r10 - 2026-11-08 (MK4-2 test build)
 - RPM stays green almost all the time. Amber only from 90% of your best RPM (was 60%), red from 97% (was 85%), red/amber flicker only when it beats your record (was 97%).
 - Same settings and goggle font as r09: flash without Full chip erase, no CLI needed.

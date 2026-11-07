@@ -1,0 +1,3108 @@
+diff --git a/src/main/cli/settings.c b/src/main/cli/settings.c
+index 489d254..37f0e31 100644
+--- a/src/main/cli/settings.c
++++ b/src/main/cli/settings.c
+@@ -1622,6 +1622,18 @@ const clivalue_t valueTable[] = {
+     { "osd_rtc_date_time_pos",      VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_RTC_DATETIME]) },
+     { "osd_adjustment_range_pos",   VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_ADJUSTMENT_RANGE]) },
+     { "osd_flip_arrow_pos",         VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FLIP_ARROW]) },
++    { "osd_frog_air_pos",           VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_AIRMODE]) },
++    { "osd_frog_rate_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_RFRATE]) },
++    { "osd_frog_feed_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_TAG]) },
++    { "osd_frog_craft_pos",         VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_CRAFT]) },
++    { "osd_frog_vtxpwr_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_VTXPWR]) },
++    { "osd_custom_msg0_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CUSTOM_MSG0]) },
++    { "osd_custom_msg1_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CUSTOM_MSG1]) },
++    { "osd_custom_msg2_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CUSTOM_MSG2]) },
++    { "osd_custom_msg3_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CUSTOM_MSG3]) },
++    { "osd_frog_noise_pos",        VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_GLITCH]) },
++    { "osd_frog_hd_font",           VAR_UINT8   | MASTER_VALUE | MODE_LOOKUP, .config.lookup = { TABLE_OFF_ON }, PG_OSD_CONFIG, offsetof(osdConfig_t, frog_hd_font) },
++    { "osd_frog_batt_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_BATTPCT]) },
+ #ifdef USE_ADC_INTERNAL
+     { "osd_core_temp_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CORE_TEMPERATURE]) },
+ #endif
+@@ -1982,6 +1994,8 @@ const clivalue_t valueTable[] = {
+ 
+ #ifdef USE_PERSISTENT_STATS
+     { "stats_min_armed_time_s",   VAR_INT8   | MASTER_VALUE, .config.minmax = { STATS_OFF, INT8_MAX }, PG_STATS_CONFIG, offsetof(statsConfig_t, stats_min_armed_time_s) },
++    { "frog_best_g10",          VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_STATS_CONFIG, offsetof(statsConfig_t, frog_best_g10) },
++    { "frog_best_rpm",          VAR_UINT32 | MASTER_VALUE, .config.u32Max = UINT32_MAX, PG_STATS_CONFIG, offsetof(statsConfig_t, frog_best_rpm) },
+     { "stats_total_flights",    VAR_UINT32 | MASTER_VALUE, .config.u32Max = UINT32_MAX, PG_STATS_CONFIG, offsetof(statsConfig_t, stats_total_flights) },
+ 
+     { "stats_total_time_s",     VAR_UINT32 | MASTER_VALUE, .config.u32Max = UINT32_MAX, PG_STATS_CONFIG, offsetof(statsConfig_t, stats_total_time_s) },
+@@ -1996,6 +2010,11 @@ const clivalue_t valueTable[] = {
+     { "craft_name",   VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, craftName) },
+ #ifdef USE_OSD
+     { "pilot_name",   VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, pilotName) },
++    // fr0gOS: custom OSD text lines (also settable over MSP), used for camera mode
++    { "osd_custom_msg0", VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, message[0]) },
++    { "osd_custom_msg1", VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, message[1]) },
++    { "osd_custom_msg2", VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, message[2]) },
++    { "osd_custom_msg3", VAR_UINT8  | MASTER_VALUE | MODE_STRING, .config.string = { 1, MAX_NAME_LENGTH, STRING_FLAGS_NONE }, PG_PILOT_CONFIG, offsetof(pilotConfig_t, message[3]) },
+ #endif
+ 
+ // PG_POSITION
+diff --git a/src/main/fc/controlrate_profile.c b/src/main/fc/controlrate_profile.c
+index 6fb219f..7b2f92d 100644
+--- a/src/main/fc/controlrate_profile.c
++++ b/src/main/fc/controlrate_profile.c
+@@ -45,16 +45,17 @@ void pgResetFn_controlRateProfiles(controlRateConfig_t *controlRateConfig)
+         RESET_CONFIG(controlRateConfig_t, &controlRateConfig[i],
+             .thrMid8 = 50,
+             .thrExpo8 = 0,
+-            .rates_type = RATES_TYPE_ACTUAL,
+-            .rcRates[FD_ROLL] = 7,
+-            .rcRates[FD_PITCH] = 7,
+-            .rcRates[FD_YAW] = 7,
+-            .rcExpo[FD_ROLL] = 0,
+-            .rcExpo[FD_PITCH] = 0,
+-            .rcExpo[FD_YAW] = 0,
+-            .rates[FD_ROLL] = 67,
+-            .rates[FD_PITCH] = 67,
+-            .rates[FD_YAW] = 67,
++            // fr0gOS: Betaflight rates, roll/pitch 500 deg/s, yaw 423 deg/s
++            .rates_type = RATES_TYPE_BETAFLIGHT,
++            .rcRates[FD_ROLL] = 65,
++            .rcRates[FD_PITCH] = 65,
++            .rcRates[FD_YAW] = 55,
++            .rcExpo[FD_ROLL] = 10,
++            .rcExpo[FD_PITCH] = 10,
++            .rcExpo[FD_YAW] = 10,
++            .rates[FD_ROLL] = 74,
++            .rates[FD_PITCH] = 74,
++            .rates[FD_YAW] = 74,
+             .throttle_limit_type = THROTTLE_LIMIT_TYPE_OFF,
+             .throttle_limit_percent = 100,
+             .rate_limit[FD_ROLL] = CONTROL_RATE_CONFIG_RATE_LIMIT_MAX,
+diff --git a/src/main/fc/stats.c b/src/main/fc/stats.c
+index 9624722..5e80d9e 100644
+--- a/src/main/fc/stats.c
++++ b/src/main/fc/stats.c
+@@ -36,6 +36,10 @@
+ 
+ #include "pg/stats.h"
+ 
++#ifdef USE_OSD
++#include "osd/osd.h"
++#endif
++
+ #ifdef USE_BATTERY_CONTINUE
+ #include "sensors/battery.h"
+ #endif
+@@ -90,8 +94,17 @@ static void writeStats(dispatchEntry_t *self)
+     }
+ }
+ 
++bool frogNewBestG = false;
++bool frogNewBestRpm = false;
++uint16_t frogPrevBestG10 = 0;    // the record before this flight, for the hi-score screen
++uint32_t frogPrevBestRpm = 0;
++
+ void statsOnArm(void)
+ {
++    frogNewBestG = false;
++    frogNewBestRpm = false;
++    frogPrevBestG10 = statsConfig()->frog_best_g10;
++    frogPrevBestRpm = statsConfig()->frog_best_rpm;
+     arm_millis      = millis();
+     arm_distance_cm = DISTANCE_FLOWN_CM;
+ }
+@@ -105,6 +118,19 @@ void statsOnDisarm(void)
+             statsConfigMutable()->stats_total_flights += 1;    // arm / flight counter
+             statsConfigMutable()->stats_total_time_s += dtS;
+             statsConfigMutable()->stats_total_dist_m += (DISTANCE_FLOWN_CM - arm_distance_cm) / 100;
++#ifdef USE_OSD
++            // fr0gOS arcade high scores (only flights long enough to count)
++            const statistic_t *flight = osdGetStats();
++            const uint16_t g10 = (uint16_t)lrintf(flight->max_g_force * 10.0f);
++            if (g10 > statsConfig()->frog_best_g10) {
++                statsConfigMutable()->frog_best_g10 = g10;
++                frogNewBestG = true;
++            }
++            if (flight->max_esc_rpm > 0 && (uint32_t)flight->max_esc_rpm > statsConfig()->frog_best_rpm) {
++                statsConfigMutable()->frog_best_rpm = flight->max_esc_rpm;
++                frogNewBestRpm = true;
++            }
++#endif
+ #ifdef USE_BATTERY_CONTINUE
+             statsConfigMutable()->stats_mah_used = getMAhDrawn();
+ #endif
+diff --git a/src/main/fc/stats.h b/src/main/fc/stats.h
+index 831f7a7..3514ca6 100644
+--- a/src/main/fc/stats.h
++++ b/src/main/fc/stats.h
+@@ -24,3 +24,9 @@ void statsInit(void);
+ 
+ void statsOnArm(void);
+ void statsOnDisarm(void);
++
++// fr0gOS: set on disarm when this flight beat a stored high score
++extern bool frogNewBestG;
++extern bool frogNewBestRpm;
++extern uint16_t frogPrevBestG10;
++extern uint32_t frogPrevBestRpm;
+diff --git a/src/main/osd/frog_anim.h b/src/main/osd/frog_anim.h
+new file mode 100644
+index 0000000..6a542cb
+--- /dev/null
++++ b/src/main/osd/frog_anim.h
+@@ -0,0 +1,109 @@
++// Generated by tools/frog_glyphs.py - do not edit by hand.
++// fr0gOS frog: glyph slots and animation tables (must match the goggle font).
++#pragma once
++
++#include <stdint.h>
++
++#define FROG_GLYPH_COUNT 80
++#define FROG_G_IDLE      0xA7
++#define FROG_G_BLINK     0xA8
++#define FROG_G_SMILE     0xAC
++#define FROG_G_SLEEPY    0x8F
++#define FROG_G_CROUCH    0xCA
++#define FROG_G_LAND      0xFA
++#define FROG_G_SQUASHED  0x97
++#define FROG_G_STAR      0x8A
++
++typedef enum {
++    FROG_ANIM_CRT,
++    FROG_ANIM_REST,
++    FROG_ANIM_PEEK,
++    FROG_ANIM_FLIP_IN,
++    FROG_ANIM_FLIP_HOLD,
++    FROG_ANIM_FLIP_OUT,
++    FROG_ANIM_LOWBATT,
++    FROG_ANIM_SQUASH_IN,
++    FROG_ANIM_SQUASH_OUT,
++    FROG_ANIM_ARMED,
++    FROG_ANIM_MODE,
++    FROG_ANIM_PUNCH,
++    FROG_ANIM_TRICK,
++    FROG_ANIM_SPIN,
++    FROG_ANIM_CRASH,
++    FROG_ANIM_RECORD,
++    FROG_ANIM_SAFE,
++    FROG_ANIM_CELEBRATE,
++    FROG_ANIM_FIL_BLINK,
++    FROG_ANIM_FIL_LOOKL,
++    FROG_ANIM_FIL_LOOKR,
++    FROG_ANIM_FIL_LOOKUP,
++    FROG_ANIM_FIL_SMILE,
++    FROG_ANIM_FIL_DANCE,
++    FROG_ANIM_COUNT
++} frogAnimId_e;
++
++typedef struct {
++    uint8_t g;      // glyph
++    uint8_t t10;    // duration, 10 ms units
++} frogFrame_t;
++
++typedef struct {
++    const frogFrame_t *f;
++    uint8_t n;
++} frogAnim_t;
++
++#ifdef FROG_ANIM_TABLES
++static const frogFrame_t frogAnim_CRT[] = { {0xA0,15}, {0xA1,6}, {0xA2,6}, {0xA3,6}, {0xA4,6}, {0xA5,6}, {0xA6,6}, {0xA7,25} };
++static const frogFrame_t frogAnim_REST[] = { {0xA7,160}, {0xA8,14}, {0xA7,120}, {0xA9,70}, {0xA7,25}, {0xAA,70}, {0xA7,40}, {0xAB,60}, {0xA7,50}, {0xAC,90} };
++static const frogFrame_t frogAnim_PEEK[] = { {0xAD,40}, {0xAE,12}, {0xAF,12}, {0xB0,40}, {0xAA,50}, {0xA7,30}, {0xB1,12}, {0xAF,12}, {0xAE,12}, {0xAD,60} };
++static const frogFrame_t frogAnim_FLIP_IN[] = { {0xA7,30}, {0xB2,6}, {0xB3,6}, {0xB4,6}, {0xB5,6}, {0xB6,6}, {0xB7,6}, {0xB8,6}, {0xB9,11}, {0xBA,11}, {0xBB,11} };
++static const frogFrame_t frogAnim_FLIP_HOLD[] = { {0xBC,50}, {0xBD,45}, {0xBE,45}, {0xBF,15}, {0xBC,15}, {0xBF,15}, {0xBC,60} };
++static const frogFrame_t frogAnim_FLIP_OUT[] = { {0xB8,6}, {0xB7,6}, {0xB6,6}, {0xB5,6}, {0xB4,6}, {0xB3,6}, {0xB2,6}, {0xA7,20} };
++static const frogFrame_t frogAnim_LOWBATT[] = { {0xC0,22}, {0xC1,8}, {0xC2,8}, {0xC3,6}, {0xC4,6}, {0xC5,7}, {0xC6,9}, {0xC7,9}, {0xC5,7}, {0xC4,6}, {0xC8,9}, {0xC9,8} };
++static const frogFrame_t frogAnim_SQUASH_IN[] = { {0xCA,6}, {0xCB,6} };
++static const frogFrame_t frogAnim_SQUASH_OUT[] = { {0xCC,6}, {0xCD,6} };
++static const frogFrame_t frogAnim_ARMED[] = { {0xA7,30}, {0xCE,60}, {0xA7,30} };
++static const frogFrame_t frogAnim_MODE[] = { {0xA7,25}, {0xCA,6}, {0xCD,6}, {0xCF,9}, {0xF9,6}, {0xFA,6}, {0xA7,40} };
++static const frogFrame_t frogAnim_PUNCH[] = { {0xA7,25}, {0xFB,7}, {0x18,8}, {0x19,8}, {0x1A,8}, {0x1B,8}, {0xA7,50} };
++static const frogFrame_t frogAnim_TRICK[] = { {0xA7,20}, {0xB2,5}, {0xB3,5}, {0xB4,5}, {0xB5,5}, {0xB6,5}, {0xB7,5}, {0xB8,5}, {0xBC,12}, {0xB8,5}, {0xB7,5}, {0xB6,5}, {0xB5,5}, {0xB4,5}, {0xB3,5}, {0xB2,5}, {0xAC,60}, {0xA7,30} };
++static const frogFrame_t frogAnim_SPIN[] = { {0xA7,20}, {0x1C,9}, {0x70,9}, {0x71,9}, {0xA7,9}, {0x1C,9}, {0x70,9}, {0x71,9}, {0xA7,50} };
++static const frogFrame_t frogAnim_CRASH[] = { {0xA7,20}, {0x72,9}, {0x73,9}, {0x74,15}, {0x78,14}, {0x7A,14}, {0x7C,14}, {0x7D,14}, {0x7E,14}, {0x7F,14}, {0xA7,40} };
++static const frogFrame_t frogAnim_RECORD[] = { {0xA7,25}, {0x8A,20}, {0x8B,11}, {0x8C,11}, {0x8D,11}, {0x8E,11}, {0x8B,11}, {0x8C,11}, {0xAC,60} };
++static const frogFrame_t frogAnim_SAFE[] = { {0xA7,30}, {0xA8,15}, {0x8F,180} };
++static const frogFrame_t frogAnim_CELEBRATE[] = { {0x1C,9}, {0x70,9}, {0x71,9}, {0xA7,9}, {0x1C,9}, {0x70,9}, {0x71,9}, {0x8A,20}, {0x8B,11}, {0x8C,11}, {0x8D,11}, {0x8E,11}, {0x8B,11}, {0x8C,11}, {0xAC,90} };
++static const frogFrame_t frogAnim_FIL_BLINK[] = { {0xA8,14}, {0xA7,30} };
++static const frogFrame_t frogAnim_FIL_LOOKL[] = { {0xA9,50}, {0xA7,20} };
++static const frogFrame_t frogAnim_FIL_LOOKR[] = { {0xAA,50}, {0xA7,20} };
++static const frogFrame_t frogAnim_FIL_LOOKUP[] = { {0xAB,50}, {0xA7,20} };
++static const frogFrame_t frogAnim_FIL_SMILE[] = { {0xAC,60}, {0xA7,20} };
++static const frogFrame_t frogAnim_FIL_DANCE[] = { {0xCA,6}, {0xCD,6}, {0xCF,9}, {0xF9,6}, {0xFA,6}, {0xA7,40} };
++static const frogAnim_t frogAnims[FROG_ANIM_COUNT] = {
++    { frogAnim_CRT, 8 },
++    { frogAnim_REST, 10 },
++    { frogAnim_PEEK, 10 },
++    { frogAnim_FLIP_IN, 11 },
++    { frogAnim_FLIP_HOLD, 7 },
++    { frogAnim_FLIP_OUT, 8 },
++    { frogAnim_LOWBATT, 12 },
++    { frogAnim_SQUASH_IN, 2 },
++    { frogAnim_SQUASH_OUT, 2 },
++    { frogAnim_ARMED, 3 },
++    { frogAnim_MODE, 7 },
++    { frogAnim_PUNCH, 7 },
++    { frogAnim_TRICK, 18 },
++    { frogAnim_SPIN, 9 },
++    { frogAnim_CRASH, 11 },
++    { frogAnim_RECORD, 9 },
++    { frogAnim_SAFE, 3 },
++    { frogAnim_CELEBRATE, 15 },
++    { frogAnim_FIL_BLINK, 2 },
++    { frogAnim_FIL_LOOKL, 2 },
++    { frogAnim_FIL_LOOKR, 2 },
++    { frogAnim_FIL_LOOKUP, 2 },
++    { frogAnim_FIL_SMILE, 2 },
++    { frogAnim_FIL_DANCE, 6 },
++};
++// hop between two cells: [step][0] = the cell it leaves, [step][1] = the cell it lands in
++static const uint8_t frogHopR[3][2] = { {0x9A,0x02}, {0x03,0x05}, {0x08,0x09} };
++static const uint8_t frogHopL[3][2] = { {0x09,0x08}, {0x05,0x03}, {0x02,0x9A} };
++#endif
+diff --git a/src/main/osd/frog_charmap.h b/src/main/osd/frog_charmap.h
+new file mode 100644
+index 0000000..bea8eae
+--- /dev/null
++++ b/src/main/osd/frog_charmap.h
+@@ -0,0 +1,28 @@
++// Generated by tools/build_hacker_font.py - do not edit by hand.
++// fr0gOS HDZero hacker font character map (must match the BTFL_000.bmp on the goggle SD card).
++#pragma once
++
++#include <stdint.h>
++
++#define FROG_GLYPH_CURSOR     0xFC
++#define FROG_GLYPH_RSCRAMBLE1 0x1D
++#define FROG_GLYPH_SCRAMBLE1  0xFD
++#define FROG_GLYPH_SCRAMBLE2  0xFE
++#define FROG_GLYPH_SCRAMBLE3  0xFF
++#define FROG_GLYPH_BATT0      0x11   // +0..+4 = empty..full
++
++#ifdef FROG_CHARMAP_TABLES
++// index = ASCII - 0x20 (0x20..0x5F); 0 = no coloured copy, keep the green glyph
++static const uint8_t frogAmberMap[64] = {
++    0x00, 0xF6, 0x00, 0x00, 0x00, 0xF7, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xF5, 0xF4, 0x00,
++    0xEA, 0xEB, 0xEC, 0xED, 0xEE, 0xEF, 0xF0, 0xF1, 0xF2, 0xF3, 0xF8, 0x00, 0x00, 0x00, 0x00, 0x00,
++    0x00, 0xD0, 0xD1, 0xD2, 0xD3, 0xD4, 0xD5, 0xD6, 0xD7, 0xD8, 0xD9, 0xDA, 0xDB, 0xDC, 0xDD, 0xDE,
++    0xDF, 0xE0, 0xE1, 0xE2, 0xE3, 0xE4, 0xE5, 0xE6, 0xE7, 0xE8, 0xE9, 0x00, 0x00, 0x00, 0x00, 0x00
++};
++static const uint8_t frogRedMap[64] = {
++    0x00, 0x9D, 0x00, 0x00, 0x00, 0x9E, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x9C, 0x9B, 0x00,
++    0x89, 0x90, 0x91, 0x92, 0x93, 0x94, 0x95, 0x96, 0x98, 0x99, 0x9F, 0x00, 0x00, 0x00, 0x00, 0x00,
++    0x00, 0x60, 0x61, 0x62, 0x63, 0x64, 0x65, 0x66, 0x67, 0x68, 0x69, 0x6A, 0x6B, 0x6C, 0x6D, 0x6E,
++    0x6F, 0x77, 0x80, 0x81, 0x82, 0x83, 0x84, 0x85, 0x86, 0x87, 0x88, 0x00, 0x00, 0x00, 0x00, 0x00
++};
++#endif
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index c4d877b..3d97c21 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -59,6 +59,7 @@
+ #include "drivers/osd_symbols.h"
+ #include "drivers/sdcard.h"
+ #include "drivers/time.h"
++#include "drivers/vtx_common.h"
+ 
+ #include "drivers/pinio.h"
+ 
+@@ -80,15 +81,20 @@
+ #include "io/beeper.h"
+ #include "io/flashfs.h"
+ #include "io/gps.h"
++#include "io/vtx.h"
+ 
+ #include "osd/osd.h"
+ #include "osd/osd_elements.h"
++#include "osd/frog_charmap.h"
++#include "osd/frog_anim.h"
+ #include "osd/osd_warnings.h"
+ 
+ #include "pg/motor.h"
++#include "pg/pilot.h"
+ #include "pg/pg.h"
+ #include "pg/pg_ids.h"
+ #include "pg/stats.h"
++#include "fc/stats.h"
+ 
+ #include "rx/crsf.h"
+ #include "rx/rc_stats.h"
+@@ -97,6 +103,7 @@
+ #include "scheduler/scheduler.h"
+ 
+ #include "sensors/acceleration.h"
++#include "sensors/adcinternal.h"
+ #include "sensors/battery.h"
+ #include "sensors/sensors.h"
+ 
+@@ -159,7 +166,7 @@ escSensorData_t *osdEscDataCombined;
+ 
+ STATIC_ASSERT(OSD_POS_MAX == OSD_POS(63,31), OSD_POS_MAX_incorrect);
+ 
+-PG_REGISTER_WITH_RESET_FN(osdConfig_t, osdConfig, PG_OSD_CONFIG, 13);
++PG_REGISTER_WITH_RESET_FN(osdConfig_t, osdConfig, PG_OSD_CONFIG, 14); // fr0gOS: +frog_hd_font
+ 
+ PG_REGISTER_WITH_RESET_FN(osdElementConfig_t, osdElementConfig, PG_OSD_ELEMENT_CONFIG, 3);
+ 
+@@ -365,6 +372,8 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
+     osdStatSetState(OSD_STAT_FULL_THROTTLE_TIME, true);
+     osdStatSetState(OSD_STAT_FULL_THROTTLE_COUNTER, true);
+     osdStatSetState(OSD_STAT_AVG_THROTTLE, true);
++    osdStatSetState(OSD_STAT_MAX_G_FORCE, true);   // fr0gOS high scores
++    osdStatSetState(OSD_STAT_MAX_ESC_RPM, true);
+ #endif
+ 
+     osdConfig->timers[OSD_TIMER_1] = osdTimerDefault[OSD_TIMER_1];
+@@ -379,7 +388,7 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
+     osdConfig->esc_temp_alarm = ESC_TEMP_ALARM_OFF; // off by default
+     osdConfig->esc_rpm_alarm = ESC_RPM_ALARM_OFF; // off by default
+     osdConfig->esc_current_alarm = ESC_CURRENT_ALARM_OFF; // off by default
+-    osdConfig->core_temp_alarm = 70; // a temperature above 70C should produce a warning, lockups have been reported above 80C
++    osdConfig->core_temp_alarm = 75; // fr0gOS: warn at 75C (lockups have been reported above 80C)
+ 
+     osdConfig->ahMaxPitch = 20; // 20 degrees
+     osdConfig->ahMaxRoll = 40; // 40 degrees
+@@ -406,6 +415,7 @@ void pgResetFn_osdConfig(osdConfig_t *osdConfig)
+ 
+     osdConfig->stat_show_cell_value = false;
+     osdConfig->framerate_hz = OSD_FRAMERATE_DEFAULT_HZ;
++    osdConfig->frog_hd_font = 1;
+     osdConfig->cms_background_type = DISPLAY_BACKGROUND_TRANSPARENT;
+     #ifdef USE_CRAFTNAME_MSGS
+     osdConfig->osd_craftname_msgs = false;   // Insert LQ/RSSI-dBm and warnings into CraftName
+@@ -471,16 +481,28 @@ void pgResetFn_osdElementConfig(osdElementConfig_t *osdElementConfig)
+ #endif
+ }
+ 
++// fr0gOS: the HD hacker font has no logo any more (its glyphs are the frog); the boot block keeps the
++// two rows it used, the frog sits in them
++#define FROG_LOGO_ROWS_HD 2
++static uint8_t frogLogoRows(void)
++{
++    return frogHdFont(osdDisplayPort) ? FROG_LOGO_ROWS_HD : OSD_LOGO_ROWS;
++}
++
+ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ {
+     // display logo and help
+     int fontOffset = SYM_LOGO_START;
+ 
+-    if (displayWriteLogo(osdDisplayPort, fontOffset, SYM_END_OF_FONT, OSD_LOGO_COLS, OSD_LOGO_ROWS)) {
++    if (frogHdFont(osdDisplayPort)) {
++        return;                     // fr0gOS: logo slots hold the frog on HD
++    }
++    const uint8_t logoRows = frogLogoRows();
++    if (displayWriteLogo(osdDisplayPort, fontOffset, SYM_END_OF_FONT, OSD_LOGO_COLS, logoRows)) {
+         return; // Display port driver has built-in support for drawing logo from font
+     }
+ 
+-    for (int row = 0; row < OSD_LOGO_ROWS; row++) {
++    for (int row = 0; row < logoRows; row++) {
+         for (int column = 0; column < OSD_LOGO_COLS; column++) {
+             if (fontOffset <= SYM_END_OF_FONT)
+                 displayWriteChar(osdDisplayPort, x + column, y + row, fontSel, fontOffset++);
+@@ -488,6 +510,219 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+     }
+ }
+ 
++// ---------------- fr0gOS boot screen ----------------
++#define FROGOS_VERSION   "V1.3 R11"
++#define FROG_BOOT_WIDTH  22
++#define FROG_BOOT_LINES  9
++
++static bool frogBootActive = false;
++static timeUs_t frogBootNextDrawUs = 0;
++static timeUs_t frogBootStartUs = 0;
++static int frogBootLineNo = 0;
++static int frogBootX = 0, frogBootLastX = 0, frogBootRow = -1;    // the frog's run along the header
++static uint8_t frogBootTick = 0;
++#define FROG_BOOT_STEP_MS 420   // one boot line: types out, spins, then reports
++#define FROG_BOOT_TYPE_MS 250   // time spent typing a line
++#define FROG_BOOT_DONE_MS (FROG_BOOT_LINES * FROG_BOOT_STEP_MS + 200)   // last check has reported
++
++static void frogUpper(char *s)
++{
++    for (; *s; s++) {
++        *s = toupper((unsigned char)*s);
++    }
++}
++
++// write the first part of a line as if it is being typed, with the cursor in front
++static void frogBootTypeOut(int x, int y, const char *line, size_t typedLen, uint32_t t)
++{
++    char buf[FROG_BOOT_WIDTH + 2];
++    size_t n = (typedLen * t) / FROG_BOOT_TYPE_MS;
++    if (n > typedLen) {
++        n = typedLen;
++    }
++    memcpy(buf, line, n);
++    buf[n] = frogHdFont(osdDisplayPort) ? (char)FROG_GLYPH_CURSOR : '_';
++    buf[n + 1] = '\0';
++    displayWrite(osdDisplayPort, x, y, DISPLAYPORT_SEVERITY_NORMAL, buf);
++}
++
++// "LBL  detail ........ STAT" padded to FROG_BOOT_WIDTH
++static void frogBootLine(int x, int y, const char *label, const char *detail, const char *status)
++{
++    // BIOS-style reveal: line N types itself out, spins, then reports
++    const int idx = ++frogBootLineNo;
++    const uint32_t ms = (micros() - frogBootStartUs) / 1000;
++    if (ms < (uint32_t)idx * FROG_BOOT_STEP_MS) {
++        return;
++    }
++    const uint32_t t = ms - (uint32_t)idx * FROG_BOOT_STEP_MS;
++    char spin[2] = { "|/-\\"[(ms / 80) % 4], '\0' };
++    const bool typing = t < FROG_BOOT_TYPE_MS;
++    const bool running = t < FROG_BOOT_STEP_MS;
++    if (running) {
++        status = typing ? " " : spin;
++    }
++    char line[FROG_BOOT_WIDTH + 1];
++    memset(line, '.', FROG_BOOT_WIDTH);
++    line[FROG_BOOT_WIDTH] = '\0';
++
++    // label padded to 4, then detail (tfp_sprintf has no %-4s)
++    char head[FROG_BOOT_WIDTH + 1];
++    memset(head, ' ', sizeof(head));
++    const size_t labelLen = MIN(strlen(label), (size_t)4);
++    memcpy(head, label, labelLen);
++    const size_t detailLen = MIN(strlen(detail), (size_t)(FROG_BOOT_WIDTH - 6));
++    memcpy(&head[5], detail, detailLen);
++    head[5 + detailLen + (detailLen ? 1 : 0)] = '\0';
++    frogUpper(head);
++    size_t headLen = strlen(head);
++    const size_t statLen = strlen(status);
++    if (headLen > FROG_BOOT_WIDTH - statLen - 1) {
++        headLen = FROG_BOOT_WIDTH - statLen - 1;
++    }
++    memcpy(line, head, headLen);
++    line[FROG_BOOT_WIDTH - statLen - 1] = ' ';
++    memcpy(&line[FROG_BOOT_WIDTH - statLen], status, statLen);
++    if (typing) {
++        frogBootTypeOut(x, y, line, FROG_BOOT_WIDTH - statLen - 1, t);
++        return;
++    }
++    if (frogHdFont(osdDisplayPort) && !running) {
++        const uint8_t sev = (strcmp(status, "OK") == 0 || strcmp(status, "--") == 0 || status[0] == '#') ? DISPLAYPORT_SEVERITY_NORMAL
++                          : strcmp(status, "FAIL") == 0 ? DISPLAYPORT_SEVERITY_CRITICAL
++                          : DISPLAYPORT_SEVERITY_WARNING;
++        frogColourise(&line[FROG_BOOT_WIDTH - statLen], sev);
++    }
++    displayWrite(osdDisplayPort, x, y, DISPLAYPORT_SEVERITY_NORMAL, line);
++}
++
++static void osdFrogDrawBootStatus(void)
++{
++    frogBootLineNo = 0;
++    const int rows = osdDisplayPort->rows;
++    const int midRow = rows / 2;
++    const int x = (osdDisplayPort->cols / 2) - (FROG_BOOT_WIDTH / 2);
++    int y = midRow - 5 + frogLogoRows() + 1;
++    if (y + FROG_BOOT_LINES > rows) {
++        y = rows - FROG_BOOT_LINES;
++    }
++    char detail[16];
++
++    // header: FROGOS V1.0 R01 ..... MK4-1
++    char head[FROG_BOOT_WIDTH + 1];
++    char craft[MAX_NAME_LENGTH + 1];
++    strncpy(craft, pilotConfig()->craftName, MAX_NAME_LENGTH);
++    craft[MAX_NAME_LENGTH] = '\0';
++    frogUpper(craft);
++    memset(head, ' ', FROG_BOOT_WIDTH);
++    head[FROG_BOOT_WIDTH] = '\0';
++    memcpy(head, "FR0GOS " FROGOS_VERSION, strlen("FR0GOS " FROGOS_VERSION));
++    // the frog runs along the row above the header, from its first letter to the last letter of the version
++    frogBootX = x;
++    frogBootLastX = x + (int)strlen("FR0GOS " FROGOS_VERSION) - 1;
++    frogBootRow = frogHdFont(osdDisplayPort) && y > 0 ? y - 1 : -1;
++    const size_t craftLen = MIN(strlen(craft), (size_t)6);
++    memcpy(&head[FROG_BOOT_WIDTH - craftLen], craft, craftLen);
++    {
++        const uint32_t ms = (micros() - frogBootStartUs) / 1000;
++        if (ms < FROG_BOOT_TYPE_MS) {
++            frogBootTypeOut(x, y++, head, FROG_BOOT_WIDTH, ms);
++        } else {
++            displayWrite(osdDisplayPort, x, y++, DISPLAYPORT_SEVERITY_NORMAL, head);
++        }
++    }
++
++    // CPU
++    const char *mcu = targetName;
++    if (strncmp(mcu, "STM32", 5) == 0) {
++        mcu += 5;
++    }
++    char mcu4[5];
++    strncpy(mcu4, mcu, 4);
++    mcu4[4] = '\0';
++#ifdef USE_ADC_INTERNAL
++    tfp_sprintf(detail, "%s C%d", mcu4, getCoreTemperatureCelsius());
++#else
++    tfp_sprintf(detail, "%s", mcu4);
++#endif
++    frogBootLine(x, y++, "CPU", detail, "OK");
++
++    // GYRO
++    frogBootLine(x, y++, "GYRO", "", sensors(SENSOR_GYRO) ? "OK" : "FAIL");
++
++    // RX: WAIT (not FAIL) until the radio links
++    if (isRxReceivingSignal()) {
++        const char *rate = NULL;
++#ifdef USE_RX_LINK_QUALITY_INFO
++        if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_CRSF) {
++            rate = frogRfRateLabel(rxGetRfMode());
++        }
++#endif
++        frogBootLine(x, y++, "RX", rate ? rate : "LINK", "OK");
++    } else {
++        frogBootLine(x, y++, "RX", "", "WAIT");
++    }
++
++    // video system
++    frogBootLine(x, y++, "VIDEO", frogHdFont(osdDisplayPort) ? "HDZERO" : "ANALOG", "OK");
++
++    // VTX
++#ifdef USE_VTX_COMMON
++    const vtxDevice_t *vtx = vtxCommonDevice();
++    if (!vtx) {
++        frogBootLine(x, y++, "VTX", "", "NONE");
++    } else if (!vtxCommonDeviceIsReady(vtx)) {
++        frogBootLine(x, y++, "VTX", "", "WAIT");
++    } else {
++        const vtxSettingsConfig_t *vs = vtxSettingsConfig();
++        const char *pwr = vtxCommonLookupPowerName(vtx, vs->power);
++        tfp_sprintf(detail, "%c%d %s", vtxCommonLookupBandLetter(vtx, vs->band), vs->channel, pwr ? pwr : "");
++        frogBootLine(x, y++, "VTX", detail, "OK");
++    }
++#else
++    frogBootLine(x, y++, "VTX", "", "NONE");
++#endif
++
++    // ESC: real bidirectional DShot telemetry check
++    const uint8_t motorCount = getMotorCount();
++#ifdef USE_DSHOT_TELEMETRY
++    if (motorConfig()->dev.useDshotTelemetry && motorCount) {
++        uint8_t alive = 0;
++        for (uint8_t i = 0; i < motorCount; i++) {
++            if (isDshotMotorTelemetryActive(i)) {
++                alive++;
++            }
++        }
++        tfp_sprintf(detail, "%d/%d", alive, motorCount);
++        frogBootLine(x, y++, "ESC", detail, alive == motorCount ? "OK" : "WAIT");
++    } else
++#endif
++    {
++        tfp_sprintf(detail, "%d MTR", motorCount);
++        frogBootLine(x, y++, "ESC", detail, "--");
++    }
++
++    // BATT
++    const uint16_t cv = getBatteryVoltage();
++    tfp_sprintf(detail, "%d.%02dV", cv / 100, cv % 100);
++    switch (getBatteryState()) {
++    case BATTERY_OK:       frogBootLine(x, y++, "BATT", detail, "OK");   break;
++    case BATTERY_WARNING:  frogBootLine(x, y++, "BATT", detail, "LOW");  break;
++    case BATTERY_CRITICAL: frogBootLine(x, y++, "BATT", detail, "FAIL"); break;
++    default:               frogBootLine(x, y++, "BATT", "", "NONE");     break;
++    }
++
++    // UPTIME: lifetime armed time and flight count from persistent stats
++    {
++        const uint32_t up = statsConfig()->stats_total_time_s;
++        char flights[12];
++        tfp_sprintf(detail, "%dH%02dM", (int)(up / 3600), (int)((up / 60) % 60));
++        tfp_sprintf(flights, "#%d", (int)statsConfig()->stats_total_flights);
++        frogBootLine(x, y++, "UP", detail, flights);
++    }
++}
++// -------------- end fr0gOS boot screen --------------
++
+ static void osdCompleteInitialization(void)
+ {
+     uint8_t midRow = osdDisplayPort->rows / 2;
+@@ -506,31 +741,19 @@ static void osdCompleteInitialization(void)
+     // Display betaflight logo
+     osdDrawLogo(midCol - (OSD_LOGO_COLS) / 2, midRow - 5, DISPLAYPORT_SEVERITY_NORMAL);
+ 
+-    // sizeof includes the terminating NULL so add space for the V
+-    char version_str_buf[sizeof(FC_VERSION_STRING) + 1];
+-    tfp_sprintf(version_str_buf, "V%s", FC_VERSION_STRING);
+-    size_t version_str_len = strlen(version_str_buf) + 1;
+-
+-    // For the OSD we only have uppercase
+-    for (size_t i = 0; i < version_str_len; i++) {
+-        version_str_buf[i] = toupper(version_str_buf[i]);
++    // fr0gOS: boot status block replaces the version string and menu hint
++    frogBootStartUs = micros();
++    osdFrogDrawBootStatus();
++    if (frogBootRow >= 0) {
++        frogBootDraw(osdDisplayPort, 0, frogBootX, frogBootLastX, frogBootRow, FROG_BOOT_DONE_MS);
+     }
+-    displayWrite(osdDisplayPort, midCol + 12 - version_str_len, midRow, DISPLAYPORT_SEVERITY_NORMAL, version_str_buf);
++    frogBootActive = true;
++    frogBootTick = 0;
++    frogBootNextDrawUs = micros() + 40000;
+ 
+-#ifdef USE_CMS
+-    displayWrite(osdDisplayPort, midCol - 8, midRow + 2, DISPLAYPORT_SEVERITY_NORMAL, CMS_STARTUP_HELP_TEXT1);
+-    displayWrite(osdDisplayPort, midCol - 4, midRow + 3, DISPLAYPORT_SEVERITY_NORMAL, CMS_STARTUP_HELP_TEXT2);
+-    displayWrite(osdDisplayPort, midCol - 4, midRow + 4, DISPLAYPORT_SEVERITY_NORMAL, CMS_STARTUP_HELP_TEXT3);
+-#endif
+-
+-#ifdef USE_RTC_TIME
+-    char dateTimeBuffer[FORMATTED_DATE_TIME_BUFSIZE];
+-    if (osdFormatRtcDateTime(&dateTimeBuffer[0])) {
+-        displayWrite(osdDisplayPort, midCol - 10, midRow + 6, DISPLAYPORT_SEVERITY_NORMAL, dateTimeBuffer);
+-    }
+-#endif
+-
+-    resumeRefreshAt = micros() + (4 * REFRESH_1S);
++    // fr0gOS: hold the boot screen until the frog has finished (about 7 s on HD, 5 s on analog)
++    const uint32_t bootMs = frogBootRow >= 0 ? frogBootLengthMs(frogBootLastX - frogBootX, FROG_BOOT_DONE_MS) : 5000;
++    resumeRefreshAt = micros() + bootMs * 1000;
+ #ifdef USE_OSD_PROFILES
+     setOsdProfile(osdConfig()->osdProfileIndex);
+ #endif
+@@ -786,11 +1009,32 @@ static void osdGetBlackboxStatusString(char * buff)
+ }
+ #endif
+ 
++// fr0gOS: DOS directory-listing style, "LABEL.......... VALUE"
+ static void osdDisplayStatisticLabel(uint8_t x, uint8_t y, const char * text, const char * value)
+ {
+-    displayWrite(osdDisplayPort, x - 13, y, DISPLAYPORT_SEVERITY_NORMAL, text);
+-    displayWrite(osdDisplayPort, x + 5, y, DISPLAYPORT_SEVERITY_NORMAL, ":");
+-    displayWrite(osdDisplayPort, x + 7, y, DISPLAYPORT_SEVERITY_NORMAL, value);
++    char line[32];
++    memset(line, '.', 18);
++    const size_t labelLen = MIN(strlen(text), (size_t)17);
++    memcpy(line, text, labelLen);
++    line[labelLen] = ' ';
++    line[18] = ' ';
++    const size_t valueLen = MIN(strlen(value), sizeof(line) - 20);
++    memcpy(&line[19], value, valueLen);
++    line[19 + valueLen] = '\0';
++    for (char *c = line; *c; c++) {
++        *c = toupper((unsigned char)*c);
++    }
++    displayWrite(osdDisplayPort, x - 13, y, DISPLAYPORT_SEVERITY_NORMAL, line);
++}
++
++// fr0gOS: number of NEW HIGH SCORE lines to show under the stats header
++static int frogHighScoreLines(void)
++{
++#ifdef USE_PERSISTENT_STATS
++    return (frogNewBestG ? 1 : 0) + (frogNewBestRpm ? 1 : 0);
++#else
++    return 0;
++#endif
+ }
+ 
+ /*
+@@ -1085,6 +1329,8 @@ static void osdRenderStatsReset(void)
+     osdStatsRenderingState.rowCount = 0;
+ }
+ 
++static bool frogStatsPromptPending = false;
++
+ static void osdRenderStatsBegin(void)
+ {
+     osdStatsRenderingState.row = 0;
+@@ -1104,15 +1350,36 @@ static bool osdRenderStatsContinue(void)
+         if (osdStatsRenderingState.rowCount > 0) {
+             const int availableRows = osdDisplayPort->rows;
+             int displayRows = MIN(osdStatsRenderingState.rowCount, availableRows);
+-            if (osdStatsRenderingState.rowCount < availableRows) {
++            // fr0gOS: header + high scores + closing prompt, if they fit
++            const int extra = 2 + frogHighScoreLines();
++            if (osdStatsRenderingState.rowCount + extra <= availableRows) {
+                 displayLabel = true;
+-                displayRows++;
++                displayRows += extra;
+             }
+             osdStatsRenderingState.row = (availableRows - displayRows) / 2;  // center the stats vertically
+         }
+ 
+         if (displayLabel) {
+-            displayWrite(osdDisplayPort, midCol - (strlen("--- STATS ---") / 2), osdStatsRenderingState.row++, DISPLAYPORT_SEVERITY_NORMAL, "--- STATS ---");
++            displayWrite(osdDisplayPort, midCol - 13, osdStatsRenderingState.row++, DISPLAYPORT_SEVERITY_NORMAL, "C:\\FR0G> STATS.EXE");
++#ifdef USE_PERSISTENT_STATS
++            char hs[32];
++            if (frogNewBestG) {
++                const uint16_t g10 = statsConfig()->frog_best_g10;
++                tfp_sprintf(hs, "NEW HIGH SCORE %d.%dG", g10 / 10, g10 % 10);
++                if (frogHdFont(osdDisplayPort)) {
++                    frogColourise(hs, DISPLAYPORT_SEVERITY_WARNING);
++                }
++                displayWrite(osdDisplayPort, midCol - 13, osdStatsRenderingState.row++, DISPLAYPORT_SEVERITY_NORMAL, hs);
++            }
++            if (frogNewBestRpm) {
++                tfp_sprintf(hs, "NEW HIGH SCORE %dK RPM", (int)(statsConfig()->frog_best_rpm / 1000));
++                if (frogHdFont(osdDisplayPort)) {
++                    frogColourise(hs, DISPLAYPORT_SEVERITY_WARNING);
++                }
++                displayWrite(osdDisplayPort, midCol - 13, osdStatsRenderingState.row++, DISPLAYPORT_SEVERITY_NORMAL, hs);
++            }
++#endif
++            frogStatsPromptPending = true;
+             return false;
+         }
+     }
+@@ -1143,13 +1410,190 @@ static bool osdRenderStatsContinue(void)
+ 
+     if (osdStatsRenderingState.rowCount == 0) {
+         osdStatsRenderingState.rowCount = osdStatsRenderingState.row;
++    } else if (frogStatsPromptPending && osdStatsRenderingState.row < osdDisplayPort->rows) {
++        // fr0gOS: back to the prompt
++        char prompt[16];
++        tfp_sprintf(prompt, "C:\\FR0G> %c", frogHdFont(osdDisplayPort) ? FROG_GLYPH_CURSOR : '_');
++        displayWrite(osdDisplayPort, midCol - 13, osdStatsRenderingState.row, DISPLAYPORT_SEVERITY_NORMAL, prompt);
+     }
++    frogStatsPromptPending = false;
+ 
+     return true;
+ }
+ 
+-// returns true when all phases are complete
++// ---------------- fr0gOS HISCORE.EXE (replaces the post-flight stats) ----------------
++// Only the arcade numbers: best G (with this flight and the record it beat), a BEST LAP placeholder,
++// lifetime flights and air time. A new record gets a decoding, colour-chasing banner with star-eyed
++// frogs hopping either side. Drawn at 10 fps from the hold loop.
++static timeUs_t frogScoreStartUs = 0;
++static timeUs_t frogScoreNextUs = 0;
++
++static void frogScoreLine(int x, int y, const char *label, const char *value, uint8_t sev)
++{
++    const bool hd = frogHdFont(osdDisplayPort);
++    char line[40];
++    int n = 0;
++    for (; label[n] && n < 18; n++) {
++        line[n] = label[n];
++    }
++    for (; n < 18; n++) {
++        line[n] = '.';                                   // dot leader, DOS-listing style
++    }
++    line[n++] = ' ';
++    for (int i = 0; value[i] && n < (int)sizeof(line) - 1; i++) {
++        line[n++] = (hd && sev != DISPLAYPORT_SEVERITY_NORMAL) ? (char)frogColourChar((uint8_t)value[i], sev) : value[i];
++    }
++    line[n] = '\0';
++    displayWrite(osdDisplayPort, x, y, DISPLAYPORT_SEVERITY_NORMAL, line);
++}
++
++static void frogFormatG(char *buf, uint16_t g10)
++{
++    if (g10 == 0) {
++        strcpy(buf, "---");
++    } else {
++        tfp_sprintf(buf, "%d.%dG", g10 / 10, g10 % 10);
++    }
++}
++
++static void frogDrawHiScore(timeUs_t now)
++{
++    const bool hd = frogHdFont(osdDisplayPort);
++    const int rows = osdDisplayPort->rows;
++    const int cols = osdDisplayPort->cols;
++    const int x = cols / 2 - 13;
++    const uint32_t ms = cmpTimeUs(now, frogScoreStartUs) / 1000;
++    char v[16];
++
++    const uint16_t thisG10 = (uint16_t)lrintf(stats.max_g_force * 10.0f);
++    bool newG = false;
++    uint16_t bestG10 = thisG10, prevG10 = 0;
++    uint32_t flights = 0, totalS = 0;
++#ifdef USE_PERSISTENT_STATS
++    newG = frogNewBestG;
++    bestG10 = statsConfig()->frog_best_g10;
++    prevG10 = frogPrevBestG10;
++    flights = statsConfig()->stats_total_flights;
++    totalS = statsConfig()->stats_total_time_s;
++#endif
++    const bool anyNew = newG;
++    // header, banner, G block, BEST LAP, blank, flights, air time, prompt
++    int lines = 1 + (anyNew ? 3 : 1) + (newG ? 3 : 2) + 1 + 1 + 2 + 1;
++    // short screens (analog, 13 rows): drop blank lines until it fits
++    const bool tightBanner = lines > rows;
++    lines -= tightBanner ? 1 : 0;
++    const bool tightFooter = lines > rows;
++    lines -= tightFooter ? 1 : 0;
++    int y = MAX(0, (rows - lines) / 2);
++
++    displayClearScreen(osdDisplayPort, DISPLAY_CLEAR_NONE);
++
++    // header types out, then the listing prints one line every 90 ms
++    static const char header[] = "C:\\FR0G> HISCORE.EXE";
++    char hb[sizeof(header) + 1];
++    const unsigned typed = MIN((uint32_t)(sizeof(header) - 1), ms / 15);
++    memcpy(hb, header, typed);
++    hb[typed] = (typed < sizeof(header) - 1) ? (char)(hd ? FROG_GLYPH_CURSOR : '_') : '\0';
++    hb[typed + 1] = '\0';
++    displayWrite(osdDisplayPort, x, y++, DISPLAYPORT_SEVERITY_NORMAL, hb);
++    const int shown = ms < 350 ? 0 : 1 + (int)((ms - 350) / 90);
++    int line = 0;
++#define FROG_SHOW() (line++ < shown && y < rows)
++
++    // the new-record value flashes amber/red
++    const uint8_t flash = ((ms / 250) % 2) ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_CRITICAL;
++
++    y++;                                                  // blank line under the header
++    if (anyNew) {
++        if (FROG_SHOW()) {
++            // NEW HIGH SCORE: decodes in, then the colours chase along it; frogs hop in the flanks
++            static const char text[] = "NEW HIGH SCORE";
++            const uint32_t bm = ms - 350;
++            char b[32];
++            int n = 0;
++            const int hop = (ms / 150) % 3;
++            for (int k = 0; k < 3; k++) {
++                if (hd) {
++                    b[n++] = (k == hop) ? (char)frogAnimGlyph(FROG_ANIM_RECORD, ms + k * 300, true) : ' ';
++                } else {
++                    b[n++] = (k == hop) ? '>' : ' ';
++                }
++            }
++            b[n++] = ' ';
++            for (unsigned i = 0; i < sizeof(text) - 1; i++) {
++                char c = text[i];
++                if (bm < 40 * i + 200 && c != ' ') {
++                    c = (char)frogNoiseChar(hd);
++                } else if (hd && c != ' ') {
++                    static const uint8_t chase[3] = { DISPLAYPORT_SEVERITY_NORMAL, DISPLAYPORT_SEVERITY_WARNING, DISPLAYPORT_SEVERITY_CRITICAL };
++                    c = (char)frogColourChar((uint8_t)c, chase[(i + ms / 80) % 3]);
++                }
++                b[n++] = c;
++            }
++            b[n++] = ' ';
++            for (int k = 2; k >= 0; k--) {
++                if (hd) {
++                    b[n++] = (k == hop) ? (char)frogAnimGlyph(FROG_ANIM_RECORD, ms + k * 300, true) : ' ';
++                } else {
++                    b[n++] = (k == hop) ? '<' : ' ';
++                }
++            }
++            b[n] = '\0';
++            displayWrite(osdDisplayPort, cols / 2 - n / 2, y, DISPLAYPORT_SEVERITY_NORMAL, b);
++
++        }
++        y += tightBanner ? 1 : 2;
++    }
++
++    if (FROG_SHOW()) {
++        frogFormatG(v, bestG10);
++        frogScoreLine(x, y, "BEST G", v, newG ? flash : DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    y++;
++    if (FROG_SHOW()) {
++        frogFormatG(v, thisG10);
++        frogScoreLine(x, y, "  THIS FLIGHT", v, DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    y++;
++    if (newG) {
++        if (FROG_SHOW()) {
++            frogFormatG(v, prevG10);
++            frogScoreLine(x, y, "  OLD RECORD", v, DISPLAYPORT_SEVERITY_NORMAL);
++        }
++        y++;
++    }
++    // lap timer placeholder: shows --.-- until the lap timer lands
++    if (FROG_SHOW()) {
++        frogScoreLine(x, y, "BEST LAP", "--.--", DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    y++;
++    y += tightFooter ? 0 : 1;
++    if (FROG_SHOW()) {
++        tfp_sprintf(v, "#%d", (int)flights);
++        frogScoreLine(x, y, "FLIGHTS", v, DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    y++;
++    if (FROG_SHOW()) {
++        tfp_sprintf(v, "%dH%02dM", (int)(totalS / 3600), (int)((totalS / 60) % 60));
++        frogScoreLine(x, y, "AIR TIME", v, DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    y++;
++    if (FROG_SHOW()) {
++        char prompt[16];
++        tfp_sprintf(prompt, "C:\\FR0G> %c", ((ms / 400) % 2) ? (hd ? FROG_GLYPH_CURSOR : '_') : ' ');
++        displayWrite(osdDisplayPort, x, y, DISPLAYPORT_SEVERITY_NORMAL, prompt);
++    }
++#undef FROG_SHOW
++}
++
+ static bool osdRefreshStats(void)
++{
++    frogDrawHiScore(micros());
++    return true;
++}
++
++// stock Betaflight stats screen, kept for reference but no longer used
++static bool __attribute__((unused)) osdRefreshStatsStock(void)
+ {
+     bool completed = false;
+ 
+@@ -1202,6 +1646,54 @@ static bool osdRefreshStats(void)
+     return completed;
+ }
+ 
++// ---------------- fr0gOS arming glitch ----------------
++// Arm / crash flip: a centre message only. Glyphs for 0.4 s, the message decodes in and holds,
++// then it glyphs out. Nothing else on the screen: no sweep, no strays.
++#define FROG_ARMFX_IN_MS    400
++#define FROG_ARMFX_HOLD_MS  1150
++#define FROG_ARMFX_OUT_MS   1550
++#define FROG_ARMFX_TOTAL_US (1600 * 1000)
++static bool frogArmFxActive = false;
++static bool frogArmFxFlip = false;     // armed into crash flip: the flip message, red/amber
++static timeUs_t frogArmFxStartUs = 0;
++
++static void frogArmFxLine(int row, const char *text, uint32_t ms, bool hd, bool flip)
++{
++    char out[24];
++    const int n = MIN((int)strlen(text), (int)sizeof(out) - 1);
++    for (int i = 0; i < n; i++) {
++        const char c = text[i];
++        uint8_t g;
++        if (c == ' ') {
++            g = ' ';
++        } else if (ms < FROG_ARMFX_IN_MS + 45 * (uint32_t)i) {
++            g = flip ? frogFlipNoiseChar(hd) : frogNoiseChar(hd);          // glyphs before it lands
++        } else if (ms >= FROG_ARMFX_HOLD_MS + 45 * (uint32_t)i) {
++            g = (ms >= FROG_ARMFX_HOLD_MS + 45 * (uint32_t)i + 150) ? ' '
++                : (flip ? frogFlipNoiseChar(hd) : frogNoiseChar(hd));        // glyph out, left to right
++        } else if (hd && flip) {
++            g = frogColourChar((uint8_t)c, ((i + ms / 90) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING);
++        } else {
++            g = (uint8_t)c;
++        }
++        out[i] = (char)g;
++    }
++    out[n] = '\0';
++    displayWrite(osdDisplayPort, osdDisplayPort->cols / 2 - n / 2, row, DISPLAYPORT_SEVERITY_NORMAL, out);
++}
++
++static void frogDrawArmFx(timeUs_t now)
++{
++    const uint32_t ms = (now - frogArmFxStartUs) / 1000;
++    const bool hd = frogHdFont(osdDisplayPort);
++    const int mid = osdDisplayPort->rows / 2;
++    displayClearScreen(osdDisplayPort, DISPLAY_CLEAR_NONE);
++    frogArmFxLine(mid, "ARMED", ms, hd, false);
++    if (frogArmFxFlip) {
++        frogArmFxLine(mid + 1, CRASHFLIP_WARNING, ms, hd, true);
++    }
++}
++
+ static timeDelta_t osdShowArmed(void)
+ {
+     uint8_t midRow = osdDisplayPort->rows / 2;
+@@ -1216,9 +1708,12 @@ static timeDelta_t osdShowArmed(void)
+         osdDrawLogo(midCol - (OSD_LOGO_COLS) / 2, midRow - 5, osdConfig()->arming_logo);
+         ret = osdConfig()->logo_on_arming_duration * 100 * 1000; // convert to microseconds
+     } else {
+-        ret = (REFRESH_1S / 2);
++        ret = FROG_ARMFX_TOTAL_US;   // fr0gOS: centre message, glyphs in and out
++        frogArmFxFlip = isCrashFlipModeActive();
++        frogArmFxActive = true;
++        frogArmFxStartUs = micros();
+     }
+-    displayWrite(osdDisplayPort, midCol - (strlen("ARMED") / 2), midRow, DISPLAYPORT_SEVERITY_NORMAL, "ARMED");
++    displayWrite(osdDisplayPort, midCol - (strlen("ARMED") / 2), midRow, DISPLAYPORT_SEVERITY_NORMAL, "ARMED"); // fr0gOS
+ 
+     if (isCrashFlipModeActive()) {
+         displayWrite(osdDisplayPort, midCol - (strlen(CRASHFLIP_WARNING) / 2), midRow + 1, DISPLAYPORT_SEVERITY_NORMAL, CRASHFLIP_WARNING);
+@@ -1230,6 +1725,109 @@ static timeDelta_t osdShowArmed(void)
+ static bool osdStatsVisible = false;
+ static bool osdStatsEnabled = false;
+ 
++// ---------------- fr0gOS Matrix rain screensaver ----------------
++// After 5 s disarmed with the sticks still, green characters fall down the black bars.
++// Any stick movement (or arming) brings the OSD straight back.
++#define FROG_RAIN_IDLE_US (5 * 1000000)
++#define FROG_RAIN_MAX_COLS 12
++static bool frogRainActive = false;
++static timeUs_t frogIdleSinceUs = 0;
++static timeUs_t frogRainNextUs = 0;
++static int8_t frogRainHead[FROG_RAIN_MAX_COLS];
++static uint8_t frogRainLen[FROG_RAIN_MAX_COLS];
++
++static void frogRainReset(int i, int rows)
++{
++    frogRainHead[i] = -(int8_t)(frogRand() % (rows + 4));
++    frogRainLen[i] = 3 + frogRand() % 5;
++}
++
++static void frogRainDraw(void)
++{
++    static const char digits[] = "0123456789ABCDEFXZ$#";
++    const bool hd = frogHdFont(osdDisplayPort);
++    const int rows = osdDisplayPort->rows;
++    const int cols = osdDisplayPort->cols;
++    const int bar = hd ? 5 : 4;      // HD: 5 columns each side stays inside the black bars
++
++    displayClearScreen(osdDisplayPort, DISPLAY_CLEAR_NONE);
++    for (int i = 0; i < bar * 2; i++) {
++        frogRainHead[i]++;
++        if (frogRainHead[i] - frogRainLen[i] >= rows) {
++            frogRainReset(i, rows);
++        }
++    }
++    for (int y = 0; y < rows; y++) {
++        for (int side = 0; side < 2; side++) {
++            char seg[8];
++            bool any = false;
++            for (int k = 0; k < bar; k++) {
++                const int i = side * bar + k;
++                const int d = frogRainHead[i] - y;          // 0 = the falling head
++                char c = ' ';
++                if (d >= 0 && d < frogRainLen[i]) {
++                    if (d >= 2 && hd) {
++                        c = (char)(FROG_GLYPH_SCRAMBLE1 + frogRand() % 3);   // dark green trail
++                    } else {
++                        c = digits[frogRand() % (sizeof(digits) - 1)];       // bright head
++                    }
++                    any = true;
++                }
++                seg[k] = c;
++            }
++            seg[bar] = '\0';
++            if (any) {
++                displayWrite(osdDisplayPort, side ? cols - bar : 0, y, DISPLAYPORT_SEVERITY_NORMAL, seg);
++            }
++        }
++    }
++}
++
++static void frogRainTick(timeUs_t now)
++{
++
++    static float lastSticks[4];
++    bool moved = false;
++    for (int i = 0; i < 4; i++) {
++        if (fabsf(rcData[i] - lastSticks[i]) > 15.0f) {
++            moved = true;
++            lastSticks[i] = rcData[i];
++        }
++    }
++    bool busy = ARMING_FLAG(ARMED) || (resumeRefreshAt && !frogRainActive);
++#ifdef USE_CMS
++    busy = busy || cmsInMenu;
++#endif
++    if (busy || moved || frogIdleSinceUs == 0) {
++        frogIdleSinceUs = now ? now : 1;
++        frogIdleShimmer = false;
++        if (frogRainActive) {
++            frogRainActive = false;
++            if (!ARMING_FLAG(ARMED)) {
++                resumeRefreshAt = now;                    // end the hold: the OSD redraws next cycle
++            }
++        }
++        return;
++    }
++    if (!frogHdFont(osdDisplayPort)) {
++        // analog: no rain in empty space; existing text shimmers instead (see osdFrogWriteJustified)
++        frogIdleShimmer = cmpTimeUs(now, frogIdleSinceUs) >= FROG_RAIN_IDLE_US;
++        return;
++    }
++    if (!frogRainActive) {
++        if (cmpTimeUs(now, frogIdleSinceUs) >= FROG_RAIN_IDLE_US) {
++            frogRainActive = true;
++            for (int i = 0; i < FROG_RAIN_MAX_COLS; i++) {
++                frogRainReset(i, osdDisplayPort->rows);
++            }
++            frogRainNextUs = now;
++            resumeRefreshAt = now + REFRESH_1S;
++        }
++        return;
++    }
++    resumeRefreshAt = now + REFRESH_1S;                   // keep the screensaver hold alive
++}
++
+ STATIC_UNIT_TESTED bool osdProcessStats1(timeUs_t currentTimeUs)
+ {
+     static timeUs_t lastTimeUs = 0;
+@@ -1244,6 +1842,8 @@ STATIC_UNIT_TESTED bool osdProcessStats1(timeUs_t currentTimeUs)
+             osdStatsEnabled = false;
+             osdStatsVisible = false;
+             osdResetStats();
++            frogBootActive = false;
++            frogRainActive = false;
+             resumeRefreshAt = osdShowArmed() + currentTimeUs;
+         } else if (isSomeStatEnabled()
+                    && !suppressStatsDisplay
+@@ -1251,6 +1851,8 @@ STATIC_UNIT_TESTED bool osdProcessStats1(timeUs_t currentTimeUs)
+                    && (!(getArmingDisableFlags() & (ARMING_DISABLED_RUNAWAY_TAKEOFF | ARMING_DISABLED_CRASH_DETECTED))
+                        || !VISIBLE(osdElementConfig()->item_pos[OSD_WARNINGS]))) { // suppress stats if runaway takeoff triggered disarm and WARNINGS element is visible
+             osdStatsEnabled = true;
++            frogScoreStartUs = currentTimeUs;
++            frogScoreNextUs = currentTimeUs;
+             resumeRefreshAt = currentTimeUs + (60 * REFRESH_1S);
+             stats.end_voltage = getStatsVoltage();
+             osdRenderStatsReset();
+@@ -1311,6 +1913,8 @@ static void osdProcessStats2(timeUs_t currentTimeUs)
+ {
+     displayBeginTransaction(osdDisplayPort, DISPLAY_TRANSACTION_OPT_RESET_DRAWING);
+ 
++    frogRainTick(currentTimeUs);
++
+     if (resumeRefreshAt) {
+         if (cmp32(currentTimeUs, resumeRefreshAt) < 0) {
+             // in timeout period, check sticks for activity or CRASHFLIP switch to resume display.
+@@ -1318,8 +1922,37 @@ static void osdProcessStats2(timeUs_t currentTimeUs)
+                 (IS_HI(THROTTLE) || IS_HI(PITCH) || IS_RC_MODE_ACTIVE(BOXCRASHFLIP))) {
+                 resumeRefreshAt = currentTimeUs;
+             }
++            // fr0gOS: arming glitch runs while the armed screen is held
++            if (frogArmFxActive && ARMING_FLAG(ARMED)) {
++                frogDrawArmFx(currentTimeUs);
++            }
++            // fr0gOS: HISCORE.EXE animates at 10 fps while the post-flight screen is up
++            if (osdStatsEnabled && osdStatsVisible && !ARMING_FLAG(ARMED) && cmp32(currentTimeUs, frogScoreNextUs) >= 0) {
++                frogDrawHiScore(currentTimeUs);
++                frogScoreNextUs = currentTimeUs + 100000;
++            }
++            // fr0gOS: Matrix rain screensaver
++            if (frogRainActive && cmp32(currentTimeUs, frogRainNextUs) >= 0) {
++                frogRainDraw();
++                frogRainNextUs = currentTimeUs + 100000;
++            }
++            // fr0gOS: keep the boot checks live while the boot screen is up
++            // (the frog row at 25 fps, the checks at half that)
++            if (frogBootActive && !ARMING_FLAG(ARMED) && cmp32(currentTimeUs, frogBootNextDrawUs) >= 0) {
++                if ((frogBootTick++ & 1) == 0) {
++                    osdFrogDrawBootStatus();
++                }
++                if (frogBootRow >= 0) {
++                    frogBootDraw(osdDisplayPort, cmpTimeUs(currentTimeUs, frogBootStartUs) / 1000, frogBootX, frogBootLastX, frogBootRow, FROG_BOOT_DONE_MS);
++                }
++                frogBootNextDrawUs = currentTimeUs + 40000;
++            }
+             return;
+         } else {
++            frogBootActive = false;
++            frogArmFxActive = false;
++            frogRainActive = false;
++            frogAppearReset();          // the main screen comes back: everything decodes in
+             displayClearScreen(osdDisplayPort, DISPLAY_CLEAR_NONE);
+             resumeRefreshAt = 0;
+             osdStatsEnabled = false;
+diff --git a/src/main/osd/osd.h b/src/main/osd/osd.h
+index 0d8e24b..c067923 100644
+--- a/src/main/osd/osd.h
++++ b/src/main/osd/osd.h
+@@ -229,6 +229,15 @@ typedef enum {
+     OSD_POS_HOLD_READY,         // pre-engagement Position Hold readiness indicator
+ #endif
+ 
++    // fr0gOS elements
++    OSD_FROG_AIRMODE,           // AIR when on, blank when off
++    OSD_FROG_RFRATE,            // live ELRS packet rate, e.g. F1000
++    OSD_FROG_BATTPCT,           // battery remaining, e.g. 78%
++    OSD_FROG_TAG,               // pilot name + blinking cursor
++    OSD_FROG_CRAFT,             // animated frog + craft name
++    OSD_FROG_VTXPWR,            // VTX transmit power, e.g. 200MW
++    OSD_FROG_GLITCH,            // battery noise in the black bars (position: top-left corner)
++
+     OSD_ITEM_COUNT // MUST BE LAST
+ } osd_items_e;
+ 
+@@ -405,6 +414,7 @@ typedef struct osdConfig_s {
+     uint8_t osd_show_spec_prearm;
+ #endif // USE_SPEC_PREARM_SCREEN
+     displayPortSeverity_e arming_logo;        // font from which to display logo on arming
++    uint8_t frog_hd_font;                     // fr0gOS: HDZero hacker font installed (colour + glyphs)
+ } osdConfig_t;
+ 
+ PG_DECLARE(osdConfig_t, osdConfig);
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 580d4d3..d9cf845 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -185,6 +185,7 @@
+ #include "sensors/adcinternal.h"
+ #include "sensors/barometer.h"
+ #include "sensors/battery.h"
++#include "sensors/gyro.h"
+ #include "sensors/sensors.h"
+ #include "sensors/rangefinder.h"
+ 
+@@ -193,6 +194,11 @@
+ #include "olc.h"
+ #endif
+ 
++#define FROG_CHARMAP_TABLES
++#include "osd/frog_charmap.h"
++#define FROG_ANIM_TABLES
++#include "osd/frog_anim.h"
++
+ #define AH_SYMBOL_COUNT 9
+ #define AH_SIDEBAR_WIDTH_POS 7
+ #define AH_SIDEBAR_HEIGHT_POS 3
+@@ -288,6 +294,122 @@ static int osdDisplayWrite(osdElementParms_t *element, uint8_t x, uint8_t y, uin
+     return displayWrite(element->osdDisplayPort, x, y, attr, s);
+ }
+ 
++// ---------------- fr0gOS hacker font helpers ----------------
++bool frogHdFont(const displayPort_t *displayPort)
++{
++    return osdConfig()->frog_hd_font && displayPort && displayPort->deviceType == DISPLAYPORT_DEVICE_TYPE_MSP;
++}
++
++uint32_t frogRand(void)
++{
++    static uint32_t state = 0;
++    if (state == 0) {
++        state = micros() | 1;
++    }
++    state ^= state << 13;
++    state ^= state >> 17;
++    state ^= state << 5;
++    return state;
++}
++
++uint8_t frogColourChar(uint8_t c, uint8_t severity)
++{
++    if (c < 0x20 || c > 0x5F) {
++        return c;
++    }
++    uint8_t mapped = 0;
++    if (severity == DISPLAYPORT_SEVERITY_WARNING) {
++        mapped = frogAmberMap[c - 0x20];
++    } else if (severity == DISPLAYPORT_SEVERITY_CRITICAL) {
++        mapped = frogRedMap[c - 0x20];
++    }
++    return mapped ? mapped : c;
++}
++
++void frogColourise(char *s, uint8_t severity)
++{
++    for (; *s; s++) {
++        *s = (char)frogColourChar((uint8_t)*s, severity);
++    }
++}
++
++// one character of decode noise: shade blocks and green letters on HD, ASCII on analog
++#define FROG_HIGH_G 2.5f   // frog squashes above this many G
++static uint8_t frogColourNoiseChar(uint8_t severity);
++// fr0gOS battery stages (per cell, live sag voltage so a hard punch flicks it down a stage)
++typedef enum { FROG_BATT_FULL = 0, FROG_BATT_GOOD, FROG_BATT_MID, FROG_BATT_LOW, FROG_BATT_LAND, FROG_BATT_DEAD } frogBattStage_e;
++static frogBattStage_e frogBattStage(void);
++static uint8_t frogBattSeverity(frogBattStage_e st, int i, timeMs_t now);
++
++uint8_t frogNoiseChar(bool hd)
++{
++    static const char ascii[] = "#%&*+=?@$/\\<>XZ0123456789";
++    const uint32_t r = frogRand();
++    if (hd && (r & 1)) {
++        return FROG_GLYPH_SCRAMBLE1 + (r >> 1) % 3;
++    }
++    return ascii[(r >> 2) % (sizeof(ascii) - 1)];
++}
++
++// fr0gOS edge justification, anchored to the element's own column so it works
++// whatever canvas width the FC believes it has:
++//  - element in the left 8 columns: padding stripped, text starts at its column
++//  - element in the right 8 columns: padding stripped, text ENDS at its column
++#define FROG_EDGE_ZONE 8
++bool frogIdleShimmer = false;   // analog screensaver: set by osd.c after 5 s idle
++
++static void osdFrogWriteJustified(osdElementParms_t *element, uint8_t x, uint8_t y, uint8_t attr, const char *s)
++{
++    char coloured[OSD_ELEMENT_BUFFER_LENGTH];
++    char shimmer[OSD_ELEMENT_BUFFER_LENGTH];
++    if (frogIdleShimmer && !frogHdFont(element->osdDisplayPort) && (frogRand() % 10) == 0) {
++        // analog screensaver: a character of existing text flips for one frame, nothing new appears
++        strncpy(shimmer, s, sizeof(shimmer) - 1);
++        shimmer[sizeof(shimmer) - 1] = '\0';
++        const int len = strlen(shimmer);
++        if (len > 0) {
++            const int i = frogRand() % len;
++            if (shimmer[i] != ' ') {
++                shimmer[i] = (char)frogNoiseChar(false);
++            }
++        }
++        s = shimmer;
++    }
++    const uint8_t severity = attr & ~DISPLAYPORT_BLINK;
++    if (frogHdFont(element->osdDisplayPort) &&
++        (severity == DISPLAYPORT_SEVERITY_WARNING || severity == DISPLAYPORT_SEVERITY_CRITICAL)) {
++        strncpy(coloured, s, sizeof(coloured) - 1);
++        coloured[sizeof(coloured) - 1] = '\0';
++        frogColourise(coloured, severity);
++        s = coloured;
++        attr = (attr & DISPLAYPORT_BLINK) | DISPLAYPORT_SEVERITY_NORMAL;
++    }
++    const uint8_t cols = element->osdDisplayPort->cols;
++    const bool leftZone = x < FROG_EDGE_ZONE;
++    const bool rightZone = cols > FROG_EDGE_ZONE * 2 && x >= cols - FROG_EDGE_ZONE;
++    if (leftZone || rightZone) {
++        while (*s == ' ') {
++            s++;
++        }
++        if (rightZone) {
++            char tmp[OSD_ELEMENT_BUFFER_LENGTH];
++            int len = strlen(s);
++            while (len > 0 && s[len - 1] == ' ') {
++                len--;
++            }
++            if (len >= (int)sizeof(tmp)) {
++                len = sizeof(tmp) - 1;
++            }
++            memcpy(tmp, s, len);
++            tmp[len] = '\0';
++            const int nx = (int)x + 1 - len;
++            osdDisplayWrite(element, nx < 0 ? 0 : nx, y, attr, tmp);
++            return;
++        }
++    }
++    osdDisplayWrite(element, x, y, attr, s);
++}
++
+ static int osdDisplayWriteChar(osdElementParms_t *element, uint8_t x, uint8_t y, uint8_t attr, char c)
+ {
+     char buf[2];
+@@ -931,7 +1053,7 @@ static void osdElementCustomMsg(osdElementParms_t *element)
+ {
+     int msgIndex = element->item - OSD_CUSTOM_MSG0;
+     if (msgIndex < 0 || msgIndex >= OSD_CUSTOM_MSG_COUNT || pilotConfig()->message[msgIndex][0] == '\0') {
+-        tfp_sprintf(element->buff, "CUSTOM_MSG%d", msgIndex + 1);
++        element->buff[0] = '\0';   // fr0gOS: unset line shows nothing
+     } else {
+         strncpy(element->buff, pilotConfig()->message[msgIndex], MAX_NAME_LENGTH);
+         element->buff[MAX_NAME_LENGTH] = 0;   // terminate maximum-length string
+@@ -941,7 +1063,7 @@ static void osdElementCustomMsg(osdElementParms_t *element)
+ #ifdef USE_ADC_INTERNAL
+ static void osdElementCoreTemperature(osdElementParms_t *element)
+ {
+-    tfp_sprintf(element->buff, "C%c%3d%c", SYM_TEMPERATURE, osdConvertTemperatureToSelectedUnit(getCoreTemperatureCelsius()), osdGetTemperatureSymbolForSelectedUnit());
++    tfp_sprintf(element->buff, "C%d", osdConvertTemperatureToSelectedUnit(getCoreTemperatureCelsius())); // fr0gOS
+ }
+ #endif // USE_ADC_INTERNAL
+ 
+@@ -1061,7 +1183,7 @@ static void osdElementCrosshairs(osdElementParms_t *element)
+ static void osdElementCurrentDraw(osdElementParms_t *element)
+ {
+     const float amperage = fabsf(getAmperage() / 100.0f);
+-    osdPrintFloat(element->buff, SYM_NONE, amperage, "%3u", 2, false, SYM_AMP);
++    osdPrintFloat(element->buff, SYM_NONE, amperage, "%u", (amperage >= 10.0f) ? 1 : 2, false, 'A'); // fr0gOS
+ }
+ 
+ static void osdElementDebug(osdElementParms_t *element)
+@@ -1076,9 +1198,8 @@ static void osdElementDebug2(osdElementParms_t *element)
+ 
+ static void osdElementDisarmed(osdElementParms_t *element)
+ {
+-    if (!ARMING_FLAG(ARMED)) {
+-        tfp_sprintf(element->buff, "DISARMED");
+-    }
++    // fr0gOS: persistent, framed when armed
++    tfp_sprintf(element->buff, ARMING_FLAG(ARMED) ? "ARMED" : "SAFE");
+ }
+ 
+ static void osdBackgroundPilotName(osdElementParms_t *element)
+@@ -1135,33 +1256,68 @@ static void osdElementOsdProfileName(osdElementParms_t *element)
+ 
+ static void osdElementEscTemperature(osdElementParms_t *element)
+ {
+-#if defined(USE_ESC_SENSOR)
+-    if (featureIsEnabled(FEATURE_ESC_SENSOR)) {
+-        tfp_sprintf(element->buff, "E%c%3d%c", SYM_TEMPERATURE, osdConvertTemperatureToSelectedUnit(osdEscDataCombined->temperature), osdGetTemperatureSymbolForSelectedUnit());
+-    } else
+-#endif
++    // fr0gOS: hottest ESC as E48; E-- when the ESC doesn't report temperature
+ #if defined(USE_DSHOT_TELEMETRY)
+-    {
+-        uint32_t osdEleIx = tfp_sprintf(element->buff, "E%c", SYM_TEMPERATURE);
+-
++    if (!featureIsEnabled(FEATURE_ESC_SENSOR)) {
++        int hottest = -1;
+         for (uint8_t k = 0; k < getMotorCount(); k++) {
+             if ((dshotTelemetryState.motorState[k].telemetryTypes & (1 << DSHOT_TELEMETRY_TYPE_TEMPERATURE)) != 0) {
+-                osdEleIx += tfp_sprintf(element->buff + osdEleIx, "%3d%c",
+-                    osdConvertTemperatureToSelectedUnit(dshotTelemetryState.motorState[k].telemetryData[DSHOT_TELEMETRY_TYPE_TEMPERATURE]),
+-                    osdGetTemperatureSymbolForSelectedUnit());
+-            } else {
+-                osdEleIx += tfp_sprintf(element->buff + osdEleIx, "  0%c", osdGetTemperatureSymbolForSelectedUnit());
++                hottest = MAX(hottest, (int)dshotTelemetryState.motorState[k].telemetryData[DSHOT_TELEMETRY_TYPE_TEMPERATURE]);
+             }
+         }
++        if (hottest < 0) {
++            strcpy(element->buff, "E--");
++        } else {
++            tfp_sprintf(element->buff, "E%d", osdConvertTemperatureToSelectedUnit(hottest));
++        }
++        return;
++    }
++#endif
++#if defined(USE_ESC_SENSOR)
++    if (featureIsEnabled(FEATURE_ESC_SENSOR)) {
++        tfp_sprintf(element->buff, "E%d", osdConvertTemperatureToSelectedUnit(osdEscDataCombined->temperature));
++        return;
+     }
+-#else
+-    {}
+ #endif
++    strcpy(element->buff, "E--");
+ }
+ 
+-static void osdElementEscRpm(osdElementParms_t *element)
++static void osdElementEscRpmValue(osdElementParms_t *element)
+ {
+-    renderOsdEscRpmOrFreq(&getEscRpm,element);
++    // fr0gOS: one line, average of all motors, e.g. 38K / 9.5K
++    const uint8_t count = getMotorCount();
++    int32_t sum = 0;
++    for (uint8_t i = 0; i < count; i++) {
++        sum += getEscRpm(i);
++    }
++    const int32_t avg = count ? sum / count : 0;
++    // the whole number (38214), no K: every digit moves
++    tfp_sprintf(element->buff, "%d", (int)MIN(avg, 99999));
++    // heat, scaled to this quad's own best RPM: green almost always, amber only from 90%,
++    // red from 97%, red/amber flicker only when it beats your record
++    if (!frogHdFont(element->osdDisplayPort) || avg <= 0) {
++        return;
++    }
++    uint32_t best = 0;
++#ifdef USE_PERSISTENT_STATS
++    best = statsConfig()->frog_best_rpm;
++#endif
++    if (best < 10000) {
++        best = 45000;                       // no record yet: a typical 1S whoop top end
++    }
++    const uint32_t pct = (uint32_t)avg * 100 / best;
++    const timeMs_t now = millis();
++    for (int i = 0; element->buff[i]; i++) {
++        uint8_t sev = DISPLAYPORT_SEVERITY_NORMAL;
++        if (pct >= 100) {
++            sev = ((i + now / 80) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
++        } else if (pct >= 97) {
++            sev = DISPLAYPORT_SEVERITY_CRITICAL;
++        } else if (pct >= 90) {
++            sev = DISPLAYPORT_SEVERITY_WARNING;
++        }
++        element->buff[i] = (char)frogColourChar((uint8_t)element->buff[i], sev);
++    }
+ }
+ 
+ static void osdElementEscRpmFreq(osdElementParms_t *element)
+@@ -1171,6 +1327,59 @@ static void osdElementEscRpmFreq(osdElementParms_t *element)
+ 
+ #endif
+ 
++// noise characters that have amber and red copies in the hacker font
++static uint8_t frogColourNoiseChar(uint8_t severity)
++{
++    static const char set[] = "%!0123456789XZAEKQ";
++    return frogColourChar((uint8_t)set[frogRand() % (sizeof(set) - 1)], severity);
++}
++// Mode-change reaction: when a switch-driven readout changes (flight mode, air mode, packet rate,
++// VTX power) the new text decodes in from colourful noise, then green/amber/red chase along it
++// before it settles. Only for readouts that change when you flip a switch, never live numbers.
++#define FROG_MODEFX_MS 800
++typedef struct {
++    char last[OSD_ELEMENT_BUFFER_LENGTH];
++    timeMs_t changedAt;
++    bool seen;
++    bool feed;          // also post changes to the activity feed (packet rate, VTX power)
++} frogModeFx_t;
++void frogFeedPost(const char *text, uint8_t sev);
++
++static void frogModeFx(frogModeFx_t *st, osdElementParms_t *element)
++{
++    const timeMs_t now = millis();
++    if (strcmp(st->last, element->buff) != 0) {
++        if (st->seen && element->buff[0]) {            // not on first draw, and nothing to animate when it goes blank
++            st->changedAt = now ? now : 1;
++            if (st->feed) {
++                frogFeedPost(element->buff, DISPLAYPORT_SEVERITY_NORMAL);
++            }
++        }
++        strncpy(st->last, element->buff, sizeof(st->last) - 1);
++        st->last[sizeof(st->last) - 1] = '\0';
++        st->seen = true;
++    }
++    if (st->changedAt == 0) {
++        return;
++    }
++    const uint32_t t = now - st->changedAt;
++    if (t >= FROG_MODEFX_MS) {
++        st->changedAt = 0;
++        return;
++    }
++    const bool hd = frogHdFont(element->osdDisplayPort);
++    static const uint8_t chase[3] = { DISPLAYPORT_SEVERITY_NORMAL, DISPLAYPORT_SEVERITY_WARNING, DISPLAYPORT_SEVERITY_CRITICAL };
++    for (unsigned i = 0; element->buff[i]; i++) {
++        const uint8_t c = (uint8_t)element->buff[i];
++        if (t < 60 * i + 180) {
++            // still decoding: coloured noise on HD, plain noise on analog
++            element->buff[i] = hd ? (char)frogColourNoiseChar(chase[frogRand() % 3]) : (char)frogNoiseChar(false);
++        } else if (hd) {
++            element->buff[i] = (char)frogColourChar(c, chase[(i + t / 70) % 3]);
++        }
++    }
++}
++
+ static void osdElementFlymode(osdElementParms_t *element)
+ {
+     // Note that flight mode display has precedence in what to display, FS first, ACRO last
+@@ -1194,9 +1403,9 @@ static void osdElementFlymode(osdElementParms_t *element)
+     } else if (FLIGHT_MODE(ALT_HOLD_MODE)) {
+         strcpy(element->buff, "ALTH");
+     } else if (FLIGHT_MODE(ANGLE_MODE)) {
+-        strcpy(element->buff, "ANGL");
++        strcpy(element->buff, "ANGLE");
+     } else if (FLIGHT_MODE(HORIZON_MODE)) {
+-        strcpy(element->buff, "HOR ");
++        strcpy(element->buff, "HORZN");
+     } else if (IS_RC_MODE_ACTIVE(BOXACROTRAINER)) {
+         strcpy(element->buff, "ATRN");
+ #ifdef USE_CHIRP
+@@ -1204,13 +1413,997 @@ static void osdElementFlymode(osdElementParms_t *element)
+     } else if (FLIGHT_MODE(CHIRP_MODE) && !pidChirpIsFinished()) {
+         strcpy(element->buff, "CHIR");
+ #endif
+-    } else if (isAirmodeEnabled()) {
+-        strcpy(element->buff, "AIR ");
+     } else {
++        // fr0gOS: air mode has its own element, flight mode never shows AIR
+         strcpy(element->buff, "ACRO");
+     }
++    static frogModeFx_t fx;
++    frogModeFx(&fx, element);
++}
++
++// ---- fr0gOS elements ----
++static void osdElementFrogAirMode(osdElementParms_t *element)
++{
++    // AIR when on, blank when off
++    strcpy(element->buff, isAirmodeEnabled() ? "AIR" : "");
++    static frogModeFx_t fx;
++    frogModeFx(&fx, element);
++}
++
++#ifdef USE_RX_LINK_QUALITY_INFO
++// ELRS 4.x reports its packet rate enum in CRSF link stats rf_Mode
++// (ExpressLRS src/include/common.h, expresslrs_RFrates_e, 2.4 GHz block).
++// L = LoRa, D = FLRC DVDA, F = FLRC, K = FSK, + = full-res 8ch.
++const char *frogRfRateLabel(uint8_t rfMode)
++{
++    switch (rfMode) {
++    case 20: return "L25";
++    case 21: return "L50";
++    case 22: return "L100";
++    case 23: return "L100+";
++    case 24: return "L150";
++    case 25: return "L200";
++    case 26: return "L200+";
++    case 27: return "L250";
++    case 28: return "L333+";
++    case 29: return "L500";
++    case 30: return "D250";
++    case 31: return "D500";
++    case 32: return "F500";
++    case 33: return "F1000";
++    case 34: return "KD250";
++    case 35: return "KD500";
++    case 36: return "K1000";
++    default: return NULL;
++    }
++}
++#endif
++
++static void osdElementFrogRfRate(osdElementParms_t *element)
++{
++#ifdef USE_RX_LINK_QUALITY_INFO
++    if (!isRxReceivingSignal()) {
++        static const char spin[] = "|/-\\";
++        tfp_sprintf(element->buff, "SCAN%c", spin[(millis() / 120) % 4]);
++        element->attr = DISPLAYPORT_SEVERITY_WARNING;
++        return;
++    }
++    if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_CRSF) {
++        const uint8_t rfMode = rxGetRfMode();
++        const char *label = frogRfRateLabel(rfMode);
++        if (label) {
++            strcpy(element->buff, label);
++        } else {
++            tfp_sprintf(element->buff, "RF%u", rfMode);
++        }
++        static frogModeFx_t fx = { .feed = true };
++        frogModeFx(&fx, element);
++        return;
++    }
++#endif
++    strcpy(element->buff, "--");
++}
++static void osdElementFrogBattPct(osdElementParms_t *element)
++{
++    // charge-up: the first second the OSD is up, % counts up and the bar fills like a boot meter
++    static timeMs_t firstShownMs = 0;
++    const timeMs_t now = millis();
++    if (firstShownMs == 0) {
++        firstShownMs = now ? now : 1;
++    }
++    const uint32_t sinceMs = now - firstShownMs;
++    uint8_t pct = calculateBatteryPercentageRemaining();
++    if (sinceMs < 1000) {
++        pct = (uint8_t)((pct * sinceMs) / 1000);
++    }
++    tfp_sprintf(element->buff, "%d%%", pct);
++    const bool hd = frogHdFont(element->osdDisplayPort);
++    const frogBattStage_e st = (sinceMs < 1000) ? FROG_BATT_FULL : frogBattStage();
++    if (hd) {
++        // bar glyph follows the stage (during charge-up it follows the counting %)
++        static const uint8_t barForStage[] = { 4, 3, 2, 1, 0, 0 };
++        uint8_t level = barForStage[st];
++        if (sinceMs < 1000) {
++            level = pct >= 88 ? 4 : pct >= 63 ? 3 : pct >= 38 ? 2 : pct >= 13 ? 1 : 0;
++        }
++        bool barOn = true;
++        if (st == FROG_BATT_LAND) {
++            barOn = (now / 300) % 2;
++        } else if (st == FROG_BATT_DEAD) {
++            barOn = (now / 100) % 2;
++        }
++        const size_t len = strlen(element->buff);
++        element->buff[len] = barOn ? (char)(FROG_GLYPH_BATT0 + level) : ' ';
++        element->buff[len + 1] = '\0';
++        const uint32_t r = frogRand();
++        const int scramble = (st == FROG_BATT_DEAD && (r & 1)) ? (int)((r >> 1) % len) : -1;
++        for (size_t i = 0; i < len; i++) {
++            const uint8_t sev = frogBattSeverity(st, (int)i, now);
++            element->buff[i] = ((int)i == scramble) ? (char)frogColourNoiseChar(DISPLAYPORT_SEVERITY_CRITICAL)
++                                                    : (char)frogColourChar((uint8_t)element->buff[i], sev);
++        }
++    } else {
++        // analog (mono): LAND blinks the %, DEAD also scrambles a character. Only its own text.
++        const size_t len = strlen(element->buff);
++        if (st == FROG_BATT_LAND && (now / 300) % 2) {
++            element->buff[len - 1] = ' ';
++        } else if (st == FROG_BATT_DEAD) {
++            if ((now / 120) % 2) {
++                element->buff[len - 1] = ' ';
++            }
++            if (frogRand() & 1) {
++                element->buff[frogRand() % len] = (char)frogNoiseChar(false);
++            }
++        }
++    }
++    element->attr = DISPLAYPORT_SEVERITY_NORMAL;
++}
++
++uint8_t frogWarnSeverity = DISPLAYPORT_SEVERITY_NORMAL;   // set by the warnings element, read by the frog
++
++// "FROG0" + blinking cursor (left top)
++// ---------------- fr0gOS activity feed (top left, two lines) ----------------
++// What the pilot is doing, for the viewer: the newest event types in through glyphs on the top line and
++// stays until the next one; the previous one drops to the second line. Battery and temperature stay out
++// (they have their own readouts).
++//   switches  ANGLE HORZN ACRO  AIR NOAIR  ARMED SAFE  TURTL  BEEP  packet rate  VTX power
++//   flying    PUNCH (full throttle)  ROLL FLIP SPIN (a full 360 on that axis)
++//   hits      3.6G! (big G)  CRASH (huge spike)  RECRD (new best G)
++//   alerts    link / failsafe / arming warnings (RXLOS, FSAFE, LQ!...)
++#define FROG_FEED_LEN 5
++#define FROG_FEED_LINES 5
++#define FROG_FEED_HOLD_MS 4000     // each message stays 4 s, then disintegrates into glyphs, then nothing
++#define FROG_FEED_OUT_MS  300
++typedef struct {
++    char text[FROG_FEED_LEN + 1];
++    uint8_t sev;
++    timeMs_t at;
++} frogFeedEvent_t;
++static frogFeedEvent_t frogFeed[FROG_FEED_LINES];   // [0] newest (top row), older pushed down
++static timeMs_t frogFeedAt = 0;
++
++// ---------------- the frog ----------------
++// It lives on "ledges": the empty row right above a group of readouts, sitting over the inner edge of the
++// readout below it (the T of THR, the V of 3.71V). It moves by hopping one cell at a time (a hop is a pair of
++// glyphs straddling two cells). To change row or side it hops off the outer edge of the screen and comes back
++// in from the edge on the new row. What it does, most important first:
++//   upside down (turtle, or inverted 0.4 s+)  spins onto its back, holds 1 s+ looking around and kicking
++//   pulling high G                            squashes flat, springs back
++//   feed events                               ARMED SAFE mode-hop PUNCH FLIP/ROLL SPIN CRASH RECORD
++//   low battery                               goes to the voltage ledge and jumps with a red !
++//   disarmed (after a flight)                 eyes closed
++//   otherwise                                 rests (blink, look around, smile), peekaboo, wanders every 15-20 s
++#define FROG_MAX_LEDGES   8
++// each phase lasts two OSD frames at 20 fps, so every frame of the hop is actually seen
++#define FROG_HOP_CROUCH   100
++#define FROG_HOP_STEP     100
++#define FROG_HOP_LAND     100
++#define FROG_HOP_MS       (FROG_HOP_CROUCH + 3 * FROG_HOP_STEP + FROG_HOP_LAND)
++#define FROG_OFFSCREEN_MS 250
++#define FROG_INVERT_MS    400      // inverted this long before it flips (a quick flip trick doesn't count)
++#define FROG_FLIP_HOLD_MS 1000
++#define FROG_SQUASH_MIN_MS 300
++
++static uint8_t frogCols = 50, frogRowsN = 18;
++static uint8_t frogItemLen[OSD_ITEM_COUNT];          // last drawn width of each element: where the ledges are
++
++typedef struct {
++    int8_t x, y;
++    uint8_t item;          // the readout under it
++} frogLedge_t;
++static frogLedge_t frogLedges[FROG_MAX_LEDGES];
++static uint8_t frogLedgeCount = 0;
++static timeMs_t frogLedgesAt = 0;
++
++typedef enum { FROG_PH_NONE = 0, FROG_PH_IN, FROG_PH_HOLD, FROG_PH_OUT } frogPhase_e;
++
++static struct {
++    bool init;
++    int8_t x, y;               // cell it is in (x may be -1 or cols while it is off-screen)
++    bool hopping;
++    int8_t dir;
++    timeMs_t hopAt;
++    bool travelling;
++    int8_t tx, ty;             // destination ledge cell
++    int8_t ledge;              // ledge it sits on (-1 = none)
++    uint8_t anim;              // what it plays while sitting
++    timeMs_t animAt;
++    uint8_t animPrio;          // 0 = idle stuff, >0 = an event reaction
++    uint8_t pending, pendingPrio;
++    bool sleeping, playedSafe;
++    timeMs_t invertedSince;
++    frogPhase_e flip, squash;
++    timeMs_t phaseAt;
++    timeMs_t nextWander;
++} frog;
++
++static uint32_t frogAnimTotal(uint8_t anim)
++{
++    uint32_t t = 0;
++    for (int i = 0; i < frogAnims[anim].n; i++) {
++        t += frogAnims[anim].f[i].t10 * 10;
++    }
++    return t;
++}
++
++// glyph of an animation `ms` in; past the end it loops or holds the last frame
++uint8_t frogAnimGlyph(uint8_t anim, uint32_t ms, bool loop)
++{
++    const frogAnim_t *a = &frogAnims[anim];
++    const uint32_t total = frogAnimTotal(anim);
++    if (ms >= total) {
++        if (!loop) {
++            return a->f[a->n - 1].g;
++        }
++        ms %= total;
++    }
++    for (int i = 0; i < a->n; i++) {
++        const uint32_t t = a->f[i].t10 * 10;
++        if (ms < t) {
++            return a->f[i].g;
++        }
++        ms -= t;
++    }
++    return a->f[a->n - 1].g;
++}
++
++static bool frogAnimDone(uint8_t anim, timeMs_t at, timeMs_t now)
++{
++    return now - at >= frogAnimTotal(anim);
++}
++
++// one hop, `t` ms in, from cell x to x + dir: fills up to two cells, returns how many
++static int frogHopCells(uint32_t t, int x, int dir, uint32_t crouch, uint32_t step, uint32_t land, int *cx, uint8_t *cg)
++{
++    if (t < crouch) {
++        cx[0] = x; cg[0] = FROG_G_CROUCH;
++        return 1;
++    }
++    t -= crouch;
++    if (t < 3 * step) {
++        const int k = t / step;
++        const uint8_t (*pairs)[2] = dir > 0 ? frogHopR : frogHopL;
++        cx[0] = x;       cg[0] = pairs[k][0];
++        cx[1] = x + dir; cg[1] = pairs[k][1];
++        return 2;
++    }
++    (void)land;
++    cx[0] = x + dir; cg[0] = FROG_G_LAND;
++    return 1;
++}
++
++static bool frogRowBusy(bool right, int row)
++{
++    for (int i = 0; i < OSD_ITEM_COUNT; i++) {
++        const uint16_t pos = osdElementConfig()->item_pos[i];
++        if (!VISIBLE(pos) || i == OSD_FROG_GLITCH) {
++            continue;
++        }
++        const int x = OSD_X(pos), y = OSD_Y(pos);
++        const bool isRight = x >= frogCols - FROG_EDGE_ZONE;
++        if (x >= FROG_EDGE_ZONE && !isRight) {
++            continue;
++        }
++        if (isRight != right) {
++            continue;
++        }
++        if (i == OSD_FROG_TAG) {
++            if (row > y && row <= y + FROG_FEED_LINES) {   // the feed lines (the frog row itself is free)
++                return true;
++            }
++            continue;
++        }
++        if (row == y || ((i == OSD_THROTTLE_POS || i == OSD_ESC_RPM) && row == y + 1)) {
++            return true;                                  // labelled readouts use two rows
++        }
++    }
++    return false;
++}
++
++// ledges from the live layout: home (the feed's frog row), then the free row above each edge readout
++static void frogFindLedges(void)
++{
++    frogLedgeCount = 0;
++    const uint16_t tag = osdElementConfig()->item_pos[OSD_FROG_TAG];
++    if (VISIBLE(tag)) {
++        const int x = OSD_X(tag) + FROG_FEED_LEN - 1;
++        frogLedges[frogLedgeCount++] = (frogLedge_t){ .x = (int8_t)MIN(x, frogCols - 1), .y = (int8_t)OSD_Y(tag), .item = OSD_FROG_TAG };
++    }
++    for (int i = 0; i < OSD_ITEM_COUNT && frogLedgeCount < FROG_MAX_LEDGES; i++) {
++        const uint16_t pos = osdElementConfig()->item_pos[i];
++        if (!VISIBLE(pos) || i == OSD_FROG_TAG || i == OSD_FROG_GLITCH || !frogItemLen[i]) {
++            continue;
++        }
++        const int x = OSD_X(pos), y = OSD_Y(pos);
++        const bool right = x >= frogCols - FROG_EDGE_ZONE;
++        if ((x >= FROG_EDGE_ZONE && !right) || y < 1 || frogRowBusy(right, y - 1)) {
++            continue;
++        }
++        const int len = MIN(frogItemLen[i], FROG_EDGE_ZONE);
++        const int lx = right ? frogCols - len : len - 1;
++        bool dup = false;
++        for (int k = 0; k < frogLedgeCount; k++) {
++            dup = dup || (frogLedges[k].y == y - 1 && (frogLedges[k].x >= frogCols / 2) == right);
++        }
++        if (!dup) {
++            frogLedges[frogLedgeCount++] = (frogLedge_t){ .x = (int8_t)lx, .y = (int8_t)(y - 1), .item = (uint8_t)i };
++        }
++    }
++}
++
++static int frogVoltageLedge(void)
++{
++    for (int k = 0; k < frogLedgeCount; k++) {
++        if (frogLedges[k].item == OSD_MAIN_BATT_VOLTAGE || frogLedges[k].item == OSD_AVG_CELL_VOLTAGE) {
++            return k;
++        }
++    }
++    return -1;
++}
++
++static void frogGoTo(int k, timeMs_t now)
++{
++    if (k < 0 || k >= frogLedgeCount || (k == frog.ledge && !frog.travelling)) {
++        return;
++    }
++    frog.tx = frogLedges[k].x;
++    frog.ty = frogLedges[k].y;
++    frog.ledge = k;
++    frog.travelling = true;
++    frog.hopAt = now;                       // if it is off-screen, it waits FROG_OFFSCREEN_MS from here
++}
++
++static void frogPlay(uint8_t anim, uint8_t prio, timeMs_t now)
++{
++    frog.anim = anim;
++    frog.animAt = now;
++    frog.animPrio = prio;
++}
++
++// feed events the frog reacts to; anything else (warnings, rates, BEEP, 3.6G!) it ignores
++static void frogReact(const char *text)
++{
++    static const struct { const char *text; uint8_t anim, prio; } map[] = {
++        { "CRASH", FROG_ANIM_CRASH, 6 }, { "RECRD", FROG_ANIM_RECORD, 5 },
++        { "FLIP", FROG_ANIM_TRICK, 4 },  { "ROLL", FROG_ANIM_TRICK, 4 }, { "SPIN", FROG_ANIM_SPIN, 4 },
++        { "ARMED", FROG_ANIM_ARMED, 3 }, { "SAFE", FROG_ANIM_SAFE, 3 },
++        { "PUNCH", FROG_ANIM_PUNCH, 2 },
++        { "ACRO", FROG_ANIM_MODE, 1 }, { "ANGLE", FROG_ANIM_MODE, 1 }, { "HORZN", FROG_ANIM_MODE, 1 },
++        { "AIR", FROG_ANIM_MODE, 1 },  { "NOAIR", FROG_ANIM_MODE, 1 },
++    };
++    for (unsigned i = 0; i < ARRAYLEN(map); i++) {
++        if (strcmp(text, map[i].text) == 0) {
++            if (map[i].anim == FROG_ANIM_ARMED) {
++                frog.sleeping = false;
++            }
++            if (map[i].prio >= frog.pendingPrio) {
++                frog.pending = map[i].anim;
++                frog.pendingPrio = map[i].prio;
++            }
++            return;
++        }
++    }
++}
++
++static bool frogUpsideDown(timeMs_t now)
++{
++    bool inverted = false;
++#if defined(USE_ACC)
++    inverted = sensors(SENSOR_ACC) && getCosTiltAngle() < 0.0f;          // tilted past 90 degrees
++#endif
++    if (!inverted) {
++        frog.invertedSince = 0;
++    } else if (!frog.invertedSince) {
++        frog.invertedSince = now ? now : 1;
++    }
++    return isCrashFlipModeActive() || (frog.invertedSince && now - frog.invertedSince >= FROG_INVERT_MS);
++}
++
++static void frogStartHop(int dir, timeMs_t now)
++{
++    frog.dir = dir;
++    frog.hopping = true;
++    frog.hopAt = now;
++}
++
++// one OSD frame of the frog: up to two cells (x, glyph); returns how many are on screen
++static int frogTick(timeMs_t now, int *cx, uint8_t *cg)
++{
++    if (!frogLedgesAt || now - frogLedgesAt >= 1000) {
++        frogLedgesAt = now ? now : 1;
++        frogFindLedges();
++    }
++    if (!frog.init) {
++        frog.init = true;
++        frog.x = frogLedgeCount ? frogLedges[0].x : FROG_FEED_LEN - 1;
++        frog.y = frogLedgeCount ? frogLedges[0].y : 0;
++        frog.ledge = frogLedgeCount ? 0 : -1;
++        frog.pending = 0xFF;
++        frogPlay(FROG_ANIM_REST, 0, now);
++        frog.nextWander = now + 15000 + frogRand() % 5000;
++    }
++    const bool armed = ARMING_FLAG(ARMED);
++    const bool upside = frogUpsideDown(now);
++    const bool squashing = armed && osdGForce >= FROG_HIGH_G;
++    const bool lowBatt = frogBattStage() >= FROG_BATT_LOW;
++    const bool offscreen = frog.x < 0 || frog.x >= frogCols;
++    const uint32_t cr = FROG_HOP_CROUCH, st = FROG_HOP_STEP, la = FROG_HOP_LAND;
++
++    // 1. in the middle of a hop: finish it
++    if (frog.hopping) {
++        const uint32_t t = now - frog.hopAt;
++        if (t < FROG_HOP_MS) {
++            return frogHopCells(t, frog.x, frog.dir, cr, st, la, cx, cg);
++        }
++        frog.hopping = false;
++        frog.x += frog.dir;
++        frog.hopAt = now;
++        if (frog.x < 0 || frog.x >= frogCols) {
++            return 0;
++        }
++    }
++
++    // 2. off the edge of the screen: come back in on the destination row
++    if (offscreen) {
++        if (!frog.travelling) {
++            frogGoTo(0, now);                       // lost: go home
++            frog.hopAt = now - FROG_OFFSCREEN_MS;
++        }
++        if (now - frog.hopAt >= FROG_OFFSCREEN_MS) {
++            const bool right = frog.tx >= frogCols / 2;
++            frog.x = right ? frogCols : -1;
++            frog.y = frog.ty;
++            frogStartHop(right ? -1 : 1, now);       // its first frame is still off-screen
++        }
++        return 0;
++    }
++
++    // 3. sitting: the most important thing wins
++    if (upside || frog.flip != FROG_PH_NONE) {
++        if (frog.flip == FROG_PH_NONE || (frog.flip == FROG_PH_OUT && upside)) {
++            frog.flip = frog.flip == FROG_PH_OUT ? FROG_PH_HOLD : FROG_PH_IN;
++            frog.phaseAt = now;
++        }
++        if (frog.flip == FROG_PH_IN && frogAnimDone(FROG_ANIM_FLIP_IN, frog.phaseAt, now)) {
++            frog.flip = FROG_PH_HOLD;
++            frog.phaseAt = now;
++        }
++        if (frog.flip == FROG_PH_HOLD && !upside && now - frog.phaseAt >= FROG_FLIP_HOLD_MS) {
++            frog.flip = FROG_PH_OUT;
++            frog.phaseAt = now;
++        }
++        if (frog.flip == FROG_PH_OUT && frogAnimDone(FROG_ANIM_FLIP_OUT, frog.phaseAt, now)) {
++            frog.flip = FROG_PH_NONE;
++            frogPlay(FROG_ANIM_REST, 0, now);
++        } else {
++            const uint8_t a = frog.flip == FROG_PH_IN ? FROG_ANIM_FLIP_IN : frog.flip == FROG_PH_HOLD ? FROG_ANIM_FLIP_HOLD : FROG_ANIM_FLIP_OUT;
++            cx[0] = frog.x;
++            cg[0] = frogAnimGlyph(a, now - frog.phaseAt, a == FROG_ANIM_FLIP_HOLD);
++            return 1;
++        }
++    }
++    if (squashing || frog.squash != FROG_PH_NONE) {
++        if (frog.squash == FROG_PH_NONE || (frog.squash == FROG_PH_OUT && squashing)) {
++            frog.squash = FROG_PH_IN;
++            frog.phaseAt = now;
++        }
++        if (frog.squash == FROG_PH_IN && frogAnimDone(FROG_ANIM_SQUASH_IN, frog.phaseAt, now)) {
++            frog.squash = FROG_PH_HOLD;
++            frog.phaseAt = now;
++        }
++        if (frog.squash == FROG_PH_HOLD && !squashing && now - frog.phaseAt >= FROG_SQUASH_MIN_MS) {
++            frog.squash = FROG_PH_OUT;
++            frog.phaseAt = now;
++        }
++        if (frog.squash == FROG_PH_OUT && frogAnimDone(FROG_ANIM_SQUASH_OUT, frog.phaseAt, now)) {
++            frog.squash = FROG_PH_NONE;
++        } else {
++            cx[0] = frog.x;
++            cg[0] = frog.squash == FROG_PH_HOLD ? FROG_G_SQUASHED
++                  : frogAnimGlyph(frog.squash == FROG_PH_IN ? FROG_ANIM_SQUASH_IN : FROG_ANIM_SQUASH_OUT, now - frog.phaseAt, false);
++            return 1;
++        }
++    }
++    // event reactions: a stronger one cuts in, otherwise it waits its turn
++    if (frog.pending != 0xFF && (frog.animPrio == 0 || frog.pendingPrio > frog.animPrio || frogAnimDone(frog.anim, frog.animAt, now))) {
++        frogPlay(frog.pending, frog.pendingPrio, now);
++        frog.playedSafe = frog.pending == FROG_ANIM_SAFE;
++        frog.pending = 0xFF;
++        frog.pendingPrio = 0;
++    }
++    if (frog.animPrio) {
++        if (!frogAnimDone(frog.anim, frog.animAt, now)) {
++            cx[0] = frog.x;
++            cg[0] = frogAnimGlyph(frog.anim, now - frog.animAt, false);
++            return 1;
++        }
++        if (frog.playedSafe) {
++            frog.sleeping = !armed;                 // eyes stay closed until the next arm
++            frog.playedSafe = false;
++        }
++        frogPlay(FROG_ANIM_REST, 0, now);
++    }
++    // on its way somewhere: next hop
++    if (frog.travelling && frog.x == frog.tx && frog.y == frog.ty) {
++        frog.travelling = false;
++        frog.nextWander = now + 15000 + frogRand() % 5000;
++    }
++    if (frog.travelling) {
++        const bool sameSide = (frog.x >= frogCols / 2) == (frog.tx >= frogCols / 2);
++        int dir;
++        if (frog.y == frog.ty && sameSide) {
++            dir = frog.tx > frog.x ? 1 : -1;
++        } else {
++            dir = frog.x >= frogCols / 2 ? 1 : -1;  // to the outer edge, and off it
++        }
++        frogStartHop(dir, now);
++        return frogHopCells(0, frog.x, dir, cr, st, la, cx, cg);
++    }
++    // low battery: to the voltage readout, then jump up and down there
++    if (lowBatt) {
++        const int k = frogVoltageLedge();
++        if (k >= 0 && (frog.x != frogLedges[k].x || frog.y != frogLedges[k].y)) {
++            frog.ledge = -1;
++            frogGoTo(k, now);
++            return frogTick(now, cx, cg);
++        }
++        if (frog.anim != FROG_ANIM_LOWBATT) {
++            frogPlay(FROG_ANIM_LOWBATT, 0, now);
++        }
++        cx[0] = frog.x;
++        cg[0] = frogAnimGlyph(FROG_ANIM_LOWBATT, now - frog.animAt, true);
++        return 1;
++    }
++    if (frog.anim == FROG_ANIM_LOWBATT) {
++        frogPlay(FROG_ANIM_REST, 0, now);
++    }
++    if (frog.sleeping) {
++        cx[0] = frog.x;
++        cg[0] = FROG_G_SLEEPY;
++        return 1;
++    }
++    // wander to another ledge every 15-20 s
++    if (frogLedgeCount > 1 && cmp32(now, frog.nextWander) >= 0) {
++        int k = frogRand() % (frogLedgeCount - 1);
++        if (k >= frog.ledge && frog.ledge >= 0) {
++            k++;
++        }
++        frogGoTo(k, now);
++        frog.nextWander = now + 15000 + frogRand() % 5000;
++        return frogTick(now, cx, cg);
++    }
++    // rest; now and then a peekaboo instead
++    if (frogAnimDone(frog.anim, frog.animAt, now)) {
++        frogPlay((frogRand() % 3) == 0 ? FROG_ANIM_PEEK : FROG_ANIM_REST, 0, now);
++    }
++    cx[0] = frog.x;
++    cg[0] = frogAnimGlyph(frog.anim, now - frog.animAt, false);
++    return 1;
++}
++
++// the boot screen frog: CRT power-on at the start of the header, hops along it to its last letter, fills any
++// spare time with random little animations (a different mix every boot), then celebrates when the checks are done
++#define FROG_BOOT_HOP_MS 200
++void frogBootDraw(displayPort_t *dp, uint32_t ms, int x0, int lastX, int row, uint32_t doneMs)
++{
++    static uint8_t fill[12];
++    static const uint8_t fillers[] = { FROG_ANIM_FIL_BLINK, FROG_ANIM_FIL_LOOKL, FROG_ANIM_FIL_LOOKR,
++                                       FROG_ANIM_FIL_LOOKUP, FROG_ANIM_FIL_SMILE, FROG_ANIM_FIL_DANCE };
++    if (ms < 50 || !fill[0]) {
++        for (unsigned i = 0; i < ARRAYLEN(fill); i++) {
++            fill[i] = fillers[frogRand() % ARRAYLEN(fillers)];
++        }
++    }
++    int cx[2] = { x0, x0 };
++    uint8_t cg[2] = { FROG_G_IDLE, 0 };
++    int n = 1;
++    const uint32_t crt = frogAnimTotal(FROG_ANIM_CRT);
++    const uint32_t hopsEnd = crt + (uint32_t)MAX(0, lastX - x0) * FROG_BOOT_HOP_MS;
++    if (ms < crt) {
++        cg[0] = frogAnimGlyph(FROG_ANIM_CRT, ms, false);
++    } else if (ms < hopsEnd) {
++        const uint32_t t = ms - crt;
++        n = frogHopCells(t % FROG_BOOT_HOP_MS, x0 + t / FROG_BOOT_HOP_MS, 1, 40, 40, 40, cx, cg);
++    } else {
++        cx[0] = lastX;
++        uint32_t t = hopsEnd;
++        unsigned i = 0;
++        bool done = false;
++        while (t < doneMs) {                        // early: fillers until the checks are done
++            const uint32_t d = frogAnimTotal(fill[i % ARRAYLEN(fill)]);
++            if (ms < t + d) {
++                cg[0] = frogAnimGlyph(fill[i % ARRAYLEN(fill)], ms - t, false);
++                done = true;
++                break;
++            }
++            t += d;
++            i++;
++        }
++        if (!done) {
++            const uint32_t c = ms - t;
++            cg[0] = c < frogAnimTotal(FROG_ANIM_CELEBRATE) ? frogAnimGlyph(FROG_ANIM_CELEBRATE, c, false)
++                  : frogAnimGlyph(FROG_ANIM_REST, c - frogAnimTotal(FROG_ANIM_CELEBRATE), true);
++        }
++    }
++    // the whole frog row is rewritten each time, so the cell it left is cleared
++    char b[40];
++    const int from = MAX(0, x0 - 1);
++    const int to = MIN((int)dp->cols - 1, lastX + 2);
++    int len = 0;
++    for (int x = from; x <= to && len < (int)sizeof(b) - 1; x++) {
++        char c = ' ';
++        for (int k = 0; k < n; k++) {
++            if (cx[k] == x) {
++                c = (char)cg[k];
++            }
++        }
++        b[len++] = c;
++    }
++    b[len] = '\0';
++    displayWrite(dp, from, row, DISPLAYPORT_SEVERITY_NORMAL, b);
++}
++
++// fr0gOS boot length: CRT + hops + celebration, so osd.c can hold the boot screen long enough
++uint32_t frogBootLengthMs(int hops, uint32_t doneMs)
++{
++    const uint32_t hopsEnd = frogAnimTotal(FROG_ANIM_CRT) + (uint32_t)MAX(0, hops) * FROG_BOOT_HOP_MS;
++    // worst case a filler starts just before doneMs
++    return MAX(hopsEnd, doneMs + 900) + frogAnimTotal(FROG_ANIM_CELEBRATE) + 300;
++}
++
++void frogFeedPost(const char *text, uint8_t sev)
++{
++    if (!text || !text[0]) {
++        return;
++    }
++    const timeMs_t now = millis();
++    if (strncmp(frogFeed[0].text, text, FROG_FEED_LEN) != 0) {
++        // new message pops in at the top and pushes the older ones down (the oldest falls off)
++        for (int i = FROG_FEED_LINES - 1; i > 0; i--) {
++            frogFeed[i] = frogFeed[i - 1];
++        }
++    }
++    strncpy(frogFeed[0].text, text, FROG_FEED_LEN);
++    frogFeed[0].text[FROG_FEED_LEN] = '\0';
++    frogFeed[0].sev = sev;
++    frogFeedAt = now ? now : 1;                 // same event again just replays the type-in
++    frogFeed[0].at = frogFeedAt;
++    frogReact(frogFeed[0].text);
++}
++
++static bool frogFeedIgnored(const char *w)
++{
++    // battery and temperature warnings have their own readouts
++    static const char *const skip[] = { "LOWV", "LAND!", "OVCAP", "BCONT", "!FULL" };
++    for (unsigned i = 0; i < ARRAYLEN(skip); i++) {
++        if (strcmp(w, skip[i]) == 0) {
++            return true;
++        }
++    }
++    return strncmp(w, "HOT", 3) == 0;
++}
++
++static void frogFeedDetect(timeMs_t now)
++{
++    static bool init = false;
++    static bool armed, air, flip, beep;
++    static uint8_t mode;                       // 0 acro, 1 angle, 2 horizon
++    static timeMs_t punchCool, gCool, lastMs;
++    static float spinDeg[3];
++    static bool punchHeld, bestPosted;
++
++    const bool nowArmed = ARMING_FLAG(ARMED);
++    const bool nowAir = isAirmodeEnabled();
++    const bool nowFlip = isCrashFlipModeActive();
++    const uint8_t nowMode = FLIGHT_MODE(ANGLE_MODE) ? 1 : FLIGHT_MODE(HORIZON_MODE) ? 2 : 0;
++    const bool nowBeep = IS_RC_MODE_ACTIVE(BOXBEEPERON);
++    if (!init) {
++        // first look: learn the current state silently
++        armed = nowArmed; air = nowAir; flip = nowFlip; mode = nowMode; beep = nowBeep;
++        init = true;
++        return;
++    }
++
++    if (nowArmed != armed) {
++        armed = nowArmed;
++        frogFeedPost(nowArmed ? "ARMED" : "SAFE", DISPLAYPORT_SEVERITY_NORMAL);
++        bestPosted = false;
++    }
++    if (nowFlip != flip) {
++        flip = nowFlip;
++        if (nowFlip) {
++            frogFeedPost("TURTL", DISPLAYPORT_SEVERITY_CRITICAL);
++        }
++    }
++    if (nowMode != mode) {
++        mode = nowMode;
++        static const char *const names[] = { "ACRO", "ANGLE", "HORZN" };
++        frogFeedPost(names[nowMode], DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    if (nowAir != air) {
++        air = nowAir;
++        frogFeedPost(nowAir ? "AIR" : "NOAIR", DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    if (nowBeep != beep) {
++        beep = nowBeep;
++        if (nowBeep) {
++            frogFeedPost("BEEP", DISPLAYPORT_SEVERITY_WARNING);
++        }
++    }
++    if (!nowArmed) {
++        return;
++    }
++
++    // throttle: PUNCH on the way up past 90% (re-arms once you drop under 70%)
++    const int thr = calculateThrottlePercent();
++    if (thr >= 90) {
++        if (!punchHeld && cmp32(now, punchCool) >= 0) {
++            frogFeedPost("PUNCH", DISPLAYPORT_SEVERITY_WARNING);
++            punchCool = now + 1500;
++        }
++        punchHeld = true;
++    } else if (thr < 70) {
++        punchHeld = false;
++    }
++#if defined(USE_ACC)
++    // G: big hit, crash, new record
++    const int g10 = lrintf(osdGForce * 10.0f);
++    if (g10 >= 45 && cmp32(now, gCool) >= 0) {
++        frogFeedPost("CRASH", DISPLAYPORT_SEVERITY_CRITICAL);
++        gCool = now + 2000;
++    } else if (g10 >= 30 && cmp32(now, gCool) >= 0) {
++        char t[8];
++        tfp_sprintf(t, "%d.%dG!", g10 / 10, g10 % 10);
++        frogFeedPost(t, DISPLAYPORT_SEVERITY_WARNING);
++        gCool = now + 1500;
++    }
++#ifdef USE_PERSISTENT_STATS
++    if (!bestPosted && statsConfig()->frog_best_g10 > 0 && g10 > statsConfig()->frog_best_g10) {
++        frogFeedPost("RECRD", DISPLAYPORT_SEVERITY_CRITICAL);
++        bestPosted = true;
++    }
++#endif
++#endif
++
++    // tricks: a full 360 on an axis. Integrate the gyro while it keeps turning one way (150 deg/s+);
++    // reset when it slows or reverses. 330 deg counts (the OSD samples at ~20 Hz).
++    static const char *const tricks[3] = { "ROLL", "FLIP", "SPIN" };
++    const float dt = lastMs ? (now - lastMs) / 1000.0f : 0.0f;
++    lastMs = now;
++    for (int axis = 0; axis < 3; axis++) {
++        const float rate = gyro.gyroADCf[axis];
++        if (fabsf(rate) < 150.0f || (spinDeg[axis] != 0.0f && (rate > 0) != (spinDeg[axis] > 0)) || dt > 0.2f) {
++            spinDeg[axis] = 0.0f;
++            continue;
++        }
++        spinDeg[axis] += rate * dt;
++        if (fabsf(spinDeg[axis]) >= 330.0f) {
++            frogFeedPost(tricks[axis], DISPLAYPORT_SEVERITY_NORMAL);
++            spinDeg[axis] = 0.0f;
++        }
++    }
++}
++
++// frog on row 0 (HD), then five event lines (newest on top), drawn as repeated calls of the same element
++static void frogFeedLine(char *b, const frogFeedEvent_t *ev, bool newest, bool hd, timeMs_t now)
++{
++    const char *txt = ev->text;
++    const int n = strlen(txt);
++    const uint32_t age = ev->at ? now - ev->at : 1000000;
++    int i = 0;
++    if (!n || age >= FROG_FEED_HOLD_MS + FROG_FEED_OUT_MS) {
++        b[0] = '\0';
++        return;
++    }
++    if (age >= FROG_FEED_HOLD_MS) {
++        // glyph out: characters turn to glyphs and drop out left to right
++        const uint32_t t = age - FROG_FEED_HOLD_MS;
++        for (; i < n; i++) {
++            b[i] = (txt[i] == ' ' || t >= 60 + 45 * (uint32_t)i) ? ' ' : (char)frogNoiseChar(hd);
++        }
++        b[i] = '\0';
++        return;
++    }
++    if (newest) {
++        // type-in: each character flashes as a glyph for 60 ms before it lands, cursor rides the front
++        for (; i < n; i++) {
++            const uint32_t at = 45 * i;
++            if (age < at) {
++                break;
++            }
++            uint8_t c = (uint8_t)txt[i];
++            if (age < at + 60 && c != ' ') {
++                c = frogNoiseChar(hd);
++            } else if (hd) {
++                c = frogColourChar(c, age < 2500 ? ev->sev : DISPLAYPORT_SEVERITY_NORMAL);
++            }
++            b[i] = (char)c;
++        }
++        if (i < n) {
++            b[i++] = hd ? (char)FROG_GLYPH_CURSOR : '_';
++        }
++    } else {
++        // older messages, pushed down one row each time a new one arrives
++        for (; i < n; i++) {
++            b[i] = txt[i];
++        }
++    }
++    b[i] = '\0';
++}
++
++static void osdElementFrogTag(osdElementParms_t *element)
++{
++    static uint8_t call = 0;
++    const bool hd = frogHdFont(element->osdDisplayPort);
++    const timeMs_t now = millis();
++    const uint8_t frogRows = hd ? 1 : 0;           // analog has no frog glyph: events start on row 0
++
++    if (call == 0) {
++        frogCols = element->osdDisplayPort->cols;
++        frogRowsN = element->osdDisplayPort->rows;
++        frogFeedDetect(now);
++    }
++    if (call < frogRows) {
++        // the frog: one or two cells (two while it is mid-hop)
++        int cx[2];
++        uint8_t cg[2];
++        const int n = frogTick(now, cx, cg);
++        int left = 99, right = -1;
++        for (int k = 0; k < n; k++) {
++            if (cx[k] >= 0 && cx[k] < frogCols) {
++                left = MIN(left, cx[k]);
++                right = MAX(right, cx[k]);
++            }
++        }
++        int len = 0;
++        for (int x = left; x <= right; x++) {
++            char c = ' ';
++            for (int k = 0; k < n; k++) {
++                if (cx[k] == x) {
++                    c = (char)cg[k];
++                }
++            }
++            element->buff[len++] = c;
++        }
++        element->buff[len] = '\0';
++        // the edge zones are justified to the screen edge: anchor on the outer end of the text
++        const int anchor = (len && right >= frogCols - FROG_EDGE_ZONE) ? right : left;
++        if (!len || anchor < element->elemPosX || frog.y < element->elemPosY) {
++            element->buff[0] = '\0';
++            element->elemOffsetX = 0;
++            element->elemOffsetY = 0;
++        } else {
++            element->elemOffsetX = anchor - element->elemPosX;
++            element->elemOffsetY = frog.y - element->elemPosY;
++        }
++    } else {
++        frogFeedLine(element->buff, &frogFeed[call - frogRows], call == frogRows, hd, now);
++        element->elemOffsetX = 0;
++        element->elemOffsetY = call;
++    }
++    if (++call < frogRows + FROG_FEED_LINES) {
++        element->rendered = false;
++    } else {
++        call = 0;
++    }
++}
++
++// animated frog + craft name (right top): blinks now and then, croaks while a warning is up
++static void osdElementFrogCraft(osdElementParms_t *element)
++{
++    char name[MAX_NAME_LENGTH + 1];
++    if (strlen(pilotConfig()->craftName) == 0) {
++        strcpy(name, "FR0GOS");
++    } else {
++        toUpperCase(name, pilotConfig()->craftName, MAX_NAME_LENGTH);
++    }
++    strcpy(element->buff, name);       // e.g. MK4-2 (the frog lives top left now, above the feed)
++}
++
++// VTX transmit power in mW, e.g. 200MW (labels that aren't numbers, like PIT, shown as is)
++static void osdElementFrogVtxPower(osdElementParms_t *element)
++{
++#ifdef USE_VTX_COMMON
++    const vtxDevice_t *vtx = vtxCommonDevice();
++    if (vtx && vtxCommonDeviceIsReady(vtx)) {
++        uint8_t level = 0;
++        vtxCommonGetPowerIndex(vtx, &level);
++        const char *label = vtxCommonLookupPowerName(vtx, level);
++        if (label && label[0] >= '0' && label[0] <= '9') {
++            tfp_sprintf(element->buff, "%sMW", label);
++        } else {
++            tfp_sprintf(element->buff, "%s", label ? label : "--");
++        }
++        static frogModeFx_t fx = { .feed = true };
++        frogModeFx(&fx, element);
++        return;
++    }
++#endif
++    strcpy(element->buff, "--");
++}
++// Red noise for the power side: a red block on HD, plain noise on analog
++uint8_t frogFlipNoiseChar(bool hd)
++{
++    // crash-flip noise: red blocks and red/amber characters on HD, plain noise on analog
++    if (!hd) {
++        return frogNoiseChar(false);
++    }
++    const uint32_t r = frogRand();
++    if (r & 1) {
++        return FROG_GLYPH_RSCRAMBLE1 + (r >> 1) % 3;
++    }
++    return frogColourNoiseChar((r & 2) ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_CRITICAL);
++}
++// ---- battery stages ----
++//   FULL  >= 4.00 V   green, bar 4
++//   GOOD  >= 3.80 V   green, bar 3
++//   MID   >= 3.65 V   green, bar 2
++//   LOW   >= 3.50 V   amber, bar 1, slow breathe            (animates)
++//   LAND  >= 3.35 V   red/amber pulse, bar 0 blinking        (animates)
++//   DEAD  <  3.35 V   red flicker, % scrambles, bar strobes  (animates hard)
++// Volts per cell from Betaflight's fast sag filter (~5 Hz): punches show up live, no hold.
++// 0.02 V hysteresis on the way back up so it doesn't chatter on a boundary.
++static const uint16_t frogBattThreshCv[FROG_BATT_DEAD] = { 400, 380, 365, 350, 335 };
++
++static frogBattStage_e frogBattStage(void)
++{
++    static frogBattStage_e stage = FROG_BATT_FULL;
++    const batteryState_e state = getBatteryState();
++    if (state == BATTERY_NOT_PRESENT || state == BATTERY_INIT) {
++        stage = FROG_BATT_FULL;
++        return stage;
++    }
++#if defined(USE_BATTERY_VOLTAGE_SAG_COMPENSATION)
++    uint16_t cell = getBatterySagCellVoltage();
++    if (cell == 0) {
++        cell = getBatteryAverageCellVoltage();
++    }
++#else
++    const uint16_t cell = getBatteryAverageCellVoltage();
++#endif
++    if (cell == 0) {
++        return stage;
++    }
++    frogBattStage_e target = FROG_BATT_DEAD;
++    for (int i = 0; i < FROG_BATT_DEAD; i++) {
++        if (cell >= frogBattThreshCv[i]) {
++            target = (frogBattStage_e)i;
++            break;
++        }
++    }
++    if (target < stage) {
++        // recovering: only step up once clearly above the threshold
++        while (target < stage && cell >= frogBattThreshCv[stage - 1] + 2) {
++            stage = (frogBattStage_e)(stage - 1);
++        }
++    } else {
++        stage = target;                  // dropping: immediate
++    }
++    return stage;
++}
++
++// colour for a battery readout character at a given stage and time
++static uint8_t frogBattSeverity(frogBattStage_e st, int i, timeMs_t now)
++{
++    switch (st) {
++    case FROG_BATT_LOW:
++        return ((now / 700) % 2) ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_NORMAL;      // slow breathe
++    case FROG_BATT_LAND:
++        return ((i + now / 220) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING; // pulse chase
++    case FROG_BATT_DEAD:
++        return ((now / 90) % 3) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;      // flicker
++    default:
++        return DISPLAYPORT_SEVERITY_NORMAL;
++    }
+ }
+ 
++// battery-noise element retired: kept as an empty element so old CLI positions are harmless
++static void osdElementFrogGlitch(osdElementParms_t *element)
++{
++    element->buff[0] = '\0';
++}
++// ---- end fr0gOS elements ----
++
+ static void osdElementReadyMode(osdElementParms_t *element)
+ {
+     if (IS_RC_MODE_ACTIVE(BOXREADY) && !ARMING_FLAG(ARMED)) {
+@@ -1228,9 +2421,59 @@ static void osdElementPosHoldReady(osdElementParms_t *element)
+ #endif
+ 
+ #ifdef USE_ACC
++// fr0gOS G meter: holds the peak for half a second so spikes are readable, and heats up as it climbs:
++//   under 1.5G green, 1.5G amber, 2.5G red (frog squashes), 3.5G+ red/amber flicker with glitching.
++// While armed and beating your all-time best G it gets a ! and the colours chase along it.
+ static void osdElementGForce(osdElementParms_t *element)
+ {
+-    osdPrintFloat(element->buff, SYM_NONE, osdGForce, "", 1, true, 'G');
++    static float held = 0.0f;
++    static timeMs_t heldAt = 0;
++    const timeMs_t now = millis();
++    if (osdGForce >= held || now - heldAt > 500) {
++        held = osdGForce;
++        heldAt = now;
++    }
++    const int g10 = lrintf(held * 10.0f);
++    bool record = false;
++#ifdef USE_PERSISTENT_STATS
++    record = ARMING_FLAG(ARMED) && statsConfig()->frog_best_g10 > 0 && g10 > statsConfig()->frog_best_g10;
++#endif
++    char *b = element->buff;
++    if (record) {
++        *b++ = '!';
++    }
++    if (g10 >= 100) {
++        tfp_sprintf(b, "%dG", g10 / 10);
++    } else {
++        tfp_sprintf(b, "%d.%dG", g10 / 10, g10 % 10);
++    }
++
++    const bool hd = frogHdFont(element->osdDisplayPort);
++    const bool violent = g10 >= 35;
++    const int len = strlen(element->buff);
++    static const uint8_t chase[3] = { DISPLAYPORT_SEVERITY_NORMAL, DISPLAYPORT_SEVERITY_WARNING, DISPLAYPORT_SEVERITY_CRITICAL };
++    // glitch: at 3.5G+ one character scrambles now and then
++    const uint32_t r = frogRand();
++    const int glitchAt = (violent && (r & 3) == 0) ? (int)((r >> 2) % len) : -1;
++    if (!hd) {
++        return;                     // analog: plain number, nothing scrambles live flight data
++    }
++    for (int i = 0; i < len; i++) {
++        uint8_t sev;
++        if (record) {
++            sev = chase[(i + now / 70) % 3];
++        } else if (violent) {
++            sev = ((i + now / 80) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
++        } else if (g10 >= 25) {
++            sev = DISPLAYPORT_SEVERITY_CRITICAL;
++        } else if (g10 >= 15) {
++            sev = DISPLAYPORT_SEVERITY_WARNING;
++        } else {
++            sev = DISPLAYPORT_SEVERITY_NORMAL;
++        }
++        element->buff[i] = (i == glitchAt) ? (char)frogColourNoiseChar(sev == DISPLAYPORT_SEVERITY_NORMAL ? DISPLAYPORT_SEVERITY_WARNING : sev)
++                                            : (char)frogColourChar((uint8_t)element->buff[i], sev);
++    }
+ }
+ #endif // USE_ACC
+ 
+@@ -1532,8 +2775,7 @@ static void osdElementLinkQuality(osdElementParms_t *element)
+ 
+     if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_CRSF) { // 0-99
+         osdLinkQuality = rxGetLinkQuality();
+-        const uint8_t osdRfMode = rxGetRfMode();
+-        tfp_sprintf(element->buff, "%c%1d:%2d", SYM_LINK_QUALITY, osdRfMode, osdLinkQuality);
++        tfp_sprintf(element->buff, "LQ%d", osdLinkQuality); // fr0gOS: rate has its own element
+     } else if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_GHST) { // 0-100
+         osdLinkQuality = rxGetLinkQuality();
+         tfp_sprintf(element->buff, "%c%2d", SYM_LINK_QUALITY, osdLinkQuality);
+@@ -1590,7 +2832,7 @@ static void osdElementMahDrawn(osdElementParms_t *element)
+         element->attr = DISPLAYPORT_SEVERITY_CRITICAL;
+     }
+ 
+-    tfp_sprintf(element->buff, "%4d%c", mAhDrawn, SYM_MAH);
++    tfp_sprintf(element->buff, "%d%c", mAhDrawn, SYM_MAH); // fr0gOS
+ }
+ 
+ static void osdElementWattHoursDrawn(osdElementParms_t *element)
+@@ -1718,7 +2960,16 @@ static void osdElementMainBatteryVoltage(osdElementParms_t *element)
+     } else {
+         decimalPlaces = 2;
+     }
+-    osdPrintFloat(element->buff, osdGetBatterySymbol(getBatteryAverageCellVoltage()), batteryVoltage, "", decimalPlaces, true, SYM_VOLT);
++    osdPrintFloat(element->buff, SYM_NONE, batteryVoltage, "", decimalPlaces, true, 'V'); // fr0gOS
++    // fr0gOS: colour follows the battery stage (green / breathing amber / red-amber pulse / red flicker)
++    if (frogHdFont(element->osdDisplayPort)) {
++        const frogBattStage_e st = frogBattStage();
++        const timeMs_t now = millis();
++        for (int i = 0; element->buff[i]; i++) {
++            element->buff[i] = (char)frogColourChar((uint8_t)element->buff[i], frogBattSeverity(st, i, now));
++        }
++        element->attr = DISPLAYPORT_SEVERITY_NORMAL;
++    }
+ }
+ 
+ static void osdElementMotorDiagnostics(osdElementParms_t *element)
+@@ -1871,9 +3122,9 @@ static void osdElementRssiDbm(osdElementParms_t *element)
+ 
+     if (antenna || diversity) {
+         diversity = true;
+-        tfp_sprintf(element->buff, "%c%3d:%d", SYM_RSSI, osdRssiDbm, antenna + 1);
++        tfp_sprintf(element->buff, "%d:%d", osdRssiDbm, antenna + 1); // fr0gOS
+     } else {
+-        tfp_sprintf(element->buff, "%c%3d", SYM_RSSI, osdRssiDbm);
++        tfp_sprintf(element->buff, "%d", osdRssiDbm); // fr0gOS
+     }
+ }
+ #endif // USE_RX_RSSI_DBM
+@@ -1946,9 +3197,55 @@ static void osdElementStickOverlay(osdElementParms_t *element)
+ }
+ #endif // USE_OSD_STICK_OVERLAY
+ 
++static void osdElementThrottleValue(osdElementParms_t *element)
++{
++    // fr0gOS: throttle to a tenth of a percent (45.3%), straight from the stick so it moves constantly.
++    // No icon: with battery % gone, the only % on screen is throttle. HD heat: amber 80%+, red 95%+.
++    const int minCheck = rxConfig()->mincheck;
++    const int tenths = constrain(lrintf((rcData[THROTTLE] - minCheck) * 1000.0f / (PWM_RANGE_MAX - minCheck)), 0, 1000);
++    if (tenths >= 1000) {
++        strcpy(element->buff, "100%");
++    } else {
++        tfp_sprintf(element->buff, "%d.%d%%", tenths / 10, tenths % 10);
++    }
++    if (frogHdFont(element->osdDisplayPort)) {
++        const uint8_t sev = tenths >= 950 ? DISPLAYPORT_SEVERITY_CRITICAL : tenths >= 800 ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_NORMAL;
++        for (int i = 0; element->buff[i]; i++) {
++            element->buff[i] = (char)frogColourChar((uint8_t)element->buff[i], sev);
++        }
++    }
++}
++
++// fr0gOS labelled readouts: a label on the element's row, the value on the row below
++static bool frogLabelled(osdElementParms_t *element, const char *label, void (*value)(osdElementParms_t *))
++{
++    static uint8_t lastItem = 0xFF;
++    static bool second = false;
++    if (lastItem != element->item) {
++        lastItem = element->item;
++        second = false;
++    }
++    if (!second) {
++        strcpy(element->buff, label);
++        second = true;
++        element->rendered = false;              // come back for the value
++        return true;
++    }
++    second = false;
++    lastItem = 0xFF;
++    element->elemOffsetY = 1;
++    value(element);
++    return false;
++}
++
+ static void osdElementThrottlePosition(osdElementParms_t *element)
+ {
+-    tfp_sprintf(element->buff, "%c%3d", SYM_THR, calculateThrottlePercent());
++    frogLabelled(element, "THR", osdElementThrottleValue);
++}
++
++static void osdElementEscRpm(osdElementParms_t *element)
++{
++    frogLabelled(element, "RPM", osdElementEscRpmValue);
+ }
+ 
+ static void osdElementTimer(osdElementParms_t *element)
+@@ -1962,7 +3259,7 @@ static void osdElementTimer(osdElementParms_t *element)
+         }
+     }
+ 
+-    osdFormatTimer(element->buff, true, true, element->item - OSD_ITEM_TIMER_1);
++    osdFormatTimer(element->buff, false, true, element->item - OSD_ITEM_TIMER_1); // fr0gOS
+ }
+ 
+ #ifdef USE_VTX_COMMON
+@@ -2004,9 +3301,9 @@ switch (element->type) {
+         if (vtxStatus & VTX_STATUS_LOCKED) {
+             tfp_sprintf(element->buff, "-:-:-:L");
+         } else if (vtxStatusIndicator) {
+-            tfp_sprintf(element->buff, "%c:%s:%s:%c", vtxBandLetter, vtxChannelName, vtxPowerLabel, vtxStatusIndicator);
++            tfp_sprintf(element->buff, "%c%s%c", vtxBandLetter, vtxChannelName, vtxStatusIndicator); // fr0gOS: R8P / R8D
+         } else {
+-            tfp_sprintf(element->buff, "%c:%s:%s", vtxBandLetter, vtxChannelName, vtxPowerLabel);
++            tfp_sprintf(element->buff, "%c%s", vtxBandLetter, vtxChannelName); // fr0gOS: R8 (power is osd_frog_vtxpwr_pos)
+         }
+         break;
+     }
+@@ -2018,10 +3315,119 @@ static void osdElementAuxValue(osdElementParms_t *element)
+     tfp_sprintf(element->buff, "%c%d", osdConfig()->aux_symbol, osdAuxValue);
+ }
+ 
++// fr0gOS: a new warning "decodes" in - noise characters lock into the real text
++// one by one, then it sits in its severity colour (amber / red on the HD font)
++static void frogDecodeWarning(osdElementParms_t *element)
++{
++    static char target[OSD_ELEMENT_BUFFER_LENGTH];
++    static timeMs_t startMs;
++    const timeMs_t now = millis();
++    const uint8_t severity = element->buff[0] ? element->attr : DISPLAYPORT_SEVERITY_NORMAL;
++    extern uint8_t frogWarnSeverity;
++    frogWarnSeverity = severity;
++
++    if (element->buff[0] == '\0') {
++        target[0] = '\0';
++        return;
++    }
++    if (strcmp(element->buff, target) != 0) {
++        strncpy(target, element->buff, sizeof(target) - 1);
++        target[sizeof(target) - 1] = '\0';
++        startMs = now;
++    }
++    const bool hd = frogHdFont(element->osdDisplayPort);
++    const uint32_t t = now - startMs;
++    const size_t len = strlen(target);
++    for (size_t i = 0; i < len; i++) {
++        if (t >= 120 + i * 90) {
++            element->buff[i] = hd ? (char)frogColourChar((uint8_t)target[i], severity) : target[i];
++        } else {
++            element->buff[i] = (char)frogNoiseChar(hd);
++        }
++    }
++    element->buff[len] = '\0';
++    if (hd) {
++        element->attr = DISPLAYPORT_SEVERITY_NORMAL;   // already coloured per character
++    }
++}
++
++// fr0gOS: every warning fits the 5-character side bar
++static void frogShortenWarning(char *buff)
++{
++    static const struct { const char *from; const char *to; } map[] = {
++        { "LOW BATTERY",  "LOWV"  },
++        { "LAND NOW",     "LAND!" },
++        { "FAIL SAFE",    "FSAFE" },
++        { "LINK QUALITY", "LQ!"   },
++        { "RSSI LOW",     "RSSI!" },
++        { "RSSI DBM",     "DBM!"  },
++        { "RSNR LOW",     "SNR!"  },
++        { "CPU OVERLOAD", "CPU!"  },
++        { "CRASHFLIP SW", "FLPSW" },
++        { CRASHFLIP_WARNING, "TURTL" },
++        { "HEADFREE",     "HFREE" },
++        { "OVER CAP",     "OVCAP" },
++        { "BATTERY CONT", "BCONT" },
++        { "BATT < FULL",  "!FULL" },
++        { "BEACON ON",    "BEACN" },
++        { "RESCUE FAIL",  "RESC!" },
++        { "RESCUE N/A",   "NORSC" },
++    };
++    const char *s = buff;
++    while (*s == ' ') {
++        s++;
++    }
++    for (unsigned i = 0; i < ARRAYLEN(map); i++) {
++        if (strcmp(s, map[i].from) == 0) {
++            strcpy(buff, map[i].to);
++            return;
++        }
++    }
++    if (*s == '*') {
++        buff[0] = '\0';     // Betaflight's visual beeper ("* * * *" on every beep): not shown, not logged
++        return;
++    }
++    if (s != buff) {
++        memmove(buff, s, strlen(s) + 1);
++    }
++    if (strlen(buff) > 5) {
++        buff[5] = '\0';   // arming flags etc: THROT, RXLOS, NOGYR, ARMSW...
++    }
++}
++
+ static void osdElementWarnings(osdElementParms_t *element)
+ {
+     bool elementBlinking = false;
+     renderOsdWarning(element->buff, &elementBlinking, &element->attr);
++    frogShortenWarning(element->buff);
++    {
++        // activity feed: every new warning that isn't battery or temperature
++        static char lastWarn[FROG_FEED_LEN + 1];
++        if (element->buff[0] && strncmp(lastWarn, element->buff, FROG_FEED_LEN) != 0 && !frogFeedIgnored(element->buff)) {
++            frogFeedPost(element->buff, element->attr >= DISPLAYPORT_SEVERITY_CRITICAL ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING);
++        }
++        strncpy(lastWarn, element->buff, FROG_FEED_LEN);
++        lastWarn[FROG_FEED_LEN] = '\0';
++    }
++    frogDecodeWarning(element);
++    if (strcmp(element->buff, "TURTL") == 0) {
++        // crash flip: no blinking, the text glitches instead. HD: red/amber chase with scrambles.
++        // Analog: one character of the text scrambles now and then, nothing outside it.
++        elementBlinking = false;
++        const bool hd = frogHdFont(element->osdDisplayPort);
++        const timeMs_t now = millis();
++        const uint32_t r = frogRand();
++        const int glitchAt = ((r & 3) == 0) ? (int)((r >> 2) % 5) : -1;
++        for (int i = 0; element->buff[i]; i++) {
++            const uint8_t sev = ((i + now / 90) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
++            if (i == glitchAt) {
++                element->buff[i] = hd ? (char)frogColourNoiseChar(sev) : (char)frogNoiseChar(false);
++            } else if (hd) {
++                element->buff[i] = (char)frogColourChar((uint8_t)element->buff[i], sev);
++            }
++        }
++        element->attr = DISPLAYPORT_SEVERITY_NORMAL;
++    }
+     if (elementBlinking) {
+         SET_BLINK(OSD_WARNINGS);
+     } else {
+@@ -2076,6 +3482,7 @@ static void osdElementSys(osdElementParms_t *element)
+ // to osdAddActiveElements()
+ 
+ static const uint8_t osdElementDisplayOrder[] = {
++    OSD_FROG_GLITCH,
+     OSD_MAIN_BATT_VOLTAGE,
+     OSD_RSSI_VALUE,
+     OSD_CROSSHAIRS,
+@@ -2085,6 +3492,12 @@ static const uint8_t osdElementDisplayOrder[] = {
+     OSD_ITEM_TIMER_2,
+     OSD_REMAINING_TIME_ESTIMATE,
+     OSD_FLYMODE,
++    OSD_FROG_AIRMODE,
++    OSD_FROG_RFRATE,
++    OSD_FROG_BATTPCT,
++    OSD_FROG_TAG,
++    OSD_FROG_CRAFT,
++    OSD_FROG_VTXPWR,
+     OSD_THROTTLE_POS,
+     OSD_VTX_CHANNEL,
+     OSD_CURRENT_DRAW,
+@@ -2202,12 +3615,19 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
+     [OSD_ITEM_TIMER_1]            = osdElementTimer,
+     [OSD_ITEM_TIMER_2]            = osdElementTimer,
+     [OSD_FLYMODE]                 = osdElementFlymode,
++    [OSD_FROG_AIRMODE]            = osdElementFrogAirMode,
++    [OSD_FROG_RFRATE]             = osdElementFrogRfRate,
++    [OSD_FROG_BATTPCT]            = osdElementFrogBattPct,
++    [OSD_FROG_TAG]                = osdElementFrogTag,
++    [OSD_FROG_CRAFT]              = osdElementFrogCraft,
++    [OSD_FROG_VTXPWR]             = osdElementFrogVtxPower,
++    [OSD_FROG_GLITCH]             = osdElementFrogGlitch,
+     [OSD_CRAFT_NAME]              = NULL,  // only has background
+     [OSD_CUSTOM_MSG0]             = osdElementCustomMsg,
+     [OSD_CUSTOM_MSG1]             = osdElementCustomMsg,
+     [OSD_CUSTOM_MSG2]             = osdElementCustomMsg,
+     [OSD_CUSTOM_MSG3]             = osdElementCustomMsg,
+-    [OSD_THROTTLE_POS]            = osdElementThrottlePosition,
++    [OSD_THROTTLE_POS]            = osdElementThrottlePosition,  // fr0gOS: THR label + value
+ #ifdef USE_VTX_COMMON
+     [OSD_VTX_CHANNEL]             = osdElementVtxChannel,
+ #endif
+@@ -2441,6 +3861,91 @@ void osdAddActiveElements(void)
+ #endif
+ }
+ 
++// fr0gOS appear / vanish: whenever a readout appears on the main screen it decodes in through a brief
++// flash of glyphs, and when it disappears it dissolves out the same way. Live numbers never go blank,
++// so they only do this when the whole OSD comes back (after boot, arming, HISCORE, screensaver).
++// Effects stay inside the element's own text, so on analog nothing lands in empty space.
++#define FROG_APPEAR_MS 260
++#define FROG_VANISH_MS 260
++#define FROG_FX_TEXT 9
++static char frogFxLast[OSD_ITEM_COUNT][FROG_FX_TEXT];
++static bool frogFxShown[OSD_ITEM_COUNT];
++static timeMs_t frogFxAppearAt[OSD_ITEM_COUNT];
++static timeMs_t frogFxVanishAt[OSD_ITEM_COUNT];
++
++void frogAppearReset(void)
++{
++    for (int i = 0; i < OSD_ITEM_COUNT; i++) {
++        frogFxShown[i] = false;
++        frogFxVanishAt[i] = 0;
++    }
++}
++
++static bool frogTextBlank(const char *s)
++{
++    for (; *s; s++) {
++        if (*s != ' ') {
++            return false;
++        }
++    }
++    return true;
++}
++
++static void frogAppearFx(uint8_t item, osdElementParms_t *element)
++{
++    if (item >= OSD_ITEM_COUNT || item == OSD_FROG_GLITCH || item == OSD_FROG_TAG || element->elemOffsetX || element->elemOffsetY) {
++        return;
++    }
++    const bool hd = frogHdFont(element->osdDisplayPort);
++    const timeMs_t now = millis();
++    const bool blank = !element->drawElement || frogTextBlank(element->buff);
++    const size_t len = blank ? 0 : strlen(element->buff);
++    if (len >= FROG_FX_TEXT) {
++        frogFxShown[item] = true;               // long elements (stick overlay etc.) don't take part
++        return;
++    }
++    if (!blank) {
++        if (!frogFxShown[item]) {
++            frogFxAppearAt[item] = now ? now : 1;
++            frogFxVanishAt[item] = 0;
++        }
++        frogFxShown[item] = true;
++        memcpy(frogFxLast[item], element->buff, len + 1);
++    } else if (frogFxShown[item]) {
++        frogFxShown[item] = false;
++        frogFxVanishAt[item] = now ? now : 1;
++        frogFxAppearAt[item] = 0;
++    }
++
++    if (frogFxAppearAt[item]) {
++        const uint32_t t = now - frogFxAppearAt[item];
++        if (t >= FROG_APPEAR_MS) {
++            frogFxAppearAt[item] = 0;
++        } else {
++            for (size_t i = 0; element->buff[i]; i++) {
++                if (element->buff[i] != ' ' && t < 35 * i + 90) {
++                    element->buff[i] = (char)frogNoiseChar(hd);
++                }
++            }
++        }
++    } else if (frogFxVanishAt[item]) {
++        const uint32_t t = now - frogFxVanishAt[item];
++        if (t >= FROG_VANISH_MS) {
++            frogFxVanishAt[item] = 0;
++        } else {
++            // the old text turns to glyphs, then the glyphs drop out one by one
++            const char *ghost = frogFxLast[item];
++            size_t i = 0;
++            for (; ghost[i]; i++) {
++                element->buff[i] = (ghost[i] == ' ' || t >= 120 + 35 * i) ? ' ' : (char)frogNoiseChar(hd);
++            }
++            element->buff[i] = '\0';
++            element->drawElement = true;
++            element->attr = DISPLAYPORT_SEVERITY_NORMAL;
++        }
++    }
++}
++
+ static bool osdDrawSingleElement(displayPort_t *osdDisplayPort, uint8_t item)
+ {
+     // By default mark the element as rendered in case it's in the off blink state
+@@ -2479,6 +3984,21 @@ static bool osdDrawSingleElement(displayPort_t *osdDisplayPort, uint8_t item)
+         displaySys(osdDisplayPort, elemPosX, elemPosY, (displayPortSystemElement_e)(item - OSD_SYS_GOGGLE_VOLTAGE + DISPLAYPORT_SYS_GOGGLE_VOLTAGE));
+     } else {
+         osdElementDrawFunction[item](&activeElement);
++        if (!activeElement.elemOffsetX && !activeElement.elemOffsetY && item < OSD_ITEM_COUNT) {
++            // width of what it drew, for the frog's ledges
++            const char *b = activeElement.drawElement ? activeElement.buff : "";
++            while (*b == ' ') {
++                b++;
++            }
++            int n = strlen(b);
++            while (n > 0 && b[n - 1] == ' ') {
++                n--;
++            }
++            frogItemLen[item] = (uint8_t)MIN(n, 255);
++        }
++        if (activeElement.rendered) {
++            frogAppearFx(item, &activeElement);
++        }
+         if (activeElement.drawElement) {
+             displayPendingForeground = true;
+         }
+@@ -2549,7 +4069,7 @@ bool osdDisplayActiveElement(void)
+ 
+     // If there's a previously drawn background string to be displayed, do that
+     if (displayPendingBackground) {
+-        osdDisplayWrite(&activeElement,
++        osdFrogWriteJustified(&activeElement,
+                         activeElement.elemPosX + activeElement.elemOffsetX,
+                         activeElement.elemPosY + activeElement.elemOffsetY,
+                         activeElement.attr, activeElement.buff);
+@@ -2563,7 +4083,7 @@ bool osdDisplayActiveElement(void)
+ 
+     // If there's a previously drawn foreground string to be displayed, do that
+     if (displayPendingForeground) {
+-        osdDisplayWrite(&activeElement,
++        osdFrogWriteJustified(&activeElement,
+                         activeElement.elemPosX + activeElement.elemOffsetX,
+                         activeElement.elemPosY + activeElement.elemOffsetY,
+                         activeElement.attr, activeElement.buff);
+diff --git a/src/main/osd/osd_elements.h b/src/main/osd/osd_elements.h
+index 7de3700..dc68458 100644
+--- a/src/main/osd/osd_elements.h
++++ b/src/main/osd/osd_elements.h
+@@ -76,3 +76,17 @@ bool osdElementsNeedAccelerometer(void);
+ #ifdef USE_SPEC_PREARM_SCREEN
+ bool osdDrawSpec(displayPort_t *osdDisplayPort);
+ #endif // USE_SPEC_PREARM_SCREEN
++
++// fr0gOS
++const char *frogRfRateLabel(uint8_t rfMode);
++bool frogHdFont(const displayPort_t *displayPort);
++uint32_t frogRand(void);
++uint8_t frogColourChar(uint8_t c, uint8_t severity);
++void frogColourise(char *s, uint8_t severity);
++uint8_t frogNoiseChar(bool hd);
++uint8_t frogAnimGlyph(uint8_t anim, uint32_t ms, bool loop);
++void frogBootDraw(displayPort_t *dp, uint32_t ms, int x0, int lastX, int row, uint32_t doneMs);
++uint32_t frogBootLengthMs(int hops, uint32_t doneMs);
++extern bool frogIdleShimmer;
++void frogAppearReset(void);
++uint8_t frogFlipNoiseChar(bool hd);
+diff --git a/src/main/osd/osd_warnings.c b/src/main/osd/osd_warnings.c
+index 4442b37..5ac604f 100644
+--- a/src/main/osd/osd_warnings.c
++++ b/src/main/osd/osd_warnings.c
+@@ -237,7 +237,7 @@ void renderOsdWarning(char *warningText, bool *blinking, uint8_t *displayAttr)
+         if (beaconGuard < 500 * 1000) {   // first 0.5s since beacon
+             tfp_sprintf(warningText, " BEACON ON");
+         } else {
+-            tfp_sprintf(warningText, "ARM IN %d.%d", armingDelayTime / 10, armingDelayTime % 10);
++            tfp_sprintf(warningText, "A%d.%d", armingDelayTime / 10, armingDelayTime % 10); // fr0gOS
+         }
+         *displayAttr = DISPLAYPORT_SEVERITY_INFO;
+         return;
+@@ -473,7 +473,7 @@ void renderOsdWarning(char *warningText, bool *blinking, uint8_t *displayAttr)
+ #ifdef USE_ADC_INTERNAL
+     const int16_t coreTemperature = getCoreTemperatureCelsius();
+     if (osdWarnGetState(OSD_WARNING_CORE_TEMPERATURE) && coreTemperature >= osdConfig()->core_temp_alarm) {
+-        tfp_sprintf(warningText, "CORE %c: %3d%c", SYM_TEMPERATURE, osdConvertTemperatureToSelectedUnit(coreTemperature), osdGetTemperatureSymbolForSelectedUnit());
++        tfp_sprintf(warningText, "HOT%d", osdConvertTemperatureToSelectedUnit(coreTemperature)); // fr0gOS
+         *displayAttr = DISPLAYPORT_SEVERITY_WARNING;
+         *blinking = true;
+         return;
+diff --git a/src/main/pg/stats.c b/src/main/pg/stats.c
+index ed26dae..ca61aeb 100644
+--- a/src/main/pg/stats.c
++++ b/src/main/pg/stats.c
+@@ -27,7 +27,7 @@
+ 
+ #include "stats.h"
+ 
+-PG_REGISTER_WITH_RESET_TEMPLATE(statsConfig_t, statsConfig, PG_STATS_CONFIG, 4);
++PG_REGISTER_WITH_RESET_TEMPLATE(statsConfig_t, statsConfig, PG_STATS_CONFIG, 5); // fr0gOS: +high scores
+ 
+ PG_RESET_TEMPLATE(statsConfig_t, statsConfig,
+     .stats_min_armed_time_s = STATS_OFF,
+diff --git a/src/main/pg/stats.h b/src/main/pg/stats.h
+index a80d086..3cbb39d 100644
+--- a/src/main/pg/stats.h
++++ b/src/main/pg/stats.h
+@@ -32,6 +32,8 @@ typedef struct statsConfig_s {
+     int8_t stats_min_armed_time_s;
+     uint32_t stats_mah_used;
+     uint8_t statsSaveMoveLimit; // gyro rate limit for saving stats upon disarm
++    uint16_t frog_best_g10;     // fr0gOS high score: best max g-force x10
++    uint32_t frog_best_rpm;     // fr0gOS high score: best max average motor RPM
+ } statsConfig_t;
+ 
+ PG_DECLARE(statsConfig_t, statsConfig);

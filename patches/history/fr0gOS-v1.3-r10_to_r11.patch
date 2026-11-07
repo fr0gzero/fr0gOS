@@ -1,0 +1,31 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index d200917..3d97c21 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -511,7 +511,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R10"
++#define FROGOS_VERSION   "V1.3 R11"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 3ebd3d0..d9cf845 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1574,9 +1574,10 @@ static timeMs_t frogFeedAt = 0;
+ //   disarmed (after a flight)                 eyes closed
+ //   otherwise                                 rests (blink, look around, smile), peekaboo, wanders every 15-20 s
+ #define FROG_MAX_LEDGES   8
+-#define FROG_HOP_CROUCH   70
+-#define FROG_HOP_STEP     60
+-#define FROG_HOP_LAND     70
++// each phase lasts two OSD frames at 20 fps, so every frame of the hop is actually seen
++#define FROG_HOP_CROUCH   100
++#define FROG_HOP_STEP     100
++#define FROG_HOP_LAND     100
+ #define FROG_HOP_MS       (FROG_HOP_CROUCH + 3 * FROG_HOP_STEP + FROG_HOP_LAND)
+ #define FROG_OFFSCREEN_MS 250
+ #define FROG_INVERT_MS    400      // inverted this long before it flips (a quick flip trick doesn't count)
