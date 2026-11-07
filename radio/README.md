@@ -29,3 +29,25 @@ The sound is soft and deadmau5-style: rounded saw plucks with a sine sub, a gent
 To undo, copy the backup back over `SOUNDS/en`.
 
 Regenerate with `python3 make_tone_pack.py <edgetx-sdcard-sounds/SOUNDS/en> <out>`. Filenames come from [EdgeTX/edgetx-sdcard-sounds](https://github.com/EdgeTX/edgetx-sdcard-sounds).
+
+## Ten sound themes (2026-11-08)
+
+`make_tone_themes.py` builds ten tone packs from completely different inspirations. They all share the same event vocabulary, so any of them can replace the voice pack.
+
+Each audition in `themes/` plays: startup, armed, disarmed, angle, horizon, acro, air on, air off, turtle, telemetry recovered, telemetry lost (critical), warning, timer, trim tick.
+
+| # | Theme | Inspiration |
+|---|---|---|
+| 01 | baroque | Harpsichord in D major. Cadences resolve when good; a diminished organ chord when bad. |
+| 02 | starship | Sci-fi bridge computer: gliding sine chirps, ring-mod sparkle, pulsing alert. |
+| 03 | dashboard | Cars: indicator relay, door-chime bongs, engine start and rev blips, reverse beeper. |
+| 04 | gameshow | TV game show: marimba dings, soft buzzer, tick-tock clock, slide whistle. |
+| 05 | 8bit | Chiptune pulse waves and a noise channel. |
+| 06 | sonar | Submarine pings, Doppler drops, depth-charge thump, bubbles. |
+| 07 | zen | Singing bowls, small bells, wood-block knocks. |
+| 08 | dialup | 90s computer: DTMF keypad, PC speaker, floppy clicks, modem screech. |
+| 09 | lounge | FM electric-piano jazz chords, vibraphone tremolo, brushes. |
+| 10 | pond | Ribbits, croaks, crickets, water drops, a splash. |
+
+To build the SD-card pack for one theme: `python3 make_tone_themes.py pack <theme> <edgetx-sdcard-sounds/SOUNDS/en> <out>`.
+All original sounds; no theme tunes are copied.
