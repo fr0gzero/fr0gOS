@@ -73,3 +73,78 @@ SWEAT_OPTIONS = {
          "GGGGGGGG"],
     ],
 }
+
+
+def _pad16(rows, top):
+    """place rows starting at row `top` of a 16-row cell (for vertical motion inside the cell)"""
+    out = ["........"] * 16
+    for i, r in enumerate(rows):
+        if 0 <= top + i < 16:
+            out[top + i] = r
+    return out
+
+
+_ARMS_UP = ["G......G", "G.G..G.G", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKRRKGG", ".GGGGGG."]
+
+# ---- low battery: hops over to the voltage readout and jumps at it, arms up, red ! ----
+LOWBATT = [
+    _pad16(_ARMS_UP + ["GG.GG.GG"], 7),                                        # crouch under the !
+    _pad16(["...RR...", "...RR...", "...RR...", "........", "...RR..."] + [""] + _ARMS_UP + [".G.GG.G."], 1),  # jump + !
+    _pad16(["...RR...", "...RR...", "........", "...RR..."] + _ARMS_UP + ["G..GG..G"], 3),                  # falling
+    _pad16(_ARMS_UP + ["GGGGGGGG"], 8),                                        # squash on landing
+]
+
+# ---- teleport with red: red spark and red flash on the way in and out ----
+TELEPORT_RED = [
+    ["........", "........", "........", "...R....", "........", ".R...C..", "...RR...", "...RR...", ".C...R..",
+     "........", "....R...", "........"],
+    ["...RC...", "...CR...", "...RC...", "...CR...", "...RC...", "..CRCR..", "..RCCR..", "...RC...", "...CR...",
+     "...RC...", "...CR...", "...RC..."],
+    ["..RCCR..", "..CRRC..", ".RRRRRR.", "..RCCR..", "..CRRC..", ".CCCCCC.", "..RCCR..", "..CRRC..", ".RRRRRR.",
+     "..RCCR..", "..CRRC..", "..RCCR.."],
+    ["........", "........", ".RR..RR.", "........", "LLLLLLLL", "........", "LGGGGGGL", "........", ".RRRRRR.",
+     "........", "........", "........"],
+    ["........", "........", ".LL..LL.", "LCKLLCKL", "LLLLLLLL", "LKLLLLKL", "LLKKKKLL", ".LLLLLL.", "LL.LL.LL",
+     "........", "........", "........"],
+    ["........", ".RR..RR.", "RGGRRGGR", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG",
+     "R......R", "........", "........"],
+]
+
+# ---- cute extras (options) ----
+CUTE = {
+    "heart": [[".GG..GG.", "GWKGGWKG", "GGGGGGGG", "GR.RGGGG", "RRRRRGGG", "GRRRGKGG", "G.R.GGGG", ".GGGGGG.", "GG.GG.GG"]],
+    "wink": [[".GG..GG.", "GKKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"],
+             [".GG..GG.", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"]],
+    "big smile": [[".GG..GG.", "GWKGGWKG", "GGGGGGGG", "KGGGGGGK", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"]],
+    "wave": [["......G.", ".GG..GGG", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"],
+             [".....G..", ".GG..GGG", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"]],
+    "sleepy zzz": [["....LLL.", ".....L..", "....LLL.", ".GG..GG.", "GKKGGKKG", "GGGGGGGG", "GGGGGGGG", "GGGKKGGG", ".GGGGGG.", "GG.GG.GG"],
+                   ["..LL....", "...L....", "..LL....", ".GG..GG.", "GKKGGKKG", "GGGGGGGG", "GGGGGGGG", "GGGKKGGG", ".GGGGGG.", "GG.GG.GG"]],
+    "shades": [[".GG..GG.", "KKKKKKKK", "KWKGGWKK", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"]],
+    "star eyes": [[".GY..YG.", "GYYYYYYG", "GGYGGYGG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"]],
+    "catch a fly": [["......K.", ".GG..GG.", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"],
+                    ["......P.", ".GG..GP.", "GWKGGPKG", "GGGGPGGG", "GKGPGGKG", "GGKPKKGG", ".GGGGGG.", "GG.GG.GG"],
+                    [".GG..GG.", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG.GG"]],
+    "dance": [[".GG..GG.", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "G..GG.GG"],
+              [".GG..GG.", "GWKGGWKG", "GGGGGGGG", "GKGGGGKG", "GGKKKKGG", ".GGGGGG.", "GG.GG..G"]],
+}
+
+# ---- detail test: the same frog at full native resolution (1 pixel = 1 screen pixel) ----
+HIRES_IDLE = [
+    "...LGGL......LGGL...",
+    "..GWWWWG....GWWWWG..",
+    "..GWWKKG....GWWKKG..",
+    "..GWWKKGGGGGGWWKKG..",
+    ".GGGWWGGGGGGGGWWGGG.",
+    ".GGGGGGGGGGGGGGGGGG.",
+    "GGGGGGGGGGGGGGGGGGGG",
+    "GGDGGGGGGGGGGGGGGDGG",
+    "GGGDDGGGGGGGGGGDDGGG",
+    ".GGGGDDDDDDDDDDGGGG.",
+    ".GGGGGGLLLLLLGGGGGG.",
+    "..GGGGLLLLLLLLGGGG..",
+    ".GGGGGGLLLLLLGGGGGG.",
+    "GGG.GGGGGGGGGGGG.GGG",
+    "GG..GG........GG..GG",
+    "D...D..........D...D",
+]
