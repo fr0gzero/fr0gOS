@@ -109,6 +109,11 @@ set osd_core_temp_pos = 3505
 set osd_vtx_channel_pos = 3537
 set osd_frog_vtxpwr_pos = 3569
 set osd_warnings_pos = 3601
+# ---- this quad ----
+# camera: HDZero Eco (stock 720p60) - change these if you set another mode
+set osd_custom_msg0 = ECO
+set osd_custom_msg1 = 720P
+set osd_custom_msg2 = 60FPS
 
 profile 0
 profile 0

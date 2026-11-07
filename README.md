@@ -11,8 +11,8 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 
 | Craft | Quad | Board target | Video | Current build |
 |---|---|---|---|---|
-| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant) | v1.1 r02 |
-| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero | v1.1 r02 |
+| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.1 r02 |
+| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 | v1.1 r02 |
 | MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.1 r02 |
 
 ## What FrogOS changes
