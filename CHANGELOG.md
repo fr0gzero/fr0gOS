@@ -3,6 +3,7 @@
 All builds are on Betaflight 2026.6.2.
 
 ## v1.1 r01 - 2026-11-07 (hacker)
+- MK4-1 (analog) moved to v1.1: decoding warnings, BIOS boot, arming glitch and `[ARM]` in mono. `FROG` with a blinking `_` top left, `MK41` top right.
 - HDZero hacker font (IBM VGA 8x16, phosphor green) with per-character amber and red copies of the alphabet. The logo shrinks to 24x2.
 - New setting `osd_frog_hd_font`. Colour and glyphs only apply on MSP displayport.
 - Elements in warning or critical state draw amber or red.
