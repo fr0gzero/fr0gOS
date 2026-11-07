@@ -89,14 +89,14 @@ set osd_vbat_pos = 2112
 set osd_current_pos = 2144
 set osd_mah_drawn_pos = 2176
 set osd_frog_batt_pos = 2208
-# camera, middle left (text from osd_custom_msg0-2, blank if unset)
-set osd_custom_msg0_pos = 2304
-set osd_custom_msg1_pos = 2336
-set osd_custom_msg2_pos = 2368
-# link, bottom left
-set osd_link_quality_pos = 2464
-set osd_rssi_dbm_pos = 2496
-set osd_frog_rate_pos = 2528
+# link, middle left
+set osd_link_quality_pos = 2272
+set osd_rssi_dbm_pos = 2304
+set osd_frog_rate_pos = 2336
+# camera / video format, bottom left (text from osd_custom_msg0-2, blank if unset)
+set osd_custom_msg0_pos = 2464
+set osd_custom_msg1_pos = 2496
+set osd_custom_msg2_pos = 2528
 # time, top right
 set osd_tim_2_pos = 3153
 set osd_throttle_pos = 3185

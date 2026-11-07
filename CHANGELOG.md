@@ -8,6 +8,7 @@ All builds are on Betaflight 2026.6.2.
 - VTX power has its own element, `osd_frog_vtxpwr_pos` (`200MW`). The VTX channel element is now just band and channel (`R8`).
 - Shared HDZero block in `tools/make_hd_cli.py` gains the camera lines and VTX power. MK5-1 and MK4-2 CLIs regenerated from it.
 - MK4-2 camera lines `720P` / `60FPS` / `4:3` (HDZero Eco set to 4:3).
+- Layout: link moves to middle left and camera / video format to bottom left, on all three quads.
 - MK4-1 (analog) gets the camera block (`ANT` / `NTSC` / `16:9`) and VTX `R8` / `200MW`. Its layout is respaced to fit rows 0-11.
 
 ## v1.1 r01 - 2026-11-07 (hacker)

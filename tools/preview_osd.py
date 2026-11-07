@@ -68,8 +68,8 @@ def flight(frog=FROG, warn=None, volt=None, batt=None, lq=None):
     c = [(L, 0, g("FR0G") + [CURSOR], False), (R, 0, [frog] + g("MK51"), True),
          (L, 2, volt or g("3.98V"), False), (L, 3, g("4.32A"), False), (L, 4, g("212") + [MAH], False),
          (L, 5, batt or (g("62%") + [BATT + 2]), False),
-         (L, 8, g("540P"), False), (L, 9, g("90FPS"), False), (L, 10, g("CROP"), False),
-         (L, 13, lq or g("LQ100"), False), (L, 14, g("-41"), False), (L, 15, g("F1000"), False),
+         (L, 7, lq or g("LQ100"), False), (L, 8, g("-41"), False), (L, 9, g("F1000"), False),
+         (L, 13, g("540P"), False), (L, 14, g("90FPS"), False), (L, 15, g("CROP"), False),
          (R, 2, g("01:47"), True), (R, 3, g("38%"), True),
          (R, 7, g("[ARM]"), True), (R, 8, g("ACRO"), True), (R, 9, g("AIRON"), True),
          (R, 13, g("C52"), True), (R, 14, g("R8"), True), (R, 15, g("200MW"), True)]
@@ -93,7 +93,7 @@ boot = [(13, 4, list(range(0xA0, 0xB8)), False), (13, 5, list(range(0xB8, 0xD0))
         (14, 11, g("VTX  R8 200 ....... OK"), False),
         (14, 12, g("ESC  4/4 ...........") + [ord("/")], False),
         (L, 0, g("FR0G") + [CURSOR], False), (R, 0, [FROG] + g("MK51"), True),
-        (L, 15, amber("SCAN") + [ord("/")], False), (R, 7, g("SAFE"), True)]
+        (L, 9, amber("SCAN") + [ord("/")], False), (R, 7, g("SAFE"), True)]
 arm = [(0, 8, ([S1, ord("%"), S3, ord("7"), S2, ord(" "), S1, ord("X"), S3] * 6)[:50], False),
        (0, 9, ([S3, ord(" "), S2, ord("@"), S1, ord("="), S2, ord("<"), S3] * 6)[:50], False),
        (12, 3, [S2], False), (40, 14, [ord("#")], False), (31, 5, [S1], False),

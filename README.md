@@ -18,7 +18,7 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 ## What FrogOS changes
 
 **Every quad**
-- Telemetry in two 5-character columns at the screen edges, grouped by category: power top left, link bottom left, time top right, state middle right, system bottom right.
+- Telemetry in two 5-character columns at the screen edges, grouped by category: power top left, link middle left, camera bottom left, time top right, state middle right, system bottom right.
 - Column 0 is left-justified and the last column right-justified, whatever canvas width the FC assumes.
 - No icons or unit glyphs: `4.09V`, `2.16A`, `LQ100`, `-33`, `45%`, `R8`, `200MW`, `C52`.
 - Camera mode as plain text lines, set per quad from the CLI (`osd_custom_msg0`-`3`, e.g. `540P` / `90FPS` / `CROP`). Unset lines show nothing.
