@@ -7,6 +7,7 @@ Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth to
 ## v1.3 r10 - 2026-11-08 (MK4-2 test build)
 - RPM stays green almost all the time. Amber only from 90% of your best RPM (was 60%), red from 97% (was 85%), red/amber flicker only when it beats your record (was 97%).
 - Same settings and goggle font as r09: flash without Full chip erase, no CLI needed.
+- **MK5-1 moves to v1.3 r10** (from v1.2 r03): layout C, the event log, the full frog, craft name `MK5-1`, battery warnings 3.50 V / 3.35 V per cell like MK4-2.
 
 ## v1.3 r09 - 2026-11-08 (MK4-2 test build)
 - Renamed FrogOS to **fr0gOS** everywhere (boot header `FR0GOS V1.3 R09`, default craft name `FR0GOS`).
