@@ -2,7 +2,7 @@
 
 All builds are on Betaflight 2026.6.2.
 
-Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice).
+Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
 ## v1.3 r08 - 2026-11-08 (MK4-2 test build)
 - Layout C (corners) chosen. Left: frog row 0, event log rows 1-5, power 7-9, links 13-16. Right: name 0, time 1, warnings 2, ARMED / mode / AIR 3-5, THR + RPM + G cluster in the bottom corner 12-16.

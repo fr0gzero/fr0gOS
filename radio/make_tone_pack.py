@@ -24,7 +24,7 @@ import numpy as np
 
 SRC, OUT = sys.argv[1:3]
 RATE = 32000
-AMP = 0.42                      # softer than v1 (about -8 dBFS peak after normalising)
+AMP = 0.21                      # half of v2 (about -14 dBFS peak): quiet, sits under the motors
 
 
 # ---- synth: deadmau5-style pluck ----
@@ -39,13 +39,13 @@ def saw(f, n):
     t = np.arange(n) / RATE
     out = np.zeros(n)
     k = 1
-    while k * f < RATE / 2 * 0.9 and k <= 40:
+    while k * f < RATE / 2 * 0.9 and k <= 12:          # fewer harmonics: rounder, less buzzy
         out += np.sin(2 * np.pi * k * f * t) / k
         k += 1
     return out * 0.55
 
 
-def lowpass_env(x, fc0, fc1, tau, q=0.35, opening=False):
+def lowpass_env(x, fc0, fc1, tau, q=0.7, opening=False):       # more damping: no resonant zing
     """state-variable low-pass, cutoff gliding from fc0 to fc1 with time constant tau (s);
     opening=True sweeps linearly from fc1 up to fc0 over the whole sound (a riser)"""
     n = len(x)
@@ -67,7 +67,7 @@ def lowpass_env(x, fc0, fc1, tau, q=0.35, opening=False):
     return y
 
 
-def pluck(f, ms=180, bright=8.0, decay=0.16, level=1.0):
+def pluck(f, ms=150, bright=3.5, decay=0.11, level=1.0):    # darker, shorter
     n = int(RATE * ms / 1000)
     x = saw(f * 1.0035, n) + saw(f / 1.0035, n) + 0.6 * np.sin(2 * np.pi * (f / 2) * np.arange(n) / RATE)
     y = lowpass_env(x, f * bright, f * 1.2, decay * 0.5)
@@ -90,7 +90,7 @@ def place(parts, total_ms=None):
     return out
 
 
-def echo(x, repeats=3, fb=0.38):
+def echo(x, repeats=1, fb=0.22):                                 # one quiet echo
     d = int(RATE * ECHO_S)
     out = np.zeros(len(x) + d * repeats)
     out[:len(x)] += x
@@ -118,23 +118,23 @@ def up():          return arp([C5, F5])
 def down():        return arp([F5, C5])
 def armed():       return arp([F4, Ab4, C5, F5], step=80)
 def disarmed():    return arp([F5, C5, Ab4, F4], step=80)
-def warning():     return echo(place([(i * 110, pluck(Eb5, ms=110, bright=10, decay=0.07)) for i in range(3)]), repeats=1)
+def warning():     return echo(place([(i * 110, pluck(Eb5, ms=90, bright=3.5, decay=0.05, level=0.8)) for i in range(3)]), repeats=1)
 def critical():
     # dark minor fall, twice, with a slower filter: unmistakable but not harsh
-    one = place([(0, pluck(Ab5, ms=220, bright=6, decay=0.2, level=1.1)), (150, pluck(F5, ms=260, bright=5, decay=0.25, level=1.1)),
-                 (300, pluck(Bb4, ms=320, bright=4, decay=0.3, level=1.1))])
-    return echo(seq(one, gap(120), one), repeats=1, fb=0.3)
+    one = place([(0, pluck(Ab5, ms=200, bright=3.5, decay=0.16)), (150, pluck(F5, ms=220, bright=3, decay=0.18)),
+                 (300, pluck(Bb4, ms=280, bright=2.5, decay=0.22))])
+    return echo(one, repeats=1, fb=0.2)                          # once, not twice
 def blip():        return echo(pluck(C5, ms=120, bright=4, decay=0.08, level=0.6), repeats=1)
 def tick(n=1, f=1000):
-    return echo(place([(i * 90, pluck(f, ms=60, bright=5, decay=0.03, level=0.7)) for i in range(n)]), repeats=1, fb=0.25)
+    return echo(place([(i * 90, pluck(f, ms=50, bright=3, decay=0.025, level=0.5)) for i in range(n)]), repeats=1, fb=0.25)
 def silent():      return gap(20)
 def hello():
     # F minor add9 rolled up, deadmau5-style stab with a long tail
-    return echo(place([(i * 70, pluck(f, ms=420, bright=7, decay=0.3, level=0.8)) for i, f in enumerate([F4, Ab4, C5, G5, C6])]), repeats=4, fb=0.4)
+    return echo(place([(i * 70, pluck(f, ms=320, bright=3.5, decay=0.22, level=0.8)) for i, f in enumerate([F4, Ab4, C5, G5])]), repeats=1, fb=0.25)
 def timer_done():
     chord = sum(pluck(f, ms=600, bright=3, decay=0.45, level=0.6) for f in (F4, Ab4, C5))
-    return echo(place([(0, chord), (420, pluck(F5, ms=160))]), repeats=2)
-def mode(f, n=1):  return echo(place([(i * 85, pluck(f, ms=110, decay=0.07)) for i in range(n)]), repeats=2, fb=0.3)
+    return echo(place([(0, chord), (420, pluck(F5, ms=140))]), repeats=1)
+def mode(f, n=1):  return echo(place([(i * 85, pluck(f, ms=110, decay=0.07)) for i in range(n)]), repeats=1, fb=0.2)
 def turtle_on():
     n = int(RATE * 0.35)
     x = saw(F4, n) + saw(F4 * 1.005, n)

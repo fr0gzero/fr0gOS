@@ -2,7 +2,7 @@
 
 Every English voice file on the radio is replaced by a tone with the same filename. Every event still makes a sound, just no voice.
 
-The sound is soft and deadmau5-style: detuned saw plucks with a sine sub, a filter that snaps shut, and a dotted-eighth echo at 128 BPM, all in F minor.
+The sound is soft and deadmau5-style: rounded saw plucks with a sine sub, a gentle filter pluck and one quiet dotted-eighth echo at 128 BPM, all in F minor. v3 (2026-11-08) is half the volume of v2 (about -14 dBFS peak), darker and about half as long, and the critical alert plays once.
 
 | Sound | Means |
 |---|---|
@@ -12,7 +12,7 @@ The sound is soft and deadmau5-style: detuned saw plucks with a sine sub, a filt
 | 2 notes rising | on / active / connected / recovered |
 | 2 notes falling | off / disabled / lost |
 | 3 quick beeps | warning (signal low, battery low, throttle or switch warning) |
-| dark 3-note fall, twice | critical (telemetry lost, signal critical, failsafe) |
+| dark 3-note fall | critical (telemetry lost, signal critical, failsafe) |
 | 2 short plucks, low / mid / high | angle / horizon / acro (low to high, like the OSD) |
 | high note + rising / falling | air mode on / off |
 | filter riser + rising | turtle on |
