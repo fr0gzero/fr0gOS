@@ -2,6 +2,10 @@
 
 All builds are on Betaflight 2026.6.2.
 
+## v1.2 r03 - 2026-11-07
+- Mode-change reaction: when flight mode, air mode, ELRS packet rate or VTX power changes, the new text decodes in from coloured noise, then green/amber/red chase along it for 0.8 s before it settles (decode only on analog). Live readouts (volts, timer, G, RPM...) don't react.
+- Air mode reads `AIR` when on and is blank when off (was `AIRON` / `NOAIR`).
+
 ## v1.2 r02 - 2026-11-07
 - Matrix rain screensaver starts after 5 s disarmed and still (was 60 s).
 - HISCORE.EXE shows best G only (this flight and the old record). Best RPM is still recorded but no longer shown.

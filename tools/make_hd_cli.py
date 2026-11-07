@@ -83,7 +83,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.2 r02 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.2 r03 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",
