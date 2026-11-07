@@ -20,24 +20,27 @@ def a(x, y):
 
 L, R = 0, 49
 LAYOUT = [
-    ("# top: FROG + cursor | frog + craft name", None),
+    # v1.3 layout. How high something sits = how much it matters in flight. Fast-moving numbers are
+    # grouped away from the critical ones, static reference goes to the bottom corners, and colour
+    # only appears when something needs you.
+    ("# top: FR0G + cursor | frog + craft name", None),
     ("osd_frog_tag_pos", a(L, 0)), ("osd_frog_craft_pos", a(R, 0)),
-    ("# power, top left", None),
-    ("osd_vbat_pos", a(L, 2)), ("osd_current_pos", a(L, 3)), ("osd_mah_drawn_pos", a(L, 4)), ("osd_frog_batt_pos", a(L, 5)),
-    ("# link, middle left", None),
+    ("# POWER, top left (eye line): the number a whoop pilot reads most", None),
+    ("osd_vbat_pos", a(L, 2)), ("osd_frog_batt_pos", a(L, 3)), ("osd_mah_drawn_pos", a(L, 4)), ("osd_current_pos", a(L, 5)),
+    ("# LINKS, middle left: control link, then video link", None),
     ("osd_link_quality_pos", a(L, 7)), ("osd_rssi_dbm_pos", a(L, 8)), ("osd_frog_rate_pos", a(L, 9)),
-    ("# camera / video format, bottom left (text from osd_custom_msg0-2, blank if unset)", None),
-    ("osd_custom_msg0_pos", a(L, 13)), ("osd_custom_msg1_pos", a(L, 14)), ("osd_custom_msg2_pos", a(L, 15)),
-    ("osd_total_flights_pos", a(L, 16)),
-    ("# time, top right", None),
-    ("osd_tim_2_pos", a(R, 2)), ("osd_throttle_pos", a(R, 3)),
-    ("osd_esc_rpm_pos", a(R, 4)),
-    ("# state, middle right", None),
-    ("osd_disarmed_pos", a(R, 7)), ("osd_flymode_pos", a(R, 8)), ("osd_frog_air_pos", a(R, 9)),
-    ("osd_g_force_pos", a(R, 10)),
-    ("# system, bottom right", None),
-    ("osd_esc_tmp_pos", a(R, 12)), ("osd_core_temp_pos", a(R, 13)), ("osd_vtx_channel_pos", a(R, 14)), ("osd_frog_vtxpwr_pos", a(R, 15)),
-    ("osd_warnings_pos", a(R, 16)),
+    ("osd_vtx_channel_pos", a(L, 10)), ("osd_frog_vtxpwr_pos", a(L, 11)),
+    ("# VIDEO, bottom left: HDZRO + camera mode (osd_custom_msg0-2 per quad, blank if unset)", None),
+    ("osd_custom_msg3_pos", a(L, 13)),
+    ("osd_custom_msg0_pos", a(L, 14)), ("osd_custom_msg1_pos", a(L, 15)), ("osd_custom_msg2_pos", a(L, 16)),
+    ("# TIME + ALERTS, top right (eye line): warnings are empty until something is wrong", None),
+    ("osd_tim_2_pos", a(R, 2)), ("osd_warnings_pos", a(R, 3)),
+    ("# STATE, middle right: what the switches say", None),
+    ("osd_disarmed_pos", a(R, 5)), ("osd_flymode_pos", a(R, 6)), ("osd_frog_air_pos", a(R, 7)),
+    ("# PERFORMANCE, lower right: the fast-moving numbers, kept together", None),
+    ("osd_throttle_pos", a(R, 9)), ("osd_esc_rpm_pos", a(R, 10)), ("osd_g_force_pos", a(R, 11)),
+    ("# SYSTEM, bottom right: slow, glance when curious", None),
+    ("osd_esc_tmp_pos", a(R, 13)), ("osd_core_temp_pos", a(R, 14)), ("osd_total_flights_pos", a(R, 16)),
 ]
 FROGOS_HD_BLOCK = "\n".join([
     "# ---- FrogOS HDZero hacker layout (identical on every HD quad) ----",
@@ -56,6 +59,7 @@ FROGOS_HD_BLOCK = "\n".join([
     "set osd_framerate_hz = 20",
     "# battery noise in the black bars (SAG green, LOW amber, LAND red, DEAD red flood)",
     "set osd_frog_noise_pos = 2048",
+    "set osd_custom_msg3 = HDZRO",
 ] + [k if v is None else f"set {k} = {v}" for k, v in LAYOUT])
 
 SKIP_PREFIX = ("mcu_id", "signature", "# version", "# Betaflight", "# config rev", "# start the command",
@@ -83,7 +87,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.2 r03 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.3 r01 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",

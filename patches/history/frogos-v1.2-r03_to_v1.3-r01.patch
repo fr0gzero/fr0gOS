@@ -1,10 +1,13 @@
 diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
-index ca6343f..666ff73 100644
+index ca6343f..3dbb1b3 100644
 --- a/src/main/osd/osd.c
 +++ b/src/main/osd/osd.c
-@@ -507,7 +507,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+@@ -505,9 +505,9 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
  // ---------------- FrogOS boot screen ----------------
- #define FROGOS_VERSION   "V1.2 R03"
+-#define FROGOS_VERSION   "V1.2 R03"
++#define FROGOS_VERSION   "V1.3 R01"
  #define FROG_BOOT_WIDTH  22
 -#define FROG_BOOT_LINES  8
 +#define FROG_BOOT_LINES  9

@@ -2,6 +2,16 @@
 
 All builds are on Betaflight 2026.6.2.
 
+## v1.3 r01 - 2026-11-07 (MK4-2 test build)
+- **New layout**, ordered by what matters in flight (see `fonts/hdzero-hacker/frogos_layout_v13_proposal.png`):
+  - Left column: power top, then links (LQ, dBm, packet rate, VTX channel and power), then video (`HDZRO` + camera mode) at the bottom.
+  - Right column: time and warnings top (warnings moved up from the bottom, empty until something's wrong), then state (ARM, mode, AIR), then performance (throttle, RPM, G), then system (ESC and core temp, flights).
+- G meter heats up: green, amber from 1.5 G, red from 2.5 G, red/amber flicker with glitches from 3.5 G. Holds the peak 0.5 s. Shows `!` and a colour chase while beating your all-time best G.
+- Appear/vanish: readouts decode in and dissolve out through brief glyph flashes. The whole OSD does it when it comes back after boot, arming, HISCORE or the screensaver.
+- Analog effects scaled back so nothing lands in empty space: battery % glitches at LAND / DEAD, no arm sweep or fireworks, text shimmer instead of Matrix rain, plain G number.
+- Boot screen `VIDEO HDZERO` (or `ANALOG`) line.
+- Only MK4-2 is built so far. MK5-1 and MK4-1 stay on v1.2 r03 until the test flight.
+
 ## v1.2 r03 - 2026-11-07
 - Mode-change reaction: when flight mode, air mode, ELRS packet rate or VTX power changes, the new text decodes in from coloured noise, then green/amber/red chase along it for 0.8 s before it settles (decode only on analog). Live readouts (volts, timer, G, RPM...) don't react.
 - Air mode reads `AIR` when on and is blank when off (was `AIRON` / `NOAIR`).
