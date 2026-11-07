@@ -23,8 +23,8 @@ LAYOUT = [
     # v1.3 layout. How high something sits = how much it matters in flight. Fast-moving numbers are
     # grouped away from the critical ones, static reference goes to the bottom corners, and colour
     # only appears when something needs you.
-    ("# top right: craft name with the frog as the dash (MK4<frog>2); FR0G tag top left removed for now", None),
-    ("osd_frog_tag_pos", 0), ("osd_frog_craft_pos", a(R, 0)),
+    ("# top left: activity feed, 2 lines (what the pilot is doing) | top right: craft name, frog as the dash", None),
+    ("osd_frog_feed_pos", a(L, 0)), ("osd_frog_craft_pos", a(R, 0)),
     ("# POWER, top left (eye line): the number a whoop pilot reads most", None),
     ("osd_vbat_pos", a(L, 2)), ("osd_frog_batt_pos", a(L, 3)), ("osd_mah_drawn_pos", a(L, 4)), ("osd_current_pos", a(L, 5)),
     ("# LINKS, middle left: control link, then video link", None),
@@ -57,8 +57,8 @@ FROGOS_HD_BLOCK = "\n".join([
     "set stats_min_armed_time_s = 15",
     "# 20 fps OSD: ~25 elements x ~15 B over MSP is ~390 B/frame, ~7.8 KB/s of the ~11.5 KB/s at 115200 baud",
     "set osd_framerate_hz = 20",
-    "# battery noise in the black bars (SAG green, LOW amber, LAND red, DEAD red flood)",
-    "set osd_frog_noise_pos = 2048",
+    "# battery noise in the bars retired in v1.3 r04 (battery stages show on voltage, % and bar instead)",
+    "set osd_frog_noise_pos = 0",
     "set osd_custom_msg3 = HDZRO",
     "# core temp warning at 75C",
     "set osd_core_temp_alarm = 75",
@@ -99,7 +99,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.3 r03 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.3 r04 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",

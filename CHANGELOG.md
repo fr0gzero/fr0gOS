@@ -4,6 +4,22 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice).
 
+## v1.3 r04 - 2026-11-08 (MK4-2 test build)
+- **Activity feed**, top left, two lines (`osd_frog_feed_pos`, replaces `osd_frog_tag_pos`). It shows what the pilot is doing, for the viewer. The newest event types in through glyphs and stays; the previous one drops to line 2.
+  - Switches: `ANGLE` `HORZN` `ACRO`, `AIR` `NOAIR`, `ARMED` `SAFE`, `TURTL`, `BEEP`, packet rate and VTX power changes.
+  - Flying: `PUNCH` (throttle past 90%), `CHOP` (60%+ to under 8% within 0.3 s), `ROLL` / `FLIP` / `SPIN` (about 85% of max rate), `FLOAT` (under 0.35 G for 0.25 s).
+  - Hits: `3.6G!` (3 G+), `CRASH` (4.5 G+), `RECRD` (beats your best G).
+  - Warnings: every new warning except battery and temperature.
+- Battery noise in the black bars removed completely (`osd_frog_noise_pos = 0`).
+- Six battery stages, per cell, from the live sag voltage (about 5 Hz), so a hard punch drops it into the low stages and it comes back when you ease off (0.02 V hysteresis):
+  - FULL 4.00 / GOOD 3.80 / MID 3.65: green; bar glyph 4 / 3 / 2.
+  - LOW 3.50: amber breathing; bar 1.
+  - LAND 3.35: red/amber pulse; bar blinking.
+  - DEAD under 3.35: red flicker, % scrambles, bar strobes.
+  - The bottom three animate all the time. Voltage, % and bar follow the stage on HD. Analog: the % blinks (LAND) and scrambles (DEAD); the voltage stays plain.
+- The frog sweats from LOW down. Betaflight warnings line up with the stages: `vbat_warning_cell_voltage = 350`, `vbat_min_cell_voltage = 335`.
+- RPM is livelier: always one decimal (`38.2K`), and on HD it heats up against this quad's own best RPM: amber from 60%, red from 85%, red/amber flicker at 97%+.
+
 ## v1.3 r03 - 2026-11-08 (MK4-2 test build)
 - Battery noise, Matrix rain and HISCORE fireworks use 5 columns each side on HD (was 6), so they stay in the black bars instead of creeping over the picture.
 - The frog is the dash in the craft name: `MK4`, frog, `2`. The arm hop lands it there.
