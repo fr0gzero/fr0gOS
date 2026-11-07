@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""Fleet mockup: MK51 + MK42 (HDZero hacker font) and MK41 (analog), with optional extras in grey.
+
+usage: mockup_fleet.py <BTFL_000.bmp> <pcface fontmap.js> <out.png>
+"""
+import re
+import sys
+from PIL import Image, ImageDraw
+
+FONT, FONTMAP, OUT = sys.argv[1:4]
+font = Image.open(FONT).convert("RGB")
+GW, GH = font.width // 16, font.height // 32
+TRANS = (127, 127, 127)
+GHOST = (120, 120, 120)
+FROG, CURSOR, BATT, MAH = 0xF9, 0xFC, 0x11, 0x07
+
+vga = {}
+for line in open(FONTMAP, encoding="utf-8"):
+    m = re.search(r"\[((?:0x[0-9a-f]{2},?\s*){16})\].*\((\d+)\)\s*$", line)
+    if m:
+        vga[int(m.group(2))] = [int(b, 16) for b in re.findall(r"0x[0-9a-f]{2}", m.group(1))]
+
+
+def g(s):
+    return [ord(c) for c in s]
+
+
+def scene(w, h, pic_w):
+    bg = Image.new("RGB", (w, h), (0, 0, 0))
+    d = ImageDraw.Draw(bg)
+    x0 = (w - pic_w) // 2
+    for y in range(h):
+        t = y / h
+        col = (int(70 + 60 * (1 - t)), int(82 + 50 * (1 - t)), int(96 + 40 * (1 - t))) if t < 0.55 else (int(58 + 30 * t), int(48 + 22 * t), int(40 + 10 * t))
+        d.line([(x0, y), (x0 + pic_w, y)], fill=col)
+    d.rectangle([x0 + pic_w * 0.62, h * 0.18, x0 + pic_w * 0.9, h * 0.55], fill=(205, 205, 190))
+    d.rectangle([x0 + pic_w * 0.1, h * 0.6, x0 + pic_w * 0.45, h * 0.95], fill=(92, 60, 42))
+    return bg
+
+
+def hd_panel(items):
+    cols, rows = 50, 18
+    img = scene(cols * GW, rows * GH, rows * GH * 4 // 3)
+    px, fpx = img.load(), font.load()
+    for x, y, codes, right, ghost in items:
+        if right:
+            x = x + 1 - len(codes)
+        for i, code in enumerate(codes):
+            gx, gy = (code % 16) * GW, (code // 16) * GH
+            for yy in range(GH):
+                for xx in range(GW):
+                    p = fpx[gx + xx, gy + yy]
+                    if p == TRANS:
+                        continue
+                    if ghost and p != (0, 0, 0):
+                        p = GHOST
+                    px[(x + i) * GW + xx, y * GH + yy] = p
+    return img
+
+
+def analog_panel(items):
+    cw, ch, cols, rows = 12, 18, 30, 13
+    img = scene(cols * cw, rows * ch, cols * cw)   # analog: picture fills the frame
+    px = img.load()
+    for x, y, text, right, ghost in items:
+        if right:
+            x = x + 1 - len(text)
+        colour = GHOST if ghost else (240, 240, 240)
+        for i, c in enumerate(text):
+            rows16 = vga[ord(c)]
+            ox, oy = (x + i) * cw + 2, y * ch + 1
+            on = {(xx, yy) for yy in range(16) for xx in range(8) if (rows16[yy] >> (7 - xx)) & 1}
+            for (xx, yy) in on:
+                for dx in (-1, 0, 1):
+                    for dy in (-1, 0, 1):
+                        if (xx + dx, yy + dy) not in on:
+                            X, Y = ox + xx + dx, oy + yy + dy
+                            if 0 <= X < img.width and 0 <= Y < img.height:
+                                px[X, Y] = (0, 0, 0)
+            for (xx, yy) in on:
+                px[ox + xx, oy + yy] = colour
+    return img.resize((img.width * 3, img.height * 3), Image.NEAREST)
+
+
+L, R = 0, 49
+
+
+def hd_quad(name, cam):
+    it = [(L, 0, g("FR0G") + [CURSOR], False, False), (R, 0, [FROG] + g(name), True, False),
+          (L, 2, g("3.98V"), False, False), (L, 3, g("4.32A"), False, False), (L, 4, g("212") + [MAH], False, False),
+          (L, 5, g("62%") + [BATT + 2], False, False),
+          (L, 7, g("LQ100"), False, False), (L, 8, g("-41"), False, False), (L, 9, g("F1000"), False, False),
+          (R, 2, g("01:47"), True, False), (R, 3, g("38%"), True, False),
+          (R, 7, g("[ARM]"), True, False), (R, 8, g("ACRO"), True, False), (R, 9, g("AIRON"), True, False),
+          (R, 13, g("C52"), True, False), (R, 14, g("R8"), True, False), (R, 15, g("200MW"), True, False)]
+    it += [(L, 13 + i, g(t), False, False) for i, t in enumerate(cam)]
+    # optional extras, grey
+    it += [(R, 4, g("2:10"), True, True),     # flight time left estimate
+           (R, 5, g("38K"), True, True),      # average motor RPM
+           (R, 10, g("2.1G"), True, True),    # g-force
+           (R, 12, g("E48"), True, True),     # ESC temperature
+           (L, 11, g("P2R1"), False, True),   # PID / rate profile
+           (L, 16, g("#127"), False, True)]   # total flights
+    return hd_panel(it)
+
+
+p51 = hd_quad("MK51", ["540P", "90FPS", "CROP"])
+p42 = hd_quad("MK42", ["720P", "60FPS", "4:3"])
+p41 = analog_panel([
+    (0, 0, "FR0G_", False, False), (29, 0, "MK41", True, False),
+    (0, 1, "3.82V", False, False), (0, 2, "78%", False, False),
+    (0, 4, "LQ99", False, False), (0, 5, "F1000", False, False),
+    (0, 9, "ANT", False, False), (0, 10, "NTSC", False, False), (0, 11, "16:9", False, False),
+    (29, 1, "01:23", True, False), (29, 2, "45%", True, False),
+    (29, 4, "SAFE", True, False), (29, 5, "ACRO", True, False), (29, 6, "NOAIR", True, False),
+    (29, 8, "C41", True, False), (29, 9, "R8", True, False), (29, 10, "200MW", True, False), (29, 11, "LOWV", True, False),
+    (29, 3, "2:10", True, True), (0, 7, "38K", False, True), (0, 3, "P1R0", False, True)])
+
+W = 1100
+panels = [("MK51  HDZero  540P90 crop", p51), ("MK42  HDZero  720P60 4:3", p42), ("MK41  analog  NTSC 16:9 (font approximate)", p41)]
+scaled = [(t, im.resize((W, int(im.height * W / im.width)), Image.LANCZOS)) for t, im in panels]
+H = sum(im.height + 34 for _, im in scaled) + 40
+sheet = Image.new("RGB", (W + 40, H), (16, 16, 16))
+d = ImageDraw.Draw(sheet)
+y = 14
+for t, im in scaled:
+    d.text((20, y), t, fill=(230, 230, 230))
+    sheet.paste(im, (20, y + 18))
+    y += im.height + 34
+d.text((20, y - 6), "grey = optional extras: 2:10 time left, 38K motor RPM, 2.1G g-force, E48 ESC temp, P2R1 profiles, #127 flight count", fill=(170, 170, 170))
+sheet.save(OUT)
+print("ok", sheet.size)
