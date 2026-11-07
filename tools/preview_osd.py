@@ -65,13 +65,14 @@ L, R = 0, 49
 
 
 def flight(frog=FROG, warn=None, volt=None, batt=None, lq=None):
-    c = [(L, 0, g("FROG0") + [CURSOR], False), (R, 0, [frog] + g("MK5-1"), True),
+    c = [(L, 0, g("FR0G") + [CURSOR], False), (R, 0, [frog] + g("MK51"), True),
          (L, 2, volt or g("3.98V"), False), (L, 3, g("4.32A"), False), (L, 4, g("212") + [MAH], False),
          (L, 5, batt or (g("62%") + [BATT + 2]), False),
+         (L, 8, g("540P"), False), (L, 9, g("90FPS"), False), (L, 10, g("CROP"), False),
          (L, 13, lq or g("LQ100"), False), (L, 14, g("-41"), False), (L, 15, g("F1000"), False),
          (R, 2, g("01:47"), True), (R, 3, g("38%"), True),
          (R, 7, g("[ARM]"), True), (R, 8, g("ACRO"), True), (R, 9, g("AIRON"), True),
-         (R, 13, g("C52"), True), (R, 14, g("R8200"), True)]
+         (R, 13, g("C52"), True), (R, 14, g("R8"), True), (R, 15, g("200MW"), True)]
     if warn:
         c.append((R, 16, warn, True))
     return c
@@ -85,13 +86,13 @@ frames = [
 ]
 
 boot = [(13, 4, list(range(0xA0, 0xB8)), False), (13, 5, list(range(0xB8, 0xD0)), False),
-        (14, 7, g("FROGOS V1.1 R01  MK5-1"), False),
+        (14, 7, g("FROGOS V1.1 R02   MK51"), False),
         (14, 8, g("CPU  G474 C41 ..... OK"), False),
         (14, 9, g("GYRO .............. OK"), False),
         (14, 10, g("RX   ............") + amber("WAIT"), False),
         (14, 11, g("VTX  R8 200 ....... OK"), False),
         (14, 12, g("ESC  4/4 ...........") + [ord("/")], False),
-        (L, 0, g("FROG0") + [CURSOR], False), (R, 0, [FROG] + g("MK5-1"), True),
+        (L, 0, g("FR0G") + [CURSOR], False), (R, 0, [FROG] + g("MK51"), True),
         (L, 15, amber("SCAN") + [ord("/")], False), (R, 7, g("SAFE"), True)]
 arm = [(0, 8, ([S1, ord("%"), S3, ord("7"), S2, ord(" "), S1, ord("X"), S3] * 6)[:50], False),
        (0, 9, ([S3, ord(" "), S2, ord("@"), S1, ord("="), S2, ord("<"), S3] * 6)[:50], False),

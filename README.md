@@ -11,16 +11,17 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 
 | Craft | Quad | Board target | Video | Current build |
 |---|---|---|---|---|
-| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant) | v1.1 r01 |
-| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero | v1.1 r01 |
-| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 90 fps | v1.1 r01 |
+| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant) | v1.1 r02 |
+| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero | v1.1 r02 |
+| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.1 r02 |
 
 ## What FrogOS changes
 
 **Every quad**
 - Telemetry in two 5-character columns at the screen edges, grouped by category: power top left, link bottom left, time top right, state middle right, system bottom right.
 - Column 0 is left-justified and the last column right-justified, whatever canvas width the FC assumes.
-- No icons or unit glyphs: `4.09V`, `2.16A`, `LQ100`, `-33`, `45%`, `R8200`, `C52`.
+- No icons or unit glyphs: `4.09V`, `2.16A`, `LQ100`, `-33`, `45%`, `R8`, `200MW`, `C52`.
+- Camera mode as plain text lines, set per quad from the CLI (`osd_custom_msg0`-`3`, e.g. `540P` / `90FPS` / `CROP`). Unset lines show nothing.
 - New elements: live ELRS packet rate (`F1000`, `D500`...), battery %, air mode (`AIRON` / `NOAIR`) on its own line, separate flight mode (`ACRO` / `ANGLE` / `HORZN`).
 - `[ARM]` / `SAFE` always shown. Every warning fits 5 characters (`LOWV`, `LAND!`, `FSAFE`, `RXLOS`, `TURTL`, `HOT70`...).
 - BIOS-style boot screen with real checks (CPU, gyro, receiver, VTX, ESC telemetry, battery) that tick in one at a time. The receiver shows `WAIT` until the radio links.
@@ -31,11 +32,11 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 **HDZero with the hacker font** (`osd_frog_hd_font = ON`)
 - IBM VGA 8x16 DOS font in phosphor green with a black outline.
 - Per-character colour: normal is green, warning is amber, critical is red. HDZero only gives Betaflight one 256-glyph bank, so the font carries amber and red copies of the alphabet.
-- `FROG` with a blinking cursor top left, and an animated frog next to the craft name top right. It blinks now and then and croaks while a warning is up.
+- `FR0G` with a blinking cursor top left, and an animated frog next to the craft name top right. It blinks now and then and croaks while a warning is up.
 - Battery bar glyph after the %, and a `SCAN` spinner until the receiver links.
 - Boot logo `> fr0gzero_` in big DOS letters.
 
-New CLI settings: `osd_frog_tag_pos`, `osd_frog_craft_pos`, `osd_frog_air_pos`, `osd_frog_rate_pos`, `osd_frog_batt_pos`, `osd_frog_hd_font`.
+New CLI settings: `osd_frog_tag_pos`, `osd_frog_craft_pos`, `osd_frog_air_pos`, `osd_frog_rate_pos`, `osd_frog_batt_pos`, `osd_frog_vtxpwr_pos`, `osd_frog_hd_font`, and `osd_custom_msg0`-`3` with `osd_custom_msg0_pos`-`3_pos`.
 Configurator doesn't know these elements, so position them from the CLI.
 
 ## Flashing a quad
@@ -54,7 +55,7 @@ The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or s
 git clone --branch 2026.6.2 --depth 1 https://github.com/betaflight/betaflight.git
 cd betaflight
 git submodule update --init --depth 1 src/config
-git apply ../patches/frogos-v1.1-r01_betaflight-2026.6.2.patch
+git apply ../patches/frogos-v1.1-r02_betaflight-2026.6.2.patch
 make arm_sdk_install            # or point ARM_SDK_DIR at GCC 13.3.1
 make CONFIG=CRAZYBEE473
 make CONFIG=BETAFPVG473_V2

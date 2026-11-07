@@ -2,6 +2,12 @@
 
 All builds are on Betaflight 2026.6.2.
 
+## v1.1 r02 - 2026-11-07
+- Top bar tag is `FR0G` (DOS-font zero, matching the other zeros).
+- Camera mode on the OSD: `osd_custom_msg0`-`3` text and positions can now be set from the CLI, and unset lines show nothing (stock showed `CUSTOM_MSG1`). MK5-1 shows `540P` / `90FPS` / `CROP` middle left.
+- VTX power has its own element, `osd_frog_vtxpwr_pos` (`200MW`). The VTX channel element is now just band and channel (`R8`).
+- Shared HDZero block in `tools/make_hd_cli.py` gains the camera lines and VTX power. MK5-1 and MK4-2 CLIs regenerated from it.
+
 ## v1.1 r01 - 2026-11-07 (hacker)
 - MK4-1 (analog) moved to v1.1: decoding warnings, BIOS boot, arming glitch and `[ARM]` in mono. `FROG` with a blinking `_` top left, `MK41` top right.
 - HDZero hacker font (IBM VGA 8x16, phosphor green) with per-character amber and red copies of the alphabet. The logo shrinks to 24x2.
