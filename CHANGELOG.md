@@ -4,6 +4,12 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice).
 
+## v1.3 r08 - 2026-11-08 (MK4-2 test build)
+- Layout C (corners) chosen. Left: frog row 0, event log rows 1-5, power 7-9, links 13-16. Right: name 0, time 1, warnings 2, ARMED / mode / AIR 3-5, THR + RPM + G cluster in the bottom corner 12-16.
+- Event log is 5 lines. A new message pops in at the top and pushes the older ones down. Each disintegrates into glyphs 4 s after it appears, then disappears.
+- Core temp and flight counter removed from the layout.
+- Screensaver back on (Matrix rain in the bars after 5 s idle; text shimmer on analog).
+
 ## v1.3 r07 - 2026-11-08 (MK4-2 test build)
 - No more glyphs across the picture. The arm screen is a centre message only: `ARMED` (plus the crash flip text when flipping) glyphs in for 0.4 s, holds, then glyphs out (1.6 s total). The noise sweep, strays, Matrix rain / shimmer screensaver and HISCORE fireworks are gone. Glyphs stay on side-column changes (feed, mode changes, appear/vanish).
 - The frog hops around the black bars. On events (arm, crash flip, mode / air changes, tricks, warnings) it jumps to a random free spot worked out from the live layout. Never sooner than 12 s after the last hop, 50/50 between 12 and 20 s, certain after that, so roughly every 15-20 s of flying. A hop is a glyph puff where it was, a puff where it lands, then the frog.
