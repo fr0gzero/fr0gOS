@@ -4,6 +4,12 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r12 - 2026-11-08 (MK4-2, MK5-1)
+- **OSD frame rate fix.** The MK5-1 DVR showed the whole OSD only refreshing about twice a second (so the hop, RPM and throttle all stepped). Cause: Betaflight schedules each OSD element by the longest time it has ever taken, and only decays that by a hair per draw. The frog's ledge search was slow (it checked every element against every other) and ran every second, so the feed / frog element looked slow forever and had to wait its turn six times a frame.
+  - Ledges are now one pass over the layout, and only worked out on the ground (the layout doesn't change in flight).
+  - Element timings decay about 1% a draw instead of a fraction of a microsecond, so a one-off slow frame doesn't hold the OSD back for minutes.
+- Same settings and goggle font: flash without Full chip erase, or with it and paste the r12 CLI.
+
 ## v1.3 r11 - 2026-11-08 (MK4-2, MK5-1)
 - Slower, smoother hop. Each phase of a hop (crouch, three arc frames, land) now lasts 100 ms, two OSD frames at 20 fps, so every frame is actually shown. One cell takes 0.5 s (was 0.32 s, which skipped frames and looked jerky).
 - Same settings and goggle font as r10: flash without Full chip erase, no CLI needed.

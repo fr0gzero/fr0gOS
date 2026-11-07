@@ -1,0 +1,97 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 3d97c21..e96e5c0 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -511,7 +511,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R11"
++#define FROGOS_VERSION   "V1.3 R12"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+@@ -2185,7 +2185,10 @@ void osdUpdate(timeUs_t currentTimeUs)
+                 osdElementDurationFractionUs[osdElement] = executeTimeUs << OSD_EXEC_TIME_SHIFT;
+             } else if (osdElementDurationFractionUs[osdElement] > 0) {
+                 // Slowly decay the max time
+-                osdElementDurationFractionUs[osdElement]--;
++                // fr0gOS: faster (about 1% a draw), so one slow frame (an effect starting, the OSD coming back)
++                // doesn't leave an element looking slow to the scheduler for minutes, holding the frame rate down
++                const uint32_t d = osdElementDurationFractionUs[osdElement];
++                osdElementDurationFractionUs[osdElement] = d - MIN(d, (d >> 7) + 1);
+             }
+ 
+             if (osdIsRenderPending()) {
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index d9cf845..947da80 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1672,8 +1672,10 @@ static int frogHopCells(uint32_t t, int x, int dir, uint32_t crouch, uint32_t st
+     return 1;
+ }
+ 
+-static bool frogRowBusy(bool right, int row)
++// which rows each side's readouts use, as bitmasks (bit n = row n). One pass over the layout.
++static void frogBusyRows(uint32_t *left, uint32_t *right)
+ {
++    *left = *right = 0;
+     for (int i = 0; i < OSD_ITEM_COUNT; i++) {
+         const uint16_t pos = osdElementConfig()->item_pos[i];
+         if (!VISIBLE(pos) || i == OSD_FROG_GLITCH) {
+@@ -1684,26 +1686,24 @@ static bool frogRowBusy(bool right, int row)
+         if (x >= FROG_EDGE_ZONE && !isRight) {
+             continue;
+         }
+-        if (isRight != right) {
+-            continue;
+-        }
++        uint32_t rows;
+         if (i == OSD_FROG_TAG) {
+-            if (row > y && row <= y + FROG_FEED_LINES) {   // the feed lines (the frog row itself is free)
+-                return true;
+-            }
+-            continue;
+-        }
+-        if (row == y || ((i == OSD_THROTTLE_POS || i == OSD_ESC_RPM) && row == y + 1)) {
+-            return true;                                  // labelled readouts use two rows
++            rows = ((1u << FROG_FEED_LINES) - 1) << (y + 1);   // the feed lines (the frog row itself is free)
++        } else if (i == OSD_THROTTLE_POS || i == OSD_ESC_RPM) {
++            rows = 3u << y;                                   // labelled readouts use two rows
++        } else {
++            rows = 1u << y;
+         }
++        *(isRight ? right : left) |= rows;
+     }
+-    return false;
+ }
+ 
+ // ledges from the live layout: home (the feed's frog row), then the free row above each edge readout
+ static void frogFindLedges(void)
+ {
+     frogLedgeCount = 0;
++    uint32_t busyL, busyR;
++    frogBusyRows(&busyL, &busyR);
+     const uint16_t tag = osdElementConfig()->item_pos[OSD_FROG_TAG];
+     if (VISIBLE(tag)) {
+         const int x = OSD_X(tag) + FROG_FEED_LEN - 1;
+@@ -1716,7 +1716,7 @@ static void frogFindLedges(void)
+         }
+         const int x = OSD_X(pos), y = OSD_Y(pos);
+         const bool right = x >= frogCols - FROG_EDGE_ZONE;
+-        if ((x >= FROG_EDGE_ZONE && !right) || y < 1 || frogRowBusy(right, y - 1)) {
++        if ((x >= FROG_EDGE_ZONE && !right) || y < 1 || ((right ? busyR : busyL) & (1u << (y - 1)))) {
+             continue;
+         }
+         const int len = MIN(frogItemLen[i], FROG_EDGE_ZONE);
+@@ -1809,7 +1809,9 @@ static void frogStartHop(int dir, timeMs_t now)
+ // one OSD frame of the frog: up to two cells (x, glyph); returns how many are on screen
+ static int frogTick(timeMs_t now, int *cx, uint8_t *cg)
+ {
+-    if (!frogLedgesAt || now - frogLedgesAt >= 1000) {
++    // ledges: worked out on the ground (the layout doesn't change in flight), kept cheap so this element
++    // never looks slow to the scheduler
++    if (!frogLedgesAt || (!ARMING_FLAG(ARMED) && now - frogLedgesAt >= 1000)) {
+         frogLedgesAt = now ? now : 1;
+         frogFindLedges();
+     }
