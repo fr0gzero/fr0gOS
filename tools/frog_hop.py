@@ -111,40 +111,41 @@ def ledge(row, right):
 
 
 # the tour: ledge on the left (above the power group) -> wrap -> ledge on the right (above the performance group)
-L_LEDGE, R_LEDGE = ledge(6, False), ledge(11, True)
-sit(L_LEDGE, 6, 900)
-sit(L_LEDGE, 6, 140, BLINK)
-sit(L_LEDGE, 6, 700)
-for c in range(L_LEDGE, 0, -1):    # hop out along the empty row to the screen edge
-    hop(c, 6, -1)
-hop(0, 6, -1)                       # off the left edge...
-frame([], 250)
-hop(50, 11, -1)                     # ...and in from the right edge, one row group further down
-for c in range(49, R_LEDGE, -1):
-    hop(c, 11, -1)
-sit(R_LEDGE, 11, 800)
-# mode change: a little hop in place on the ledge
-for f, ms in ((CROUCH, 60), (scale(IDLE, 0.94, 1.08), 60), (IDLE.transform(IDLE.size, Image.AFFINE, (1, 0, 0, 0, 1, 5)), 90), (LAND, 60)):
-    sit(R_LEDGE, 11, ms, f)
-sit(R_LEDGE, 11, 600, SMILE)
-sit(R_LEDGE, 11, 1200, SLEEPY)
+if __name__ == "__main__":
+    L_LEDGE, R_LEDGE = ledge(6, False), ledge(11, True)
+    sit(L_LEDGE, 6, 900)
+    sit(L_LEDGE, 6, 140, BLINK)
+    sit(L_LEDGE, 6, 700)
+    for c in range(L_LEDGE, 0, -1):    # hop out along the empty row to the screen edge
+        hop(c, 6, -1)
+    hop(0, 6, -1)                       # off the left edge...
+    frame([], 250)
+    hop(50, 11, -1)                     # ...and in from the right edge, one row group further down
+    for c in range(49, R_LEDGE, -1):
+        hop(c, 11, -1)
+    sit(R_LEDGE, 11, 800)
+    # mode change: a little hop in place on the ledge
+    for f, ms in ((CROUCH, 60), (scale(IDLE, 0.94, 1.08), 60), (IDLE.transform(IDLE.size, Image.AFFINE, (1, 0, 0, 0, 1, 5)), 90), (LAND, 60)):
+        sit(R_LEDGE, 11, ms, f)
+    sit(R_LEDGE, 11, 600, SMILE)
+    sit(R_LEDGE, 11, 1200, SLEEPY)
 
-out = sys.argv[1]
-os.makedirs(out, exist_ok=True)
-frames[0].save(os.path.join(out, "frog_hop_tour.gif"), save_all=True, append_images=frames[1:], duration=durs, loop=0, disposal=2)
-# glyph sheet for the hop
-sh = Image.new("RGB", (8 * (W * 3 + 10) + 20, 2 * (H * 3 + 30) + 30), (16, 16, 16))
-dd = ImageDraw.Draw(sh)
-for row, (name, pairs) in enumerate((("hop right: from-cell | to-cell, three steps", HOP_R), ("hop left (and the wraparound)", HOP_L))):
-    y = 10 + row * (H * 3 + 30)
-    dd.text((10, y), name, fill=(220, 220, 220))
-    x = 10
-    for a, b in pairs:
-        for g in (a, b) if name.startswith("hop right") else (b, a):
-            cell = Image.new("RGB", (W, H), (0, 0, 0))
-            cell.paste(g, (0, 0), g)
-            sh.paste(cell.resize((W * 3, H * 3), Image.NEAREST), (x, y + 14))
-            x += W * 3 + 2
-        x += 14
-sh.save(os.path.join(out, "frog_hop_glyphs.png"))
-print("tour", len(frames), "frames", round(sum(durs) / 1000, 1), "s; hop glyphs: 12 (6 each way)")
+    out = sys.argv[1]
+    os.makedirs(out, exist_ok=True)
+    frames[0].save(os.path.join(out, "frog_hop_tour.gif"), save_all=True, append_images=frames[1:], duration=durs, loop=0, disposal=2)
+    # glyph sheet for the hop
+    sh = Image.new("RGB", (8 * (W * 3 + 10) + 20, 2 * (H * 3 + 30) + 30), (16, 16, 16))
+    dd = ImageDraw.Draw(sh)
+    for row, (name, pairs) in enumerate((("hop right: from-cell | to-cell, three steps", HOP_R), ("hop left (and the wraparound)", HOP_L))):
+        y = 10 + row * (H * 3 + 30)
+        dd.text((10, y), name, fill=(220, 220, 220))
+        x = 10
+        for a, b in pairs:
+            for g in (a, b) if name.startswith("hop right") else (b, a):
+                cell = Image.new("RGB", (W, H), (0, 0, 0))
+                cell.paste(g, (0, 0), g)
+                sh.paste(cell.resize((W * 3, H * 3), Image.NEAREST), (x, y + 14))
+                x += W * 3 + 2
+            x += 14
+    sh.save(os.path.join(out, "frog_hop_glyphs.png"))
+    print("tour", len(frames), "frames", round(sum(durs) / 1000, 1), "s; hop glyphs: 12 (6 each way)")
