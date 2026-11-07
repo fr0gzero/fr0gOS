@@ -13,9 +13,9 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 
 | Craft | Quad | Board target | Video | Current build |
 |---|---|---|---|---|
-| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.2 r01 |
-| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.2 r01 |
-| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.2 r01 |
+| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.2 r02 |
+| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.2 r02 |
+| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.2 r02 |
 
 ## What FrogOS changes
 
@@ -29,9 +29,9 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 - `[ARM]` / `SAFE` always shown. Every warning fits 5 characters (`LOWV`, `LAND!`, `FSAFE`, `RXLOS`, `TURTL`, `HOT70`...).
 - BIOS-style boot screen with real checks (CPU, gyro, receiver, VTX, ESC telemetry, battery) that tick in one at a time. The receiver shows `WAIT` until the radio links.
 - Arming plays a glitch sweep, then `[ARM]` decodes in.
-- Post-flight `HISCORE.EXE`: best G and best motor RPM (this flight and the old record), lifetime flights and air time. A new record gets a decoding, colour-chasing `NEW HIGH SCORE` banner with hopping frogs and fireworks.
+- Post-flight `HISCORE.EXE`: best G (this flight and the old record), a `BEST LAP` placeholder for the coming lap timer, lifetime flights and air time. A new record gets a decoding, colour-chasing `NEW HIGH SCORE` banner with hopping frogs and fireworks.
 - Battery noise creeps into the black bars in four stages: SAG green, LOW amber, LAND red, DEAD red flood.
-- Matrix rain screensaver in the bars after 60 s disarmed and still. Any stick brings the OSD back.
+- Matrix rain screensaver in the bars after 5 s disarmed and still. Any stick brings the OSD back.
 - Boot lines type out with a cursor, with an uptime and flight count line. Battery % charges up when the OSD comes on.
 - OSD at 20 fps.
 - New warnings decode in from noise, one character at a time.
@@ -40,7 +40,7 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 **HDZero with the hacker font** (`osd_frog_hd_font = ON`)
 - IBM VGA 8x16 DOS font in phosphor green with a black outline.
 - Per-character colour: normal is green, warning is amber, critical is red. HDZero only gives Betaflight one 256-glyph bank, so the font carries amber and red copies of the alphabet.
-- `FR0G` with a blinking cursor top left, and an animated frog next to the craft name top right. It blinks now and then, croaks while a warning is up, sweats on low battery, flips in turtle mode, squashes flat above 2.5 G, and hops along the top bar when you arm.
+- `FR0G` with a blinking cursor top left, and an animated frog next to the craft name top right. It blinks now and then, croaks while a warning is up, sweats on low battery, flips whenever the quad is upside down, squashes flat above 2.5 G, and hops along the top bar when you arm.
 - Battery bar glyph after the %, and a `SCAN` spinner until the receiver links.
 - Boot logo `> fr0gzero_` in big DOS letters.
 
@@ -63,7 +63,7 @@ The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or s
 git clone --branch 2026.6.2 --depth 1 https://github.com/betaflight/betaflight.git
 cd betaflight
 git submodule update --init --depth 1 src/config
-git apply ../patches/frogos-v1.2-r01_betaflight-2026.6.2.patch
+git apply ../patches/frogos-v1.2-r02_betaflight-2026.6.2.patch
 make arm_sdk_install            # or point ARM_SDK_DIR at GCC 13.3.1
 make CONFIG=CRAZYBEE473
 make CONFIG=BETAFPVG473_V2

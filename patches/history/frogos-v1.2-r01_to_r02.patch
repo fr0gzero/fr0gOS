@@ -1,0 +1,128 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 37075bc..7d82751 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -505,7 +505,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- FrogOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.2 R01"
++#define FROGOS_VERSION   "V1.2 R02"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  8
+ 
+@@ -1401,7 +1401,7 @@ static bool osdRenderStatsContinue(void)
+ }
+ 
+ // ---------------- FrogOS HISCORE.EXE (replaces the post-flight stats) ----------------
+-// Only the arcade numbers: best G and best motor RPM (with this flight and the record it beat),
++// Only the arcade numbers: best G (with this flight and the record it beat), a BEST LAP placeholder,
+ // lifetime flights and air time. A new record gets a decoding, colour-chasing banner with hopping
+ // frogs and fireworks in the black bars. Drawn at 10 fps from the hold loop.
+ static timeUs_t frogScoreStartUs = 0;
+@@ -1435,15 +1435,6 @@ static void frogFormatG(char *buf, uint16_t g10)
+     }
+ }
+ 
+-static void frogFormatRpm(char *buf, uint32_t rpm)
+-{
+-    if (rpm == 0) {
+-        strcpy(buf, "---");
+-    } else {
+-        tfp_sprintf(buf, "%d.%dK", (int)(rpm / 1000), (int)((rpm % 1000) / 100));
+-    }
+-}
+-
+ static void frogDrawHiScore(timeUs_t now)
+ {
+     const bool hd = frogHdFont(osdDisplayPort);
+@@ -1454,24 +1445,19 @@ static void frogDrawHiScore(timeUs_t now)
+     char v[16];
+ 
+     const uint16_t thisG10 = (uint16_t)lrintf(stats.max_g_force * 10.0f);
+-    const uint32_t thisRpm = stats.max_esc_rpm > 0 ? (uint32_t)stats.max_esc_rpm : 0;
+-    bool newG = false, newRpm = false;
++    bool newG = false;
+     uint16_t bestG10 = thisG10, prevG10 = 0;
+-    uint32_t bestRpm = thisRpm, prevRpm = 0;
+     uint32_t flights = 0, totalS = 0;
+ #ifdef USE_PERSISTENT_STATS
+     newG = frogNewBestG;
+-    newRpm = frogNewBestRpm;
+     bestG10 = statsConfig()->frog_best_g10;
+     prevG10 = frogPrevBestG10;
+-    bestRpm = statsConfig()->frog_best_rpm;
+-    prevRpm = frogPrevBestRpm;
+     flights = statsConfig()->stats_total_flights;
+     totalS = statsConfig()->stats_total_time_s;
+ #endif
+-    const bool anyNew = newG || newRpm;
+-    const bool showRpm = bestRpm > 0 || thisRpm > 0;
+-    int lines = 1 + (anyNew ? 3 : 1) + (newG ? 3 : 2) + (showRpm ? (newRpm ? 3 : 2) : 0) + 1 + 2 + 1;
++    const bool anyNew = newG;
++    // header, banner, G block, BEST LAP, blank, flights, air time, prompt
++    int lines = 1 + (anyNew ? 3 : 1) + (newG ? 3 : 2) + 1 + 1 + 2 + 1;
+     // short screens (analog, 13 rows): drop blank lines until it fits
+     const bool tightBanner = lines > rows;
+     lines -= tightBanner ? 1 : 0;
+@@ -1567,25 +1553,11 @@ static void frogDrawHiScore(timeUs_t now)
+         }
+         y++;
+     }
+-    if (showRpm) {
+-        if (FROG_SHOW()) {
+-            frogFormatRpm(v, bestRpm);
+-            frogScoreLine(x, y, "BEST RPM", v, newRpm ? flash : DISPLAYPORT_SEVERITY_NORMAL);
+-        }
+-        y++;
+-        if (FROG_SHOW()) {
+-            frogFormatRpm(v, thisRpm);
+-            frogScoreLine(x, y, "  THIS FLIGHT", v, DISPLAYPORT_SEVERITY_NORMAL);
+-        }
+-        y++;
+-        if (newRpm) {
+-            if (FROG_SHOW()) {
+-                frogFormatRpm(v, prevRpm);
+-                frogScoreLine(x, y, "  OLD RECORD", v, DISPLAYPORT_SEVERITY_NORMAL);
+-            }
+-            y++;
+-        }
++    // lap timer placeholder: shows --.-- until the lap timer lands
++    if (FROG_SHOW()) {
++        frogScoreLine(x, y, "BEST LAP", "--.--", DISPLAYPORT_SEVERITY_NORMAL);
+     }
++    y++;
+     y += tightFooter ? 0 : 1;
+     if (FROG_SHOW()) {
+         tfp_sprintf(v, "#%d", (int)flights);
+@@ -1773,9 +1745,9 @@ static bool osdStatsVisible = false;
+ static bool osdStatsEnabled = false;
+ 
+ // ---------------- FrogOS Matrix rain screensaver ----------------
+-// After 60 s disarmed with the sticks still, green characters fall down the black bars.
++// After 5 s disarmed with the sticks still, green characters fall down the black bars.
+ // Any stick movement (or arming) brings the OSD straight back.
+-#define FROG_RAIN_IDLE_US (60 * 1000000)
++#define FROG_RAIN_IDLE_US (5 * 1000000)
+ #define FROG_RAIN_MAX_COLS 12
+ static bool frogRainActive = false;
+ static timeUs_t frogIdleSinceUs = 0;
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index a21a188..a350591 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1436,8 +1436,12 @@ static void osdElementFrogCraft(osdElementParms_t *element)
+     const timeMs_t now = millis();
+     uint8_t frog = FROG_GLYPH_FROG_IDLE;
+     const batteryState_e batt = getBatteryState();
+-    if (isCrashFlipModeActive()) {
+-        frog = FROG_GLYPH_FROG_FLIP;                                   // turtle mode: frog on its back
++    bool upsideDown = isCrashFlipModeActive();                      // turtle mode
++#if defined(USE_ACC)
++    upsideDown = upsideDown || (sensors(SENSOR_ACC) && getCosTiltAngle() < 0.0f);   // tilted past 90 degrees
++#endif
++    if (upsideDown) {
++        frog = FROG_GLYPH_FROG_FLIP;                                   // quad upside down: frog on its back
+     } else if (ARMING_FLAG(ARMED) && osdGForce >= FROG_HIGH_G) {
+         frog = ((now / 120) % 2) ? FROG_GLYPH_FROG_SQUASH1 : FROG_GLYPH_FROG_SQUASH2;   // pulling G: squashed flat
+     } else if (batt == BATTERY_WARNING || batt == BATTERY_CRITICAL) {

@@ -2,6 +2,12 @@
 
 All builds are on Betaflight 2026.6.2.
 
+## v1.2 r02 - 2026-11-07
+- Matrix rain screensaver starts after 5 s disarmed and still (was 60 s).
+- HISCORE.EXE shows best G only (this flight and the old record). Best RPM is still recorded but no longer shown.
+- `BEST LAP --.--` placeholder on HISCORE.EXE, ready for the lap timer.
+- The frog flips onto its back whenever the quad is upside down (tilted past 90 degrees), not just in turtle mode.
+
 ## v1.2 r01 - 2026-11-07 (arcade)
 - **HISCORE.EXE replaces the post-flight stats.** Only the arcade numbers: best G and best motor RPM, with this flight and the old record, plus lifetime flights and air time. It types out like a DOS listing at 10 fps.
 - **New record animation:** `NEW HIGH SCORE` decodes in from noise, then green/amber/red chase along it; frogs hop and croak either side, the record flashes amber/red, and fireworks pop in the black bars. Records only count on flights of 15 s or more and are saved with the lifetime stats (`frog_best_g10`, `frog_best_rpm`).

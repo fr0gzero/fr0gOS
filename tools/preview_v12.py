@@ -91,10 +91,10 @@ def score_line(s, x, y, label, value, sev=NORMAL):
 
 
 def hiscore(ms, cols=50, rows=18):
-    """frogDrawHiScore() with a new G record and a new RPM record"""
+    """frogDrawHiScore() with a new G record"""
     s = Screen(cols, rows)
     x = cols // 2 - 13
-    lines = 1 + 3 + 3 + 3 + 1 + 2 + 1
+    lines = 1 + 3 + 3 + 1 + 1 + 2 + 1
     tight_b = lines > rows
     lines -= tight_b
     tight_f = lines > rows
@@ -117,9 +117,7 @@ def hiscore(ms, cols=50, rows=18):
     score_line(s, x, y, "BEST G", "4.6G", flash); y += 1
     score_line(s, x, y, "  THIS FLIGHT", "4.6G"); y += 1
     score_line(s, x, y, "  OLD RECORD", "3.9G"); y += 1
-    score_line(s, x, y, "BEST RPM", "41.2K", flash); y += 1
-    score_line(s, x, y, "  THIS FLIGHT", "41.2K"); y += 1
-    score_line(s, x, y, "  OLD RECORD", "39.8K"); y += 1
+    score_line(s, x, y, "BEST LAP", "--.--"); y += 1
     y += 0 if tight_f else 1
     score_line(s, x, y, "FLIGHTS", "#128"); y += 1
     score_line(s, x, y, "AIR TIME", "6H12M"); y += 1
@@ -186,7 +184,7 @@ def hop(ms):
 
 def strip():
     names = [("IDLE", "FROG_IDLE"), ("BLINK", "FROG_BLINK"), ("CROAK warn", "FROG_CROAK"), ("SWEAT low batt", "FROG_SWEAT1"),
-             ("SWEAT", "FROG_SWEAT2"), ("FLIP turtle", "FROG_FLIP"), ("SQUASH high G", "FROG_SQUASH1"), ("SQUASH", "FROG_SQUASH2")]
+             ("SWEAT", "FROG_SWEAT2"), ("FLIP upside down", "FROG_FLIP"), ("SQUASH high G", "FROG_SQUASH1"), ("SQUASH", "FROG_SQUASH2")]
     k = 4
     img = Image.new("RGB", (len(names) * (GW * k + 40), GH * k + 30), (0, 0, 0))
     d = ImageDraw.Draw(img)
@@ -201,7 +199,7 @@ def strip():
 
 
 W = 1100
-panels = [("HISCORE.EXE  - new G and RPM records: banner decodes, colours chase, frogs hop, fireworks in the bars", hiscore(1500).render()),
+panels = [("HISCORE.EXE  - new G record (BEST LAP is a placeholder for the lap timer): banner decodes, colours chase, frogs hop, fireworks in the bars", hiscore(1500).render()),
           ("HISCORE.EXE on analog (30x13, compact; mono on the goggles)", hiscore(1500, 30, 13).render())]
 sheet_parts = [(t, im.resize((W, int(im.height * W / im.width)), Image.LANCZOS)) for t, im in panels]
 stages = [stage(n).render() for n in ("SAG", "LOW", "LAND", "DEAD")]
@@ -228,7 +226,7 @@ for i, (t, im) in enumerate(st):
     if i % 2:
         y += im.height + 12
 y += 6
-d.text((20, y), "Matrix rain screensaver (60 s disarmed and still; any stick brings the OSD back)", fill=(230, 230, 230))
+d.text((20, y), "Matrix rain screensaver (5 s disarmed and still; any stick brings the OSD back)", fill=(230, 230, 230))
 r = rainimg.resize((W, int(rainimg.height * W / rainimg.width)), Image.LANCZOS)
 sheet.paste(r, (20, y + 18))
 y += r.height + 34
