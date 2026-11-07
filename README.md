@@ -1,0 +1,84 @@
+# FrogOS
+
+Custom Betaflight firmware and a unified OSD for the **fr0gzero** FPV fleet.
+Strictly business by default, with a calm DOS-terminal look on HDZero: telemetry lives in the black bars, warnings decode in and climb from green to amber to red, and a little frog keeps an eye on things.
+
+![FrogOS hacker OSD preview](fonts/hdzero-hacker/frogos_hacker_osd_preview.png)
+
+FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
+
+## Fleet
+
+| Craft | Quad | Board target | Video | Current build |
+|---|---|---|---|---|
+| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant) | v1.0 (v1.1 r01 built, not flashed yet) |
+| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero | v1.1 r01 |
+| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 90 fps | v1.1 r01 |
+
+## What FrogOS changes
+
+**Every quad**
+- Telemetry in two 5-character columns at the screen edges, grouped by category: power top left, link bottom left, time top right, state middle right, system bottom right.
+- Column 0 is left-justified and the last column right-justified, whatever canvas width the FC assumes.
+- No icons or unit glyphs: `4.09V`, `2.16A`, `LQ100`, `-33`, `45%`, `R8200`, `C52`.
+- New elements: live ELRS packet rate (`F1000`, `D500`...), battery %, air mode (`AIRON` / `NOAIR`) on its own line, separate flight mode (`ACRO` / `ANGLE` / `HORZN`).
+- `[ARM]` / `SAFE` always shown. Every warning fits 5 characters (`LOWV`, `LAND!`, `FSAFE`, `RXLOS`, `TURTL`, `HOT70`...).
+- BIOS-style boot screen with real checks (CPU, gyro, receiver, VTX, ESC telemetry, battery) that tick in one at a time. The receiver shows `WAIT` until the radio links.
+- Arming plays a glitch sweep, then `[ARM]` decodes in.
+- New warnings decode in from noise, one character at a time.
+- Default rates: Betaflight, roll/pitch 0.65 / 0.74 / 0.10, yaw 0.55 / 0.74 / 0.10.
+
+**HDZero with the hacker font** (`osd_frog_hd_font = ON`)
+- IBM VGA 8x16 DOS font in phosphor green with a black outline.
+- Per-character colour: normal is green, warning is amber, critical is red. HDZero only gives Betaflight one 256-glyph bank, so the font carries amber and red copies of the alphabet.
+- `FROG` with a blinking cursor top left, and an animated frog next to the craft name top right. It blinks now and then and croaks while a warning is up.
+- Battery bar glyph after the %, and a `SCAN` spinner until the receiver links.
+- Boot logo `> fr0gzero_` in big DOS letters.
+
+New CLI settings: `osd_frog_tag_pos`, `osd_frog_craft_pos`, `osd_frog_air_pos`, `osd_frog_rate_pos`, `osd_frog_batt_pos`, `osd_frog_hd_font`.
+Configurator doesn't know these elements, so position them from the CLI.
+
+## Flashing a quad
+
+1. **HDZero quads only:** copy `fonts/hdzero-hacker/BTFL_000.bmp` and `BTFL_FHD_000.bmp` to `resource/OSD/FC/` on the goggle SD card. Every Betaflight HDZero quad that uses this font needs FrogOS v1.1.
+2. Save a `diff all` backup first.
+3. Flash `builds/<quad>/<hex>` with **Full chip erase** ticked (Firmware Flasher, Load Firmware [Local]).
+4. Paste `quads/<quad>/frogos_cli_*.txt` into the CLI.
+5. Recalibrate the accelerometer.
+
+The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or set your own binding UID.
+
+## Building from source
+
+```sh
+git clone --branch 2026.6.2 --depth 1 https://github.com/betaflight/betaflight.git
+cd betaflight
+git submodule update --init --depth 1 src/config
+git apply ../patches/frogos-v1.1-r01_betaflight-2026.6.2.patch
+make arm_sdk_install            # or point ARM_SDK_DIR at GCC 13.3.1
+make CONFIG=CRAZYBEE473
+make CONFIG=BETAFPVG473_V2
+make CONFIG=CRAZYBEEF4SX1280 EXTRA_FLAGS=-DUSE_ELRSV4   # built-in SPI receiver must speak ELRS 4
+```
+
+`patches/history/` keeps the step-by-step patches. Regenerate the HDZero font and its firmware charmap with `tools/build_hacker_font.py`. `tools/make_hd_cli.py` turns a quad's `diff all` into a FrogOS HDZero CLI with the shared OSD block. `tools/preview_osd.py` renders what the goggles should show.
+
+## Layout
+
+```
+builds/<quad>/        hex files (old/ = superseded)
+quads/<quad>/         diff all backups and FrogOS CLI files
+patches/              cumulative patch against Betaflight 2026.6.2 (+ history/)
+fonts/hdzero-hacker/  HDZero hacker goggle font (v1.1)
+fonts/hdzero/         earlier HDZero font with the two-line logo (v1.0)
+logos/                analog 288x72 and HDZero boot logo designs
+tools/                font builder, CLI generator, OSD preview
+```
+
+## Licences
+
+- Firmware patches, builds and tools: **GPL-3.0**, same as Betaflight (see `LICENSE`).
+- `fonts/hdzero-hacker/`: text glyphs are "IBM VGA 8x16" from [The Oldschool PC Font Resource](https://int10h.org/oldschool-pc-fonts/) by VileR, **CC BY-SA 4.0**, via [susam/pcface](https://github.com/susam/pcface). Symbol glyphs come from the stock HDZero Betaflight font ([hd-zero/hdzero-goggle](https://github.com/hd-zero/hdzero-goggle)).
+- ELRS packet-rate names follow ExpressLRS 4.x `expresslrs_RFrates_e`.
+
+Not affiliated with Betaflight, HDZero or ExpressLRS. Flash at your own risk and always keep a `diff all`.

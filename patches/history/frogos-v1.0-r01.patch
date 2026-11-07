@@ -1,0 +1,525 @@
+diff --git a/src/main/cli/settings.c b/src/main/cli/settings.c
+index 489d254..687e00f 100644
+--- a/src/main/cli/settings.c
++++ b/src/main/cli/settings.c
+@@ -1622,6 +1622,9 @@ const clivalue_t valueTable[] = {
+     { "osd_rtc_date_time_pos",      VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_RTC_DATETIME]) },
+     { "osd_adjustment_range_pos",   VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_ADJUSTMENT_RANGE]) },
+     { "osd_flip_arrow_pos",         VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FLIP_ARROW]) },
++    { "osd_frog_air_pos",           VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_AIRMODE]) },
++    { "osd_frog_rate_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_RFRATE]) },
++    { "osd_frog_batt_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_FROG_BATTPCT]) },
+ #ifdef USE_ADC_INTERNAL
+     { "osd_core_temp_pos",          VAR_UINT16  | MASTER_VALUE, .config.minmaxUnsigned = { 0, OSD_POSCFG_MAX }, PG_OSD_ELEMENT_CONFIG, offsetof(osdElementConfig_t, item_pos[OSD_CORE_TEMPERATURE]) },
+ #endif
+diff --git a/src/main/fc/controlrate_profile.c b/src/main/fc/controlrate_profile.c
+index 6fb219f..4419224 100644
+--- a/src/main/fc/controlrate_profile.c
++++ b/src/main/fc/controlrate_profile.c
+@@ -45,16 +45,17 @@ void pgResetFn_controlRateProfiles(controlRateConfig_t *controlRateConfig)
+         RESET_CONFIG(controlRateConfig_t, &controlRateConfig[i],
+             .thrMid8 = 50,
+             .thrExpo8 = 0,
+-            .rates_type = RATES_TYPE_ACTUAL,
+-            .rcRates[FD_ROLL] = 7,
+-            .rcRates[FD_PITCH] = 7,
+-            .rcRates[FD_YAW] = 7,
+-            .rcExpo[FD_ROLL] = 0,
+-            .rcExpo[FD_PITCH] = 0,
+-            .rcExpo[FD_YAW] = 0,
+-            .rates[FD_ROLL] = 67,
+-            .rates[FD_PITCH] = 67,
+-            .rates[FD_YAW] = 67,
++            // FrogOS: Betaflight rates, roll/pitch 500 deg/s, yaw 423 deg/s
++            .rates_type = RATES_TYPE_BETAFLIGHT,
++            .rcRates[FD_ROLL] = 65,
++            .rcRates[FD_PITCH] = 65,
++            .rcRates[FD_YAW] = 55,
++            .rcExpo[FD_ROLL] = 10,
++            .rcExpo[FD_PITCH] = 10,
++            .rcExpo[FD_YAW] = 10,
++            .rates[FD_ROLL] = 74,
++            .rates[FD_PITCH] = 74,
++            .rates[FD_YAW] = 74,
+             .throttle_limit_type = THROTTLE_LIMIT_TYPE_OFF,
+             .throttle_limit_percent = 100,
+             .rate_limit[FD_ROLL] = CONTROL_RATE_CONFIG_RATE_LIMIT_MAX,
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index c4d877b..04735dd 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -59,6 +59,7 @@
+ #include "drivers/osd_symbols.h"
+ #include "drivers/sdcard.h"
+ #include "drivers/time.h"
++#include "drivers/vtx_common.h"
+ 
+ #include "drivers/pinio.h"
+ 
+@@ -80,12 +81,14 @@
+ #include "io/beeper.h"
+ #include "io/flashfs.h"
+ #include "io/gps.h"
++#include "io/vtx.h"
+ 
+ #include "osd/osd.h"
+ #include "osd/osd_elements.h"
+ #include "osd/osd_warnings.h"
+ 
+ #include "pg/motor.h"
++#include "pg/pilot.h"
+ #include "pg/pg.h"
+ #include "pg/pg_ids.h"
+ #include "pg/stats.h"
+@@ -97,6 +100,7 @@
+ #include "scheduler/scheduler.h"
+ 
+ #include "sensors/acceleration.h"
++#include "sensors/adcinternal.h"
+ #include "sensors/battery.h"
+ #include "sensors/sensors.h"
+ 
+@@ -488,6 +492,151 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+     }
+ }
+ 
++// ---------------- FrogOS boot screen ----------------
++#define FROGOS_VERSION   "V1.0 R01"
++#define FROG_BOOT_WIDTH  22
++#define FROG_BOOT_LINES  7
++
++static bool frogBootActive = false;
++static timeUs_t frogBootNextDrawUs = 0;
++
++static void frogUpper(char *s)
++{
++    for (; *s; s++) {
++        *s = toupper((unsigned char)*s);
++    }
++}
++
++// "LBL  detail ........ STAT" padded to FROG_BOOT_WIDTH
++static void frogBootLine(int x, int y, const char *label, const char *detail, const char *status)
++{
++    char line[FROG_BOOT_WIDTH + 1];
++    memset(line, '.', FROG_BOOT_WIDTH);
++    line[FROG_BOOT_WIDTH] = '\0';
++
++    // label padded to 4, then detail (tfp_sprintf has no %-4s)
++    char head[FROG_BOOT_WIDTH + 1];
++    memset(head, ' ', sizeof(head));
++    const size_t labelLen = MIN(strlen(label), (size_t)4);
++    memcpy(head, label, labelLen);
++    const size_t detailLen = MIN(strlen(detail), (size_t)(FROG_BOOT_WIDTH - 6));
++    memcpy(&head[5], detail, detailLen);
++    head[5 + detailLen + (detailLen ? 1 : 0)] = '\0';
++    frogUpper(head);
++    size_t headLen = strlen(head);
++    const size_t statLen = strlen(status);
++    if (headLen > FROG_BOOT_WIDTH - statLen - 1) {
++        headLen = FROG_BOOT_WIDTH - statLen - 1;
++    }
++    memcpy(line, head, headLen);
++    line[FROG_BOOT_WIDTH - statLen - 1] = ' ';
++    memcpy(&line[FROG_BOOT_WIDTH - statLen], status, statLen);
++    displayWrite(osdDisplayPort, x, y, DISPLAYPORT_SEVERITY_NORMAL, line);
++}
++
++static void osdFrogDrawBootStatus(void)
++{
++    const int rows = osdDisplayPort->rows;
++    const int midRow = rows / 2;
++    const int x = (osdDisplayPort->cols / 2) - (FROG_BOOT_WIDTH / 2);
++    int y = midRow - 5 + OSD_LOGO_ROWS + 1;
++    if (y + FROG_BOOT_LINES > rows) {
++        y = rows - FROG_BOOT_LINES;
++    }
++    char detail[16];
++
++    // header: FROGOS V1.0 R01 ..... MK4-1
++    char head[FROG_BOOT_WIDTH + 1];
++    char craft[MAX_NAME_LENGTH + 1];
++    strncpy(craft, pilotConfig()->craftName, MAX_NAME_LENGTH);
++    craft[MAX_NAME_LENGTH] = '\0';
++    frogUpper(craft);
++    memset(head, ' ', FROG_BOOT_WIDTH);
++    head[FROG_BOOT_WIDTH] = '\0';
++    memcpy(head, "FROGOS " FROGOS_VERSION, strlen("FROGOS " FROGOS_VERSION));
++    const size_t craftLen = MIN(strlen(craft), (size_t)6);
++    memcpy(&head[FROG_BOOT_WIDTH - craftLen], craft, craftLen);
++    displayWrite(osdDisplayPort, x, y++, DISPLAYPORT_SEVERITY_NORMAL, head);
++
++    // CPU
++    const char *mcu = targetName;
++    if (strncmp(mcu, "STM32", 5) == 0) {
++        mcu += 5;
++    }
++    char mcu4[5];
++    strncpy(mcu4, mcu, 4);
++    mcu4[4] = '\0';
++#ifdef USE_ADC_INTERNAL
++    tfp_sprintf(detail, "%s C%d", mcu4, getCoreTemperatureCelsius());
++#else
++    tfp_sprintf(detail, "%s", mcu4);
++#endif
++    frogBootLine(x, y++, "CPU", detail, "OK");
++
++    // GYRO
++    frogBootLine(x, y++, "GYRO", "", sensors(SENSOR_GYRO) ? "OK" : "FAIL");
++
++    // RX: WAIT (not FAIL) until the radio links
++    if (isRxReceivingSignal()) {
++        const char *rate = NULL;
++#ifdef USE_RX_LINK_QUALITY_INFO
++        if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_CRSF) {
++            rate = frogRfRateLabel(rxGetRfMode());
++        }
++#endif
++        frogBootLine(x, y++, "RX", rate ? rate : "LINK", "OK");
++    } else {
++        frogBootLine(x, y++, "RX", "", "WAIT");
++    }
++
++    // VTX
++#ifdef USE_VTX_COMMON
++    const vtxDevice_t *vtx = vtxCommonDevice();
++    if (!vtx) {
++        frogBootLine(x, y++, "VTX", "", "NONE");
++    } else if (!vtxCommonDeviceIsReady(vtx)) {
++        frogBootLine(x, y++, "VTX", "", "WAIT");
++    } else {
++        const vtxSettingsConfig_t *vs = vtxSettingsConfig();
++        const char *pwr = vtxCommonLookupPowerName(vtx, vs->power);
++        tfp_sprintf(detail, "%c%d %s", vtxCommonLookupBandLetter(vtx, vs->band), vs->channel, pwr ? pwr : "");
++        frogBootLine(x, y++, "VTX", detail, "OK");
++    }
++#else
++    frogBootLine(x, y++, "VTX", "", "NONE");
++#endif
++
++    // ESC: real bidirectional DShot telemetry check
++    const uint8_t motorCount = getMotorCount();
++#ifdef USE_DSHOT_TELEMETRY
++    if (motorConfig()->dev.useDshotTelemetry && motorCount) {
++        uint8_t alive = 0;
++        for (uint8_t i = 0; i < motorCount; i++) {
++            if (isDshotMotorTelemetryActive(i)) {
++                alive++;
++            }
++        }
++        tfp_sprintf(detail, "%d/%d", alive, motorCount);
++        frogBootLine(x, y++, "ESC", detail, alive == motorCount ? "OK" : "WAIT");
++    } else
++#endif
++    {
++        tfp_sprintf(detail, "%d MTR", motorCount);
++        frogBootLine(x, y++, "ESC", detail, "--");
++    }
++
++    // BATT
++    const uint16_t cv = getBatteryVoltage();
++    tfp_sprintf(detail, "%d.%02dV", cv / 100, cv % 100);
++    switch (getBatteryState()) {
++    case BATTERY_OK:       frogBootLine(x, y++, "BATT", detail, "OK");   break;
++    case BATTERY_WARNING:  frogBootLine(x, y++, "BATT", detail, "LOW");  break;
++    case BATTERY_CRITICAL: frogBootLine(x, y++, "BATT", detail, "FAIL"); break;
++    default:               frogBootLine(x, y++, "BATT", "", "NONE");     break;
++    }
++}
++// -------------- end FrogOS boot screen --------------
++
+ static void osdCompleteInitialization(void)
+ {
+     uint8_t midRow = osdDisplayPort->rows / 2;
+@@ -506,31 +655,13 @@ static void osdCompleteInitialization(void)
+     // Display betaflight logo
+     osdDrawLogo(midCol - (OSD_LOGO_COLS) / 2, midRow - 5, DISPLAYPORT_SEVERITY_NORMAL);
+ 
+-    // sizeof includes the terminating NULL so add space for the V
+-    char version_str_buf[sizeof(FC_VERSION_STRING) + 1];
+-    tfp_sprintf(version_str_buf, "V%s", FC_VERSION_STRING);
+-    size_t version_str_len = strlen(version_str_buf) + 1;
+-
+-    // For the OSD we only have uppercase
+-    for (size_t i = 0; i < version_str_len; i++) {
+-        version_str_buf[i] = toupper(version_str_buf[i]);
+-    }
+-    displayWrite(osdDisplayPort, midCol + 12 - version_str_len, midRow, DISPLAYPORT_SEVERITY_NORMAL, version_str_buf);
++    // FrogOS: boot status block replaces the version string and menu hint
++    osdFrogDrawBootStatus();
++    frogBootActive = true;
++    frogBootNextDrawUs = micros() + 250000;
+ 
+-#ifdef USE_CMS
+-    displayWrite(osdDisplayPort, midCol - 8, midRow + 2, DISPLAYPORT_SEVERITY_NORMAL, CMS_STARTUP_HELP_TEXT1);
+-    displayWrite(osdDisplayPort, midCol - 4, midRow + 3, DISPLAYPORT_SEVERITY_NORMAL, CMS_STARTUP_HELP_TEXT2);
+-    displayWrite(osdDisplayPort, midCol - 4, midRow + 4, DISPLAYPORT_SEVERITY_NORMAL, CMS_STARTUP_HELP_TEXT3);
+-#endif
+ 
+-#ifdef USE_RTC_TIME
+-    char dateTimeBuffer[FORMATTED_DATE_TIME_BUFSIZE];
+-    if (osdFormatRtcDateTime(&dateTimeBuffer[0])) {
+-        displayWrite(osdDisplayPort, midCol - 10, midRow + 6, DISPLAYPORT_SEVERITY_NORMAL, dateTimeBuffer);
+-    }
+-#endif
+-
+-    resumeRefreshAt = micros() + (4 * REFRESH_1S);
++    resumeRefreshAt = micros() + (5 * REFRESH_1S); // FrogOS: 5 s boot status
+ #ifdef USE_OSD_PROFILES
+     setOsdProfile(osdConfig()->osdProfileIndex);
+ #endif
+@@ -1218,7 +1349,7 @@ static timeDelta_t osdShowArmed(void)
+     } else {
+         ret = (REFRESH_1S / 2);
+     }
+-    displayWrite(osdDisplayPort, midCol - (strlen("ARMED") / 2), midRow, DISPLAYPORT_SEVERITY_NORMAL, "ARMED");
++    displayWrite(osdDisplayPort, midCol - (strlen("ARM") / 2), midRow, DISPLAYPORT_SEVERITY_NORMAL, "ARM"); // FrogOS
+ 
+     if (isCrashFlipModeActive()) {
+         displayWrite(osdDisplayPort, midCol - (strlen(CRASHFLIP_WARNING) / 2), midRow + 1, DISPLAYPORT_SEVERITY_NORMAL, CRASHFLIP_WARNING);
+@@ -1244,6 +1375,7 @@ STATIC_UNIT_TESTED bool osdProcessStats1(timeUs_t currentTimeUs)
+             osdStatsEnabled = false;
+             osdStatsVisible = false;
+             osdResetStats();
++            frogBootActive = false;
+             resumeRefreshAt = osdShowArmed() + currentTimeUs;
+         } else if (isSomeStatEnabled()
+                    && !suppressStatsDisplay
+@@ -1318,8 +1450,14 @@ static void osdProcessStats2(timeUs_t currentTimeUs)
+                 (IS_HI(THROTTLE) || IS_HI(PITCH) || IS_RC_MODE_ACTIVE(BOXCRASHFLIP))) {
+                 resumeRefreshAt = currentTimeUs;
+             }
++            // FrogOS: keep the boot checks live while the boot screen is up
++            if (frogBootActive && !ARMING_FLAG(ARMED) && cmp32(currentTimeUs, frogBootNextDrawUs) >= 0) {
++                osdFrogDrawBootStatus();
++                frogBootNextDrawUs = currentTimeUs + 250000;
++            }
+             return;
+         } else {
++            frogBootActive = false;
+             displayClearScreen(osdDisplayPort, DISPLAY_CLEAR_NONE);
+             resumeRefreshAt = 0;
+             osdStatsEnabled = false;
+diff --git a/src/main/osd/osd.h b/src/main/osd/osd.h
+index 0d8e24b..af18f01 100644
+--- a/src/main/osd/osd.h
++++ b/src/main/osd/osd.h
+@@ -229,6 +229,11 @@ typedef enum {
+     OSD_POS_HOLD_READY,         // pre-engagement Position Hold readiness indicator
+ #endif
+ 
++    // FrogOS elements
++    OSD_FROG_AIRMODE,           // AIRON / AIROF, always shown
++    OSD_FROG_RFRATE,            // live ELRS packet rate, e.g. F1000
++    OSD_FROG_BATTPCT,           // battery remaining, e.g. 78%
++
+     OSD_ITEM_COUNT // MUST BE LAST
+ } osd_items_e;
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 580d4d3..665ed26 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -288,6 +288,34 @@ static int osdDisplayWrite(osdElementParms_t *element, uint8_t x, uint8_t y, uin
+     return displayWrite(element->osdDisplayPort, x, y, attr, s);
+ }
+ 
++// FrogOS: an element placed in column 0 is left-justified (padding stripped);
++// an element placed in the last column is right-justified to the screen edge.
++static void osdFrogWriteJustified(osdElementParms_t *element, uint8_t x, uint8_t y, uint8_t attr, const char *s)
++{
++    const uint8_t cols = element->osdDisplayPort->cols;
++    if (cols && (x == 0 || x >= cols - 1)) {
++        while (*s == ' ') {
++            s++;
++        }
++        if (x >= cols - 1) {
++            char tmp[OSD_ELEMENT_BUFFER_LENGTH];
++            int len = strlen(s);
++            while (len > 0 && s[len - 1] == ' ') {
++                len--;
++            }
++            if (len >= (int)sizeof(tmp)) {
++                len = sizeof(tmp) - 1;
++            }
++            memcpy(tmp, s, len);
++            tmp[len] = '\0';
++            const int nx = (int)cols - len;
++            osdDisplayWrite(element, nx < 0 ? 0 : nx, y, attr, tmp);
++            return;
++        }
++    }
++    osdDisplayWrite(element, x, y, attr, s);
++}
++
+ static int osdDisplayWriteChar(osdElementParms_t *element, uint8_t x, uint8_t y, uint8_t attr, char c)
+ {
+     char buf[2];
+@@ -941,7 +969,7 @@ static void osdElementCustomMsg(osdElementParms_t *element)
+ #ifdef USE_ADC_INTERNAL
+ static void osdElementCoreTemperature(osdElementParms_t *element)
+ {
+-    tfp_sprintf(element->buff, "C%c%3d%c", SYM_TEMPERATURE, osdConvertTemperatureToSelectedUnit(getCoreTemperatureCelsius()), osdGetTemperatureSymbolForSelectedUnit());
++    tfp_sprintf(element->buff, "C%d", osdConvertTemperatureToSelectedUnit(getCoreTemperatureCelsius())); // FrogOS
+ }
+ #endif // USE_ADC_INTERNAL
+ 
+@@ -1076,9 +1104,8 @@ static void osdElementDebug2(osdElementParms_t *element)
+ 
+ static void osdElementDisarmed(osdElementParms_t *element)
+ {
+-    if (!ARMING_FLAG(ARMED)) {
+-        tfp_sprintf(element->buff, "DISARMED");
+-    }
++    // FrogOS: persistent ARM / SAFE
++    tfp_sprintf(element->buff, ARMING_FLAG(ARMED) ? "ARM" : "SAFE");
+ }
+ 
+ static void osdBackgroundPilotName(osdElementParms_t *element)
+@@ -1194,9 +1221,9 @@ static void osdElementFlymode(osdElementParms_t *element)
+     } else if (FLIGHT_MODE(ALT_HOLD_MODE)) {
+         strcpy(element->buff, "ALTH");
+     } else if (FLIGHT_MODE(ANGLE_MODE)) {
+-        strcpy(element->buff, "ANGL");
++        strcpy(element->buff, "ANGLE");
+     } else if (FLIGHT_MODE(HORIZON_MODE)) {
+-        strcpy(element->buff, "HOR ");
++        strcpy(element->buff, "HORZN");
+     } else if (IS_RC_MODE_ACTIVE(BOXACROTRAINER)) {
+         strcpy(element->buff, "ATRN");
+ #ifdef USE_CHIRP
+@@ -1204,13 +1231,73 @@ static void osdElementFlymode(osdElementParms_t *element)
+     } else if (FLIGHT_MODE(CHIRP_MODE) && !pidChirpIsFinished()) {
+         strcpy(element->buff, "CHIR");
+ #endif
+-    } else if (isAirmodeEnabled()) {
+-        strcpy(element->buff, "AIR ");
+     } else {
++        // FrogOS: air mode has its own element, flight mode never shows AIR
+         strcpy(element->buff, "ACRO");
+     }
+ }
+ 
++// ---- FrogOS elements ----
++static void osdElementFrogAirMode(osdElementParms_t *element)
++{
++    strcpy(element->buff, isAirmodeEnabled() ? "AIRON" : "AIROF");
++}
++
++#ifdef USE_RX_LINK_QUALITY_INFO
++// ELRS 4.x reports its packet rate enum in CRSF link stats rf_Mode
++// (ExpressLRS src/include/common.h, expresslrs_RFrates_e, 2.4 GHz block).
++// L = LoRa, D = FLRC DVDA, F = FLRC, K = FSK, + = full-res 8ch.
++const char *frogRfRateLabel(uint8_t rfMode)
++{
++    switch (rfMode) {
++    case 20: return "L25";
++    case 21: return "L50";
++    case 22: return "L100";
++    case 23: return "L100+";
++    case 24: return "L150";
++    case 25: return "L200";
++    case 26: return "L200+";
++    case 27: return "L250";
++    case 28: return "L333+";
++    case 29: return "L500";
++    case 30: return "D250";
++    case 31: return "D500";
++    case 32: return "F500";
++    case 33: return "F1000";
++    case 34: return "KD250";
++    case 35: return "KD500";
++    case 36: return "K1000";
++    default: return NULL;
++    }
++}
++#endif
++
++static void osdElementFrogRfRate(osdElementParms_t *element)
++{
++#ifdef USE_RX_LINK_QUALITY_INFO
++    if (!isRxReceivingSignal()) {
++        strcpy(element->buff, "-----");
++        return;
++    }
++    if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_CRSF) {
++        const uint8_t rfMode = rxGetRfMode();
++        const char *label = frogRfRateLabel(rfMode);
++        if (label) {
++            strcpy(element->buff, label);
++        } else {
++            tfp_sprintf(element->buff, "RF%u", rfMode);
++        }
++        return;
++    }
++#endif
++    strcpy(element->buff, "--");
++}
++static void osdElementFrogBattPct(osdElementParms_t *element)
++{
++    tfp_sprintf(element->buff, "%d%%", calculateBatteryPercentageRemaining());
++}
++// ---- end FrogOS elements ----
++
+ static void osdElementReadyMode(osdElementParms_t *element)
+ {
+     if (IS_RC_MODE_ACTIVE(BOXREADY) && !ARMING_FLAG(ARMED)) {
+@@ -1532,8 +1619,7 @@ static void osdElementLinkQuality(osdElementParms_t *element)
+ 
+     if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_CRSF) { // 0-99
+         osdLinkQuality = rxGetLinkQuality();
+-        const uint8_t osdRfMode = rxGetRfMode();
+-        tfp_sprintf(element->buff, "%c%1d:%2d", SYM_LINK_QUALITY, osdRfMode, osdLinkQuality);
++        tfp_sprintf(element->buff, "LQ%d", osdLinkQuality); // FrogOS: rate has its own element
+     } else if (linkQualitySource == LQ_SOURCE_RX_PROTOCOL_GHST) { // 0-100
+         osdLinkQuality = rxGetLinkQuality();
+         tfp_sprintf(element->buff, "%c%2d", SYM_LINK_QUALITY, osdLinkQuality);
+@@ -2085,6 +2171,9 @@ static const uint8_t osdElementDisplayOrder[] = {
+     OSD_ITEM_TIMER_2,
+     OSD_REMAINING_TIME_ESTIMATE,
+     OSD_FLYMODE,
++    OSD_FROG_AIRMODE,
++    OSD_FROG_RFRATE,
++    OSD_FROG_BATTPCT,
+     OSD_THROTTLE_POS,
+     OSD_VTX_CHANNEL,
+     OSD_CURRENT_DRAW,
+@@ -2202,6 +2291,9 @@ const osdElementDrawFn osdElementDrawFunction[OSD_ITEM_COUNT] = {
+     [OSD_ITEM_TIMER_1]            = osdElementTimer,
+     [OSD_ITEM_TIMER_2]            = osdElementTimer,
+     [OSD_FLYMODE]                 = osdElementFlymode,
++    [OSD_FROG_AIRMODE]            = osdElementFrogAirMode,
++    [OSD_FROG_RFRATE]             = osdElementFrogRfRate,
++    [OSD_FROG_BATTPCT]            = osdElementFrogBattPct,
+     [OSD_CRAFT_NAME]              = NULL,  // only has background
+     [OSD_CUSTOM_MSG0]             = osdElementCustomMsg,
+     [OSD_CUSTOM_MSG1]             = osdElementCustomMsg,
+@@ -2549,7 +2641,7 @@ bool osdDisplayActiveElement(void)
+ 
+     // If there's a previously drawn background string to be displayed, do that
+     if (displayPendingBackground) {
+-        osdDisplayWrite(&activeElement,
++        osdFrogWriteJustified(&activeElement,
+                         activeElement.elemPosX + activeElement.elemOffsetX,
+                         activeElement.elemPosY + activeElement.elemOffsetY,
+                         activeElement.attr, activeElement.buff);
+@@ -2563,7 +2655,7 @@ bool osdDisplayActiveElement(void)
+ 
+     // If there's a previously drawn foreground string to be displayed, do that
+     if (displayPendingForeground) {
+-        osdDisplayWrite(&activeElement,
++        osdFrogWriteJustified(&activeElement,
+                         activeElement.elemPosX + activeElement.elemOffsetX,
+                         activeElement.elemPosY + activeElement.elemOffsetY,
+                         activeElement.attr, activeElement.buff);
+diff --git a/src/main/osd/osd_elements.h b/src/main/osd/osd_elements.h
+index 7de3700..145190d 100644
+--- a/src/main/osd/osd_elements.h
++++ b/src/main/osd/osd_elements.h
+@@ -76,3 +76,6 @@ bool osdElementsNeedAccelerometer(void);
+ #ifdef USE_SPEC_PREARM_SCREEN
+ bool osdDrawSpec(displayPort_t *osdDisplayPort);
+ #endif // USE_SPEC_PREARM_SCREEN
++
++// FrogOS
++const char *frogRfRateLabel(uint8_t rfMode);
