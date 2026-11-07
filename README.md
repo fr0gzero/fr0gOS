@@ -5,15 +5,17 @@ Strictly business by default, with a calm DOS-terminal look on HDZero: telemetry
 
 ![FrogOS hacker OSD preview](fonts/hdzero-hacker/frogos_hacker_osd_preview.png)
 
+![FrogOS v1.2: HISCORE.EXE, battery noise, Matrix rain, frog moods](fonts/hdzero-hacker/frogos_v12_preview.png)
+
 FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 
 ## Fleet
 
 | Craft | Quad | Board target | Video | Current build |
 |---|---|---|---|---|
-| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.1 r04 |
-| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.1 r04 |
-| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.1 r04 |
+| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.2 r01 |
+| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.2 r01 |
+| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.2 r01 |
 
 ## What FrogOS changes
 
@@ -27,22 +29,27 @@ FrogOS is a set of patches on top of **Betaflight 2026.6.2**.
 - `[ARM]` / `SAFE` always shown. Every warning fits 5 characters (`LOWV`, `LAND!`, `FSAFE`, `RXLOS`, `TURTL`, `HOT70`...).
 - BIOS-style boot screen with real checks (CPU, gyro, receiver, VTX, ESC telemetry, battery) that tick in one at a time. The receiver shows `WAIT` until the radio links.
 - Arming plays a glitch sweep, then `[ARM]` decodes in.
+- Post-flight `HISCORE.EXE`: best G and best motor RPM (this flight and the old record), lifetime flights and air time. A new record gets a decoding, colour-chasing `NEW HIGH SCORE` banner with hopping frogs and fireworks.
+- Battery noise creeps into the black bars in four stages: SAG green, LOW amber, LAND red, DEAD red flood.
+- Matrix rain screensaver in the bars after 60 s disarmed and still. Any stick brings the OSD back.
+- Boot lines type out with a cursor, with an uptime and flight count line. Battery % charges up when the OSD comes on.
+- OSD at 20 fps.
 - New warnings decode in from noise, one character at a time.
 - Default rates: Betaflight, roll/pitch 0.65 / 0.74 / 0.10, yaw 0.55 / 0.74 / 0.10.
 
 **HDZero with the hacker font** (`osd_frog_hd_font = ON`)
 - IBM VGA 8x16 DOS font in phosphor green with a black outline.
 - Per-character colour: normal is green, warning is amber, critical is red. HDZero only gives Betaflight one 256-glyph bank, so the font carries amber and red copies of the alphabet.
-- `FR0G` with a blinking cursor top left, and an animated frog next to the craft name top right. It blinks now and then and croaks while a warning is up.
+- `FR0G` with a blinking cursor top left, and an animated frog next to the craft name top right. It blinks now and then, croaks while a warning is up, sweats on low battery, flips in turtle mode, squashes flat above 2.5 G, and hops along the top bar when you arm.
 - Battery bar glyph after the %, and a `SCAN` spinner until the receiver links.
 - Boot logo `> fr0gzero_` in big DOS letters.
 
-New CLI settings: `osd_frog_tag_pos`, `osd_frog_craft_pos`, `osd_frog_air_pos`, `osd_frog_rate_pos`, `osd_frog_batt_pos`, `osd_frog_vtxpwr_pos`, `osd_frog_hd_font`, and `osd_custom_msg0`-`3` with `osd_custom_msg0_pos`-`3_pos`.
+New CLI settings: `osd_frog_tag_pos`, `osd_frog_craft_pos`, `osd_frog_air_pos`, `osd_frog_rate_pos`, `osd_frog_batt_pos`, `osd_frog_vtxpwr_pos`, `osd_frog_noise_pos`, `osd_frog_hd_font`, and `osd_custom_msg0`-`3` with `osd_custom_msg0_pos`-`3_pos`.
 Configurator doesn't know these elements, so position them from the CLI.
 
 ## Flashing a quad
 
-1. **HDZero quads only:** copy `fonts/hdzero-hacker/BTFL_000.bmp` and `BTFL_FHD_000.bmp` to `resource/OSD/FC/` on the goggle SD card. Every Betaflight HDZero quad that uses this font needs FrogOS v1.1.
+1. **HDZero quads only:** copy `fonts/hdzero-hacker/BTFL_000.bmp` and `BTFL_FHD_000.bmp` to `resource/OSD/FC/` on the goggle SD card. The v1.2 font adds frog and noise glyphs; older FrogOS builds still work with it.
 2. Save a `diff all` backup first.
 3. Flash `builds/<quad>/<hex>` with **Full chip erase** ticked (Firmware Flasher, Load Firmware [Local]).
 4. Paste `quads/<quad>/frogos_cli_*.txt` into the CLI.
@@ -56,14 +63,14 @@ The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or s
 git clone --branch 2026.6.2 --depth 1 https://github.com/betaflight/betaflight.git
 cd betaflight
 git submodule update --init --depth 1 src/config
-git apply ../patches/frogos-v1.1-r04_betaflight-2026.6.2.patch
+git apply ../patches/frogos-v1.2-r01_betaflight-2026.6.2.patch
 make arm_sdk_install            # or point ARM_SDK_DIR at GCC 13.3.1
 make CONFIG=CRAZYBEE473
 make CONFIG=BETAFPVG473_V2
 make CONFIG=CRAZYBEEF4SX1280 EXTRA_FLAGS=-DUSE_ELRSV4   # built-in SPI receiver must speak ELRS 4
 ```
 
-`patches/history/` keeps the step-by-step patches. Regenerate the HDZero font and its firmware charmap with `tools/build_hacker_font.py`. `tools/make_hd_cli.py` turns a quad's `diff all` into a FrogOS HDZero CLI with the shared OSD block. `tools/preview_osd.py` renders what the goggles should show.
+`patches/history/` keeps the step-by-step patches. Regenerate the HDZero font and its firmware charmap with `tools/build_hacker_font.py`. `tools/make_hd_cli.py` turns a quad's `diff all` into a FrogOS HDZero CLI with the shared OSD block. `tools/preview_osd.py` and `tools/preview_v12.py` render what the goggles should show.
 
 ## Layout
 
@@ -71,7 +78,7 @@ make CONFIG=CRAZYBEEF4SX1280 EXTRA_FLAGS=-DUSE_ELRSV4   # built-in SPI receiver 
 builds/<quad>/        hex files (old/ = superseded)
 quads/<quad>/         diff all backups and FrogOS CLI files
 patches/              cumulative patch against Betaflight 2026.6.2 (+ history/)
-fonts/hdzero-hacker/  HDZero hacker goggle font (v1.1)
+fonts/hdzero-hacker/  HDZero hacker goggle font (v1.2)
 fonts/hdzero/         earlier HDZero font with the two-line logo (v1.0)
 logos/                analog 288x72 and HDZero boot logo designs
 tools/                font builder, CLI generator, OSD preview

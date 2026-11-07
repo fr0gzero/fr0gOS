@@ -52,6 +52,10 @@ FROGOS_HD_BLOCK = "\n".join([
     "set osd_warn_bitmask = 794623",
     "# count a flight when armed 15 s or more (flight counter, saved on disarm)",
     "set stats_min_armed_time_s = 15",
+    "# 20 fps OSD: ~25 elements x ~15 B over MSP is ~390 B/frame, ~7.8 KB/s of the ~11.5 KB/s at 115200 baud",
+    "set osd_framerate_hz = 20",
+    "# battery noise in the black bars (SAG green, LOW amber, LAND red, DEAD red flood)",
+    "set osd_frog_noise_pos = 2048",
 ] + [k if v is None else f"set {k} = {v}" for k, v in LAYOUT])
 
 SKIP_PREFIX = ("mcu_id", "signature", "# version", "# Betaflight", "# config rev", "# start the command",
@@ -79,10 +83,11 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FROGOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# FrogOS v1.1 r04 (hacker) - {CRAFT}",
+head = [f"# FrogOS v1.2 r01 (hacker) - {CRAFT}",
         "# 1. Goggle SD card: fonts/hdzero-hacker/BTFL_000.bmp + BTFL_FHD_000.bmp in resource/OSD/FC/",
         f"# 2. Flash {HEX} with Full chip erase ticked",
         "# 3. Paste this whole file into the CLI, then recalibrate the accelerometer",
+        "# Note: v1.2 resets the lifetime stats (flights, air time) and starts the high-score table at zero",
         "", "batch start"]
 open(OUT, "w").write("\n".join(head + body + ["", "batch end", "save", ""]))
 print("ok", OUT)

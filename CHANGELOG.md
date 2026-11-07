@@ -2,6 +2,19 @@
 
 All builds are on Betaflight 2026.6.2.
 
+## v1.2 r01 - 2026-11-07 (arcade)
+- **HISCORE.EXE replaces the post-flight stats.** Only the arcade numbers: best G and best motor RPM, with this flight and the old record, plus lifetime flights and air time. It types out like a DOS listing at 10 fps.
+- **New record animation:** `NEW HIGH SCORE` decodes in from noise, then green/amber/red chase along it; frogs hop and croak either side, the record flashes amber/red, and fireworks pop in the black bars. Records only count on flights of 15 s or more and are saved with the lifetime stats (`frog_best_g10`, `frog_best_rpm`).
+- **Battery noise in the black bars**, in four stages that escalate in colour and amount: SAG (0.20 V/cell+ dip under load, green, 1-4 chars), LOW (below the warning voltage, amber, 4+), LAND (below the minimum voltage, red, 8+), DEAD (0.30 V/cell under the minimum, red flood, 14). Telemetry is drawn over it so numbers stay readable. Position: `osd_frog_noise_pos`. No link-quality noise.
+- **Frog moods (HD):** sweats on low battery, flips on its back in turtle mode, squashes flat when pulling 2.5 G or more.
+- **Arm (HD):** after the glitch sweep the frog hops along the top bar and lands next to the craft name (arm screen 0.9 s on HD, 0.6 s analog).
+- **Matrix rain screensaver:** after 60 s disarmed with the sticks still, green characters fall down the black bars. Any stick movement or arming brings the OSD straight back.
+- **Boot:** lines type out with a cursor before their status, plus an `UPTIME ... FLIGHTS` line.
+- **Charge-up battery:** when the OSD comes up, the battery % and bar fill from zero like a boot meter.
+- OSD at 20 fps (`osd_framerate_hz = 20`). About 390 bytes a frame over MSP at 20 fps is about 7.8 KB/s, within the ~11.5 KB/s that 115200 baud carries.
+- Goggle font adds sweat, flip and squash frogs and red noise blocks in the unused compass slots 0x18-0x1F. **HDZero goggles need the new BTFL_000.bmp / BTFL_FHD_000.bmp.**
+- Stats PG version 5: the lifetime stats reset (a full chip erase clears them anyway).
+
 ## v1.1 r04 - 2026-11-07
 - Throttle readout gets the throttle icon back (icon + `45%`) so it can't be mistaken for battery %.
 - Flight-time-left estimate removed. `osd_cap_alarm` back to its previous values. Motor RPM moves up into the gap.
