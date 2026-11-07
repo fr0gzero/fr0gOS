@@ -1,0 +1,6 @@
+# FrogOS MK4-2: earlier battery warning (paste into the Betaflight CLI, no reflash needed)
+# LOW (amber, LOWV) at 3.50 V/cell, LAND (red, LAND!) at 3.30 V/cell. Was 3.20 / 3.10.
+battery_profile 0
+set vbat_warning_cell_voltage = 350
+set vbat_min_cell_voltage = 330
+save

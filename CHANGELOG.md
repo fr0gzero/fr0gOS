@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice).
 
+## MK4-2 CLI update - 2026-11-08
+- Battery warnings were set far too low in MK4-2's battery profile (LOW 3.20 V, LAND 3.10 V), so the warning came when the pack was already dead. Now LOW 3.50 V and LAND 3.30 V (Betaflight defaults). `quads/mk4-2/battery_warning_fix_2026-11-08.txt` applies it without reflashing.
+- `tools/make_hd_cli.py`: per-quad extras that set something already in the diff now replace it in place.
+
 ## v1.3 r02 - 2026-11-07 (MK4-2 test build)
 - Crash flip gets the glitch treatment. Arming into crash flip plays a red sweep that travels up the screen. `[ARM]` decodes in, then the crash flip text decodes in from red noise and keeps glitching red/amber.
 - The `TURTL` warning no longer blinks. On HD it chases red/amber with scrambles; on analog, one character of its own text scrambles now and then.

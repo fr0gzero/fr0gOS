@@ -77,6 +77,16 @@ for raw in open(DIFF):
         continue
     body.append(line)
 
+# extras that set something the diff already sets (e.g. battery profile voltages) replace it in place
+for e in list(EXTRA):
+    if e.startswith("set ") and " = " in e:
+        key = e.split(" = ")[0] + " ="
+        hits = [i for i, l in enumerate(body) if l.startswith(key)]
+        if hits:
+            for i in hits:
+                body[i] = e
+            EXTRA.remove(e)
+
 # OSD block goes where the master section ends (before the first profile)
 first_profile = next(i for i, l in enumerate(body) if l.startswith("profile "))
 AUX_EXTRA = [e for e in EXTRA if e.startswith(("aux ", "# air"))]
