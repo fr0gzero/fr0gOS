@@ -2,7 +2,7 @@
 
 Cue points for a track, baked into the firmware so the OSD calls the song while you fly.
 
-1. **Mark it:** open the fr0gOS Songbook page, drop the track in, fix the suggested cues (it finds the drops, choruses, build-ups and the outro from the audio, and works out the BPM), check them on the goggle preview.
+1. **Mark it:** open the fr0gOS Songbook page, drop the track in, scroll and zoom the timeline, double-click anywhere to type your own note (up to 9 characters) at that moment, fix the suggested cues (it finds the drops, choruses, build-ups and the outro from the audio, and works out the BPM), check them on the goggle preview.
 2. **Send it:** "Send to Dax" (or copy the cue sheet). The sheet lands here as `songs/<title>.txt`.
 3. **Build it:** `python3 tools/make_song.py songs/<title>.txt src/main/osd/frog_song.h`, then build the firmware.
 4. **Radio:** "Save radio pack" gives `SOUNDS/en/<NAME>.wav` (32 kHz mono). On the Pocket: CH9 (AUX 5) from the SONG switch, and a Special Function on the same switch: Play Track <NAME>, 1x.

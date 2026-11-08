@@ -49,6 +49,10 @@ input[type=number] { width: 84px; }
 .drop strong { color: var(--green); font-weight: 500; }
 .wave-box { position: relative; min-width: 0; }
 canvas#wave { width: 100%; height: 190px; display: block; background: #050707; border: 1px solid var(--line); border-radius: 3px; cursor: crosshair; touch-action: none; }
+canvas#over { width: 100%; height: 34px; display: block; margin-top: 6px; background: #050707; border: 1px solid var(--line); border-radius: 3px; cursor: grab; touch-action: none; }
+.note-pop { position: absolute; top: 34px; z-index: 5; display: flex; gap: 6px; align-items: center; background: #0a0f0e; border: 1px solid var(--cyan); border-radius: 3px; padding: 6px; box-shadow: 0 4px 18px #000a; }
+.note-pop input { width: 12ch; text-transform: uppercase; }
+.note-pop .t { color: var(--cyan); font-variant-numeric: tabular-nums; font-size: 12px; }
 .time { font-family: var(--display); font-size: 30px; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; min-width: 6.5ch; }
 .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; }
 @media (max-width: 860px) { .grid2 { grid-template-columns: minmax(0, 1fr); } }
@@ -113,9 +117,15 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       <button id="back5">-5s</button><button id="nudgeL">-0.1</button><button id="nudgeR">+0.1</button><button id="fwd5">+5s</button>
       <button id="suggest" title="Analyse the track and suggest cues">Suggest cues</button>
     </div>
-    <div class="wave-box"><canvas id="wave" tabindex="0" aria-label="Waveform. Click to move the playhead, drag a marker to move a cue."></canvas></div>
+    <div class="row" style="gap:8px">
+      <button id="zoomOut" aria-label="Zoom out">&minus;</button><button id="zoomIn" aria-label="Zoom in">+</button><button id="zoomAll">Whole song</button>
+      <label class="row" style="gap:6px"><input type="checkbox" id="follow" checked><span class="label">follow playhead</span></label>
+      <button id="noteHere" title="Type a note at the playhead (N)">+ Note at playhead<span class="k">N</span></button>
+    </div>
+    <div class="wave-box" id="waveBox"><canvas id="wave" tabindex="0" aria-label="Song timeline. Click to move the playhead, double-click to type a note there, drag a marker to move a cue, scroll to zoom."></canvas>
+      <canvas id="over" aria-label="Whole song overview. Drag to scroll the timeline."></canvas></div>
     <div class="row" id="addRow"></div>
-    <p class="note">Click the waveform to jump there. Drag a marker to move it. Keys while playing: <code>D</code> drop, <code>B</code> big drop, <code>C</code> chorus, <code>U</code> build, <code>T</code> text, <code>E</code> outro, <code>Space</code> play/pause, <code>Delete</code> removes the selected cue.</p>
+    <p class="note"><b>Notes:</b> double-click (or long-press) anywhere on the timeline, type up to 9 characters, Enter: fr0gOS puts it on the goggles at that moment. Scroll or pinch to zoom, drag the strip underneath to move along the song. Click the waveform to jump there. Drag a marker to move it. Keys while playing: <code>D</code> drop, <code>B</code> big drop, <code>C</code> chorus, <code>U</code> build, <code>T</code> text, <code>E</code> outro, <code>N</code> note, <code>Space</code> play/pause, <code>Delete</code> removes the selected cue.</p>
   </section>
 
   <div class="grid2">
@@ -190,7 +200,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
 
   // ---------- example so the page is never empty ----------
   function loadExample() {
-    state.duration = 62; state.bpm = 174; state.offset = 0; state.hasAudio = false;
+    state.duration = 62; state.bpm = 174; state.offset = 0; state.hasAudio = false; resetView();
     state.cues = [ { t: 8, kind: "BUILD", label: "BUILD" }, { t: 12, kind: "DROP", label: "DROP" }, { t: 24, kind: "CHORUS", label: "CHORUS" },
                    { t: 34, kind: "TEXT", label: "SEND IT" }, { t: 45, kind: "BIGDROP", label: "BIGDROP" }, { t: 60, kind: "END", label: "OUTRO" } ];
     // a fake envelope that looks like a track: intro, build, drop...
@@ -215,7 +225,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       const ctx = new Ctx();
       const audioBuf = await ctx.decodeAudioData(buf.slice(0));
       ctx.close && ctx.close();
-      state.buffer = audioBuf; state.duration = audioBuf.duration; state.hasAudio = true; state.fileName = file.name;
+      state.buffer = audioBuf; state.duration = audioBuf.duration; state.hasAudio = true; state.fileName = file.name; resetView();
       audio.src = URL.createObjectURL(file);
       analyse(audioBuf);
       const base = file.name.replace(/\.[^.]+$/, "").toUpperCase().replace(/[^A-Z0-9 ]/g, " ").replace(/\s+/g, " ").trim();
@@ -358,17 +368,21 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   const cv = $("wave"), g = cv.getContext("2d");
   let drag = -1;
   function sizeCanvas() { const r = cv.getBoundingClientRect(); const d = window.devicePixelRatio || 1; cv.width = Math.max(1, Math.round(r.width * d)); cv.height = Math.round(190 * d); }
-  const xOf = (t) => (t / state.duration) * cv.width, tOf = (x) => Math.max(0, Math.min(state.duration, (x / cv.width) * state.duration));
+  // ---------- view: the timeline shows [v0, v0 + span] of the song ----------
+  function resetView() { state.v0 = 0; state.span = Math.min(state.duration, 24); }
+  function clampView() { state.span = Math.max(2, Math.min(state.duration, state.span)); state.v0 = Math.max(0, Math.min(state.duration - state.span, state.v0)); }
+  function zoomAt(t, f) { const r = (t - state.v0) / state.span; state.span *= f; clampView(); state.v0 = t - r * state.span; clampView(); }
+  const xOf = (t) => ((t - state.v0) / state.span) * cv.width, tOf = (x) => Math.max(0, Math.min(state.duration, state.v0 + (x / cv.width) * state.span));
   function drawWave() {
     const W = cv.width, H = cv.height, d = window.devicePixelRatio || 1, mid = H * 0.55;
     g.fillStyle = "#050707"; g.fillRect(0, 0, W, H);
     // bars grid
     const bar = 4 * beat(); g.strokeStyle = "#101816"; g.lineWidth = 1;
-    for (let t = state.offset; t < state.duration; t += bar) { const x = Math.round(xOf(t)) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
+    for (let t = state.offset + Math.max(0, Math.floor((state.v0 - state.offset) / bar)) * bar; t < state.v0 + state.span; t += bar) { const x = Math.round(xOf(t)) + 0.5; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke(); }
     if (state.env) {
       const n = state.env.length;
       for (let px = 0; px < W; px++) {
-        const i0 = Math.floor((px / W) * n), i1 = Math.max(i0 + 1, Math.floor(((px + 1) / W) * n));
+        const i0 = Math.floor((tOf(px) / state.duration) * n), i1 = Math.max(i0 + 1, Math.floor((tOf(px + 1) / state.duration) * n));
         let e = 0, b = 0; for (let i = i0; i < i1 && i < n; i++) { e = Math.max(e, state.env[i]); b = Math.max(b, state.bass[i]); }
         const he = e * (H * 0.42), hb = b * (H * 0.42);
         g.fillStyle = "#1d3a2b"; g.fillRect(px, mid - he, 1, he * 2);
@@ -380,7 +394,11 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       const x = Math.round(xOf(c.t)) + 0.5, col = KINDS[c.kind].color;
       if (c.kind === "DROP" || c.kind === "BIGDROP") { g.fillStyle = col + "26"; const w0 = xOf(c.t - 3 * tickSec()); g.fillRect(w0, 0, x - w0, H); }
       g.strokeStyle = col; g.lineWidth = (i === state.sel ? 3 : 1.5) * d; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
-      g.fillStyle = col; g.font = (11 * d) + "px IBM Plex Mono, monospace"; g.fillText(c.label, x + 4 * d, 13 * d + (i % 3) * 13 * d);
+      if (x < -200 * d || x > W + 10) return;
+      g.font = (11 * d) + "px IBM Plex Mono, monospace";
+      const ly = 13 * d + (i % 3) * 15 * d;
+      if (c.kind === "TEXT") { const tw = g.measureText(c.label).width; g.fillStyle = "#06201f"; g.fillRect(x + 2 * d, ly - 11 * d, tw + 6 * d, 14 * d); g.strokeStyle = col; g.lineWidth = 1 * d; g.strokeRect(x + 2 * d, ly - 11 * d, tw + 6 * d, 14 * d); g.fillStyle = col; g.fillText(c.label, x + 5 * d, ly); }
+      else { g.fillStyle = col; g.fillText(c.label, x + 4 * d, ly); }
     });
     // playhead
     const px = Math.round(xOf(state.t)) + 0.5; g.strokeStyle = "#ffffff"; g.lineWidth = 1 * d; g.beginPath(); g.moveTo(px, 0); g.lineTo(px, H); g.stroke();
@@ -390,6 +408,68 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   cv.addEventListener("pointerdown", (ev) => { const x = evX(ev); const i = hitCue(x); if (i >= 0) { drag = i; state.sel = i; cv.setPointerCapture(ev.pointerId); } else { seek(tOf(x)); } render(); });
   cv.addEventListener("pointermove", (ev) => { if (drag < 0) return; state.cues[drag].t = snap(tOf(evX(ev))); state.cues[drag].sug = false; drawWave(); });
   cv.addEventListener("pointerup", () => { if (drag >= 0) { const moved = state.cues[drag]; sortCues(); state.sel = state.cues.indexOf(moved); drag = -1; changed(); } });
+
+  // ---------- overview strip ----------
+  const ov = $("over"), og = ov.getContext("2d");
+  function drawOver() {
+    const r = ov.getBoundingClientRect(), d = window.devicePixelRatio || 1;
+    if (ov.width !== Math.round(r.width * d)) { ov.width = Math.max(1, Math.round(r.width * d)); ov.height = Math.round(34 * d); }
+    const W = ov.width, H = ov.height, X = (t) => (t / state.duration) * W;
+    og.fillStyle = "#050707"; og.fillRect(0, 0, W, H);
+    if (state.env) { const n = state.env.length; og.fillStyle = "#1d3a2b"; for (let px = 0; px < W; px++) { const i0 = Math.floor(px / W * n), i1 = Math.max(i0 + 1, Math.floor((px + 1) / W * n)); let e = 0; for (let i = i0; i < i1 && i < n; i++) e = Math.max(e, state.env[i]); og.fillRect(px, H / 2 - e * H * 0.42, 1, e * H * 0.84); } }
+    for (const c of state.cues) { og.fillStyle = KINDS[c.kind].color; og.fillRect(Math.round(X(c.t)), 0, Math.max(1, d), H); }
+    og.fillStyle = "#ffffff18"; og.fillRect(X(state.v0), 0, X(state.v0 + state.span) - X(state.v0), H);
+    og.strokeStyle = "#59d8e6"; og.lineWidth = d; og.strokeRect(X(state.v0) + 0.5, 0.5, X(state.v0 + state.span) - X(state.v0) - 1, H - 1);
+    og.fillStyle = "#fff"; og.fillRect(Math.round(X(state.t)), 0, d, H);
+  }
+  let ovDrag = null;
+  const ovT = (ev) => { const r = ov.getBoundingClientRect(); return (ev.clientX - r.left) / r.width * state.duration; };
+  ov.addEventListener("pointerdown", (ev) => { const t = ovT(ev); const inside = t >= state.v0 && t <= state.v0 + state.span; ovDrag = inside ? t - state.v0 : state.span / 2; state.v0 = t - ovDrag; clampView(); $("follow").checked = false; ov.setPointerCapture(ev.pointerId); });
+  ov.addEventListener("pointermove", (ev) => { if (ovDrag === null) return; state.v0 = ovT(ev) - ovDrag; clampView(); });
+  ov.addEventListener("pointerup", () => { ovDrag = null; });
+  cv.addEventListener("wheel", (ev) => {
+    ev.preventDefault();
+    const t = tOf(evX(ev));
+    if (Math.abs(ev.deltaX) > Math.abs(ev.deltaY) || ev.shiftKey) { state.v0 += ((ev.deltaX || ev.deltaY) / cv.getBoundingClientRect().width) * state.span; clampView(); $("follow").checked = false; }
+    else zoomAt(t, Math.exp(ev.deltaY * (ev.ctrlKey ? 0.01 : 0.0025)));
+  }, { passive: false });
+  $("zoomIn").addEventListener("click", () => zoomAt(state.t >= state.v0 && state.t <= state.v0 + state.span ? state.t : state.v0 + state.span / 2, 0.5));
+  $("zoomOut").addEventListener("click", () => zoomAt(state.v0 + state.span / 2, 2));
+  $("zoomAll").addEventListener("click", () => { state.v0 = 0; state.span = state.duration; });
+  function followPlayhead() {
+    if (!$("follow").checked) return;
+    const playingNow = state.hasAudio ? !audio.paused : playing;
+    if (!playingNow) return;
+    if (state.t > state.v0 + state.span * 0.85 || state.t < state.v0) { state.v0 = state.t - state.span * 0.15; clampView(); }
+  }
+
+  // ---------- notes: click a spot, type, Enter ----------
+  let pop = null;
+  function closeNote() { if (pop) { pop.remove(); pop = null; cv.focus(); } }
+  function openNote(t, xCss) {
+    closeNote();
+    t = snap(t);
+    const box = $("waveBox"), bw = box.getBoundingClientRect().width;
+    pop = document.createElement("div"); pop.className = "note-pop";
+    pop.style.left = Math.max(0, Math.min(bw - 230, xCss - 10)) + "px";
+    const tl = document.createElement("span"); tl.className = "t"; tl.textContent = fmt(t);
+    const inp = document.createElement("input"); inp.maxLength = 9; inp.placeholder = "SEND IT"; inp.setAttribute("aria-label", "Note text, up to 9 characters");
+    const ok = document.createElement("button"); ok.textContent = "Add";
+    const done = () => { const v = inp.value.toUpperCase().trim(); if (v) { state.cues.push({ t, kind: "TEXT", label: v }); sortCues(); state.sel = state.cues.findIndex((c) => c.kind === "TEXT" && c.t === t && c.label === v); changed(); } closeNote(); };
+    inp.addEventListener("input", () => { const v = inp.value.toUpperCase(); inp.value = FONT_OK.test(v) ? v : v.replace(/[^ !#$%&'()*+,\-./0-9:;<=>?@A-Z\[\]^_]/g, ""); });
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); done(); } else if (e.key === "Escape") closeNote(); e.stopPropagation(); });
+    ok.addEventListener("click", done);
+    pop.append(tl, inp, ok); box.appendChild(pop); inp.focus();
+  }
+  const cssX = (ev) => ev.clientX - cv.getBoundingClientRect().left;
+  cv.addEventListener("dblclick", (ev) => { if (hitCue(evX(ev)) >= 0) return; openNote(tOf(evX(ev)), cssX(ev)); });
+  let press = null;
+  cv.addEventListener("pointerdown", (ev) => { if (ev.pointerType !== "mouse") { const x = evX(ev), cx = cssX(ev); press = setTimeout(() => { press = null; if (hitCue(x) < 0) openNote(tOf(x), cx); }, 550); } });
+  const cancelPress = () => { if (press) { clearTimeout(press); press = null; } };
+  cv.addEventListener("pointerup", cancelPress); cv.addEventListener("pointercancel", cancelPress);
+  cv.addEventListener("pointermove", (ev) => { if (press && Math.abs(ev.movementX) + Math.abs(ev.movementY) > 6) cancelPress(); });
+  $("noteHere").addEventListener("click", () => openNote(state.t, Math.max(0, xOf(state.t) / (window.devicePixelRatio || 1))));
+  document.addEventListener("pointerdown", (ev) => { if (pop && !pop.contains(ev.target)) closeNote(); });
 
   // ---------- cue list ----------
   function sortCues() { state.cues.sort((a, b) => a.t - b.t); }
@@ -450,7 +530,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     if (state.hasAudio) state.t = audio.currentTime;
     else if (playing) { state.t = startT + (performance.now() - startedAt) / 1000; if (state.t >= state.duration) { state.t = 0; startT = 0; startedAt = performance.now(); } }
     $("now").textContent = fmt(state.t);
-    drawWave(); drawOsd(state.t);
+    followPlayhead(); drawWave(); drawOver(); drawOsd(state.t);
     requestAnimationFrame(tick);
   }
 
@@ -477,6 +557,9 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     if (e.target.matches("input, textarea, select")) return;
     const k = e.key.toLowerCase();
     if (k === " ") { e.preventDefault(); playPause(); return; }
+    if (k === "n") { e.preventDefault(); $("noteHere").click(); return; }
+    if (k === "+" || k === "=") { $("zoomIn").click(); return; }
+    if (k === "-") { $("zoomOut").click(); return; }
     if ((k === "delete" || k === "backspace") && state.sel >= 0) { state.cues.splice(state.sel, 1); state.sel = -1; changed(); return; }
     for (const [kind, v] of Object.entries(KINDS)) if (v.key === k) { addCue(kind); return; }
   });
