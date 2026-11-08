@@ -4,6 +4,14 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r24 - 2026-11-08 (MK4-2, MK5-1)
+- **New tricks, told apart by how you fly them:**
+  - `LOOP`: a pitch 360 that took 0.7 s+ with the throttle up (45%+ on average). A quick one off the throttle is still `FLIP`.
+  - `ORBIT`: a yaw 360 while banked 12-45 degrees, under 250 deg/s. A patient second counter catches slow orbits too (down to 30 deg/s, up to 15 s).
+  - `TRIPY` (trippy spin): a yaw 360 while way off level (45 degrees+) or rolling / pitching hard at the same time for most of it. Flat and fast is still `SPIN`.
+- **A crash breaks the combo** (it disintegrates; the crash doesn't count).
+- PERCH is easier to land: throttle under 25%, gyro under 70 deg/s, 0.7-1.4 G, upright within ~53 degrees, for 0.5 s.
+
 ## v1.3 r23 - 2026-11-08 (MK4-2, MK5-1)
 - **Song cues.** A song's drops, choruses and build-ups are baked into the build and called on the OSD, centred in the upper middle, decoding in and out like ARMED. Drops count in (`DROP IN 3 2 1`, one bar apart at the song's BPM) so you can time the send. Cue types: DROP, BIGDROP, CHORUS, BUILD, END (OUTRO), TEXT (your own words). See `songs/README.md`.
 - The **SONG switch** (Betaflight mode USER1, AUX 5) starts the cue clock; the radio starts the track on the same switch (EdgeTX Play Track), so they stay in sync.

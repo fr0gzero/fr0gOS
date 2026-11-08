@@ -1,0 +1,191 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 772f452..0430a4b 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R23"
++#define FROGOS_VERSION   "V1.3 R24"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 48c3fb5..de460ad 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1766,6 +1766,7 @@ static void frogReact(const char *text)
+         { "FLIP", FROG_ANIM_TRICK, 4 },  { "ROLL", FROG_ANIM_TRICK, 4 }, { "SPIN", FROG_ANIM_SPIN, 4 },
+         { "ARMED", FROG_ANIM_ARMED, 3 }, { "SAFE", FROG_ANIM_SAFE, 3 },
+         { "PUNCH", FROG_ANIM_PUNCH, 2 }, { "ZOOM", FROG_ANIM_PUNCH, 2 }, { "PERCH", FROG_ANIM_FIL_SMILE, 2 },
++        { "LOOP", FROG_ANIM_TRICK, 4 }, { "ORBIT", FROG_ANIM_SPIN, 4 }, { "TRIPY", FROG_ANIM_SPIN, 4 },
+         { "ACRO", FROG_ANIM_MODE, 1 }, { "ANGLE", FROG_ANIM_MODE, 1 }, { "HORZN", FROG_ANIM_MODE, 1 },
+         { "AIR", FROG_ANIM_MODE, 1 },  { "NOAIR", FROG_ANIM_MODE, 1 },
+     };
+@@ -2103,8 +2104,8 @@ static void frogComboEnd(timeMs_t now)
+ 
+ static void frogComboEvent(const char *text, timeMs_t now)
+ {
+-    if (!ARMING_FLAG(ARMED) || strcmp(text, "SAFE") == 0) {
+-        frogComboEnd(now);
++    if (!ARMING_FLAG(ARMED) || strcmp(text, "SAFE") == 0 || strcmp(text, "CRASH") == 0) {
++        frogComboEnd(now);              // disarming or crashing breaks the chain
+         return;
+     }
+     if (strcmp(text, "ARMED") == 0) {
+@@ -2222,12 +2223,30 @@ static bool frogFeedIgnored(const char *w)
+ #define FROG_BIGG_G10        30
+ #define FROG_IMPACT_LOOK_MS  500
+ #define FROG_TUMBLE_DPS      500.0f
+-#define FROG_UPRIGHT_COS     0.7f
+-#define FROG_PERCH_DPS       40.0f
+-#define FROG_PERCH_THR       20
+-#define FROG_PERCH_MS        700
++#define FROG_UPRIGHT_COS     0.6f
++#define FROG_PERCH_DPS       70.0f
++#define FROG_PERCH_THR       25
++#define FROG_PERCH_MS        500
+ #define FROG_EV_CRASH        0x08
+ #define FROG_EV_PERCH        0x10
++#define FROG_EV_LOOP         0x20
++#define FROG_EV_ORBIT        0x40
++#define FROG_EV_TRIPPY       0x80
++// What kind of trick: a pitch 360 that took 0.7 s+ with the throttle up (45%+ on average) is a power LOOP,
++// otherwise a FLIP. A yaw 360 is a SPIN when flat, TRIPPY when the quad was way off level (45 degrees+) or
++// rolling / pitching hard at the same time for most of it, and an ORBIT when it was banked 12-45 degrees for
++// most of it at under 250 deg/s. Slow orbits (down to 30 deg/s, up to 15 s) are caught by a second, patient
++// yaw counter that only counts while banked.
++#define FROG_LOOP_MS         700
++#define FROG_LOOP_THR        45
++#define FROG_BANK_DECI       120        // 12 degrees, attitude is in tenths
++#define FROG_OFFLEVEL_COS    0.7f
++#define FROG_TRIPPY_DPS      150.0f
++#define FROG_ORBIT_DPS       30.0f
++#define FROG_ORBIT_FAST_DPS  250.0f
++#define FROG_ORBIT_DEG       330.0f
++#define FROG_ORBIT_MAX_MS    15000
++#define FROG_ORBIT_GAP_MS    1500
+ static uint8_t frogTrickPending = 0;    // bit 0 roll, 1 flip (pitch), 2 spin (yaw), FROG_EV_CRASH, FROG_EV_PERCH
+ static uint16_t frogPeakG10 = 0;        // peak G since the last look, below the impact level (for "3.4G!")
+ static timeUs_t frogMotionArmedAt = 0;
+@@ -2238,6 +2257,9 @@ void frogMotionTick(timeUs_t nowUs)
+     static timeUs_t last = 0;
+     static float deg[3];
+     static timeUs_t startAt[3], slowAt[3];
++    static uint16_t samples[3], thrSum[3], banked[3], offLevel[3], wild[3];
++    static float orbitDeg = 0.0f;
++    static timeUs_t orbitAt = 0, orbitSeen = 0;
+     const float peak = frogAccPeakG;
+     frogAccPeakG = 0.0f;
+     if (!ARMING_FLAG(ARMED) || isCrashFlipModeActive()) {
+@@ -2293,7 +2315,7 @@ void frogMotionTick(timeUs_t nowUs)
+         }
+     }
+     // perch: settled, upright, throttle down, after flying
+-    const bool still = upright && thr < FROG_PERCH_THR && maxRate < FROG_PERCH_DPS && peak > 0.8f && peak < 1.2f;
++    const bool still = upright && thr < FROG_PERCH_THR && maxRate < FROG_PERCH_DPS && peak > 0.7f && peak < 1.4f;
+     if (!still) {
+         stillSince = 0;
+         if (thr >= 30 || maxRate >= 150.0f) {
+@@ -2311,22 +2333,54 @@ void frogMotionTick(timeUs_t nowUs)
+         deg[0] = deg[1] = deg[2] = 0.0f;
+         return;
+     }
++    const bool isBanked = abs(attitude.values.roll) >= FROG_BANK_DECI;
++#if defined(USE_ACC)
++    const bool isOffLevel = getCosTiltAngle() < FROG_OFFLEVEL_COS;
++#else
++    const bool isOffLevel = false;
++#endif
++    // the patient orbit counter: yaw one way while banked
++    const float yawRate = gyro.gyroADCf[FD_YAW];
++    if (isBanked && !isOffLevel && fabsf(yawRate) >= FROG_ORBIT_DPS && fabsf(yawRate) < FROG_ORBIT_FAST_DPS
++        && (orbitDeg == 0.0f || (yawRate > 0) == (orbitDeg > 0))) {
++        if (orbitDeg == 0.0f) {
++            orbitAt = nowUs;
++        }
++        orbitDeg += yawRate * dt;
++        orbitSeen = nowUs;
++    }
++    if (orbitDeg != 0.0f && (cmpTimeUs(nowUs, orbitSeen) > FROG_ORBIT_GAP_MS * 1000 || cmpTimeUs(nowUs, orbitAt) > FROG_ORBIT_MAX_MS * 1000
++        || ((yawRate > 0) != (orbitDeg > 0) && fabsf(yawRate) >= FROG_TRICK_RATE))) {
++        orbitDeg = 0.0f;
++    } else if (fabsf(orbitDeg) >= FROG_ORBIT_DEG) {
++        frogTrickPending |= FROG_EV_ORBIT;
++        orbitDeg = 0.0f;
++        deg[FD_YAW] = 0.0f;
++    }
+     for (int axis = 0; axis < 3; axis++) {
+         const float rate = gyro.gyroADCf[axis];
+         const bool turning = fabsf(rate) >= FROG_TRICK_RATE;
+-        if (deg[axis] == 0.0f) {
+-            if (turning) {
++        if (deg[axis] == 0.0f || (turning && (rate > 0) != (deg[axis] > 0))) {
++            if (turning) {                       // starting, or hard the other way: start over in that direction
+                 startAt[axis] = nowUs;
+                 slowAt[axis] = 0;
+                 deg[axis] = rate * dt;
++                samples[axis] = thrSum[axis] = banked[axis] = offLevel[axis] = wild[axis] = 0;
+             }
+             continue;
+         }
+-        if (turning && (rate > 0) != (deg[axis] > 0)) {
+-            startAt[axis] = nowUs;               // hard the other way: start over in that direction
+-            slowAt[axis] = 0;
+-            deg[axis] = rate * dt;
+-            continue;
++        if (samples[axis] < 1000) {
++            float other = 0.0f;
++            for (int k = 0; k < 3; k++) {
++                if (k != axis) {
++                    other = MAX(other, fabsf(gyro.gyroADCf[k]));
++                }
++            }
++            samples[axis]++;
++            thrSum[axis] += MIN(thr, 100);
++            banked[axis] += isBanked && !isOffLevel;
++            offLevel[axis] += isOffLevel;
++            wild[axis] += other >= FROG_TRIPPY_DPS;
+         }
+         if (!turning) {
+             if (!slowAt[axis]) {
+@@ -2344,7 +2398,21 @@ void frogMotionTick(timeUs_t nowUs)
+         if (cmpTimeUs(nowUs, startAt[axis]) > FROG_TRICK_MAX_MS * 1000) {
+             deg[axis] = 0.0f;
+         } else if (fabsf(deg[axis]) >= FROG_TRICK_DEG) {
+-            frogTrickPending |= 1 << axis;
++            const uint32_t ms = cmpTimeUs(nowUs, startAt[axis]) / 1000;
++            const uint16_t n = MAX(samples[axis], 1);
++            if (axis == FD_PITCH && ms >= FROG_LOOP_MS && thrSum[axis] / n >= FROG_LOOP_THR) {
++                frogTrickPending |= FROG_EV_LOOP;
++            } else if (axis == FD_YAW && (offLevel[axis] * 2 > n || wild[axis] * 2 > n)) {
++                frogTrickPending |= FROG_EV_TRIPPY;
++            } else if (axis == FD_YAW && banked[axis] * 5 > n * 3 && FROG_TRICK_DEG * 1000.0f / MAX(ms, 1u) < FROG_ORBIT_FAST_DPS) {
++                frogTrickPending |= FROG_EV_ORBIT;
++                orbitDeg = 0.0f;
++            } else {
++                frogTrickPending |= 1 << axis;
++                if (axis == FD_YAW) {
++                    orbitDeg = 0.0f;
++                }
++            }
+             deg[axis] = 0.0f;
+         }
+     }
+@@ -2449,6 +2517,15 @@ static void frogFeedDetect(timeMs_t now)
+             frogFeedPost(tricks[axis], DISPLAYPORT_SEVERITY_NORMAL);
+         }
+     }
++    if (pending & FROG_EV_LOOP) {
++        frogFeedPost("LOOP", DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    if (pending & FROG_EV_ORBIT) {
++        frogFeedPost("ORBIT", DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    if (pending & FROG_EV_TRIPPY) {
++        frogFeedPost("TRIPY", DISPLAYPORT_SEVERITY_WARNING);
++    }
+     if (pending & FROG_EV_PERCH) {
+         frogFeedPost("PERCH", DISPLAYPORT_SEVERITY_NORMAL);
+     }
