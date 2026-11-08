@@ -4,6 +4,11 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r20 - 2026-11-08 (MK4-2, MK5-1)
+- **Easier tricks.** FLIP / ROLL / SPIN now need 300 degrees one way (was 330), turning at 100 deg/s+ (was 150), within 3 s, and a slow patch of up to 0.5 s mid-trick no longer cancels it. Detection moved from the OSD (which only looks 10-20 times a second, and threw the count away whenever a frame took over 0.2 s) to the IMU task at 100 Hz.
+- **More sensitive crash.** CRASH uses the peak G since the last OSD frame, captured on every accelerometer sample (short hits used to fall between OSD frames), at 3.8 G (was 4.5 G sampled). The `3.xG!` message uses the same peak.
+- **New event: `ZOOM`** when the throttle is held at 95%+ for more than a second (once per hold). Counts for the combo; the frog does its punch.
+
 ## v1.3 r19 - 2026-11-08 (MK4-2, MK5-1)
 - **Side bars stay up.** The ARMED message and HISCORE.EXE are now drawn over the live side bars instead of blanking the whole screen (HD). Only the boot screen takes over the screen.
 - Matrix rain screensaver off, so the telemetry stays visible while disarmed.

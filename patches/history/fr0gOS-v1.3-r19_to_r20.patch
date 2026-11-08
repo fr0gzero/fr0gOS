@@ -1,0 +1,249 @@
+diff --git a/src/main/flight/imu.c b/src/main/flight/imu.c
+index 103f8f1..c19d35e 100644
+--- a/src/main/flight/imu.c
++++ b/src/main/flight/imu.c
+@@ -792,8 +792,15 @@ static int calculateThrottleAngleCorrection(void)
+     return lrintf(throttleAngleValue * sin_approx(angle / (900.0f * M_PIf / 2.0f)));
+ }
+ 
++#ifdef USE_OSD
++void frogMotionTick(timeUs_t currentTimeUs);   // fr0gOS trick / crash detector (osd_elements.c)
++#endif
++
+ void imuUpdateAttitude(timeUs_t currentTimeUs)
+ {
++#ifdef USE_OSD
++    frogMotionTick(currentTimeUs);              // fr0gOS: watch for flips / rolls / spins / crashes at IMU rate
++#endif
+     if (sensors(SENSOR_ACC) && acc.isAccelUpdatedAtLeastOnce) {
+         IMU_LOCK;
+ #if ENABLE_SIMULATOR_IMU_SYNC
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index ff48e14..0c8bb6b 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R19"
++#define FROGOS_VERSION   "V1.3 R20"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 57b2cbb..d2eb881 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -182,6 +182,7 @@
+ 
+ #include "rx/rx.h"
+ 
++#include "sensors/acceleration.h"
+ #include "sensors/adcinternal.h"
+ #include "sensors/barometer.h"
+ #include "sensors/battery.h"
+@@ -1763,7 +1764,7 @@ static void frogReact(const char *text)
+         { "CRASH", FROG_ANIM_CRASH, 6 }, { "RECRD", FROG_ANIM_RECORD, 5 },
+         { "FLIP", FROG_ANIM_TRICK, 4 },  { "ROLL", FROG_ANIM_TRICK, 4 }, { "SPIN", FROG_ANIM_SPIN, 4 },
+         { "ARMED", FROG_ANIM_ARMED, 3 }, { "SAFE", FROG_ANIM_SAFE, 3 },
+-        { "PUNCH", FROG_ANIM_PUNCH, 2 },
++        { "PUNCH", FROG_ANIM_PUNCH, 2 }, { "ZOOM", FROG_ANIM_PUNCH, 2 },
+         { "ACRO", FROG_ANIM_MODE, 1 }, { "ANGLE", FROG_ANIM_MODE, 1 }, { "HORZN", FROG_ANIM_MODE, 1 },
+         { "AIR", FROG_ANIM_MODE, 1 },  { "NOAIR", FROG_ANIM_MODE, 1 },
+     };
+@@ -2201,14 +2202,86 @@ static bool frogFeedIgnored(const char *w)
+     return strncmp(w, "HOT", 3) == 0;
+ }
+ 
++// ---- tricks and crashes, watched at IMU rate (the OSD itself only looks ~10-20 times a second) ----
++// A trick is 300 degrees one way on one axis (a "full" 360 with some slack), started and finished within 3 s.
++// It keeps counting through a slow patch of up to 0.5 s; turning back the other way hard starts it over.
++#define FROG_TRICK_DEG       300.0f
++#define FROG_TRICK_RATE      100.0f     // deg/s to count as turning
++#define FROG_TRICK_SLOW_MS   500
++#define FROG_TRICK_MAX_MS    3000
++#define FROG_CRASH_G10       38         // peak 3.8 G (sampled at full rate) = crash
++#define FROG_BIGG_G10        30
++static uint8_t frogTrickPending = 0;    // bit 0 roll, 1 flip (pitch), 2 spin (yaw)
++static uint16_t frogPeakG10 = 0;
++
++void frogMotionTick(timeUs_t nowUs)
++{
++    static timeUs_t last = 0;
++    static float deg[3];
++    static timeUs_t startAt[3], slowAt[3];
++    const float peak = frogAccPeakG;
++    frogAccPeakG = 0.0f;
++    if (!ARMING_FLAG(ARMED) || isCrashFlipModeActive()) {
++        deg[0] = deg[1] = deg[2] = 0.0f;
++        last = 0;
++        return;
++    }
++    const uint16_t g10 = (uint16_t)lrintf(peak * 10.0f);
++    if (g10 > frogPeakG10) {
++        frogPeakG10 = g10;
++    }
++    const float dt = last ? cmpTimeUs(nowUs, last) * 1e-6f : 0.0f;
++    last = nowUs;
++    if (dt <= 0.0f || dt > 0.1f) {
++        deg[0] = deg[1] = deg[2] = 0.0f;
++        return;
++    }
++    for (int axis = 0; axis < 3; axis++) {
++        const float rate = gyro.gyroADCf[axis];
++        const bool turning = fabsf(rate) >= FROG_TRICK_RATE;
++        if (deg[axis] == 0.0f) {
++            if (turning) {
++                startAt[axis] = nowUs;
++                slowAt[axis] = 0;
++                deg[axis] = rate * dt;
++            }
++            continue;
++        }
++        if (turning && (rate > 0) != (deg[axis] > 0)) {
++            startAt[axis] = nowUs;               // hard the other way: start over in that direction
++            slowAt[axis] = 0;
++            deg[axis] = rate * dt;
++            continue;
++        }
++        if (!turning) {
++            if (!slowAt[axis]) {
++                slowAt[axis] = nowUs;
++            } else if (cmpTimeUs(nowUs, slowAt[axis]) > FROG_TRICK_SLOW_MS * 1000) {
++                deg[axis] = 0.0f;
++                continue;
++            }
++        } else {
++            slowAt[axis] = 0;
++        }
++        if ((rate > 0) == (deg[axis] > 0)) {
++            deg[axis] += rate * dt;
++        }
++        if (cmpTimeUs(nowUs, startAt[axis]) > FROG_TRICK_MAX_MS * 1000) {
++            deg[axis] = 0.0f;
++        } else if (fabsf(deg[axis]) >= FROG_TRICK_DEG) {
++            frogTrickPending |= 1 << axis;
++            deg[axis] = 0.0f;
++        }
++    }
++}
++
+ static void frogFeedDetect(timeMs_t now)
+ {
+     static bool init = false;
+     static bool armed, air, flip, beep;
+     static uint8_t mode;                       // 0 acro, 1 angle, 2 horizon
+-    static timeMs_t punchCool, gCool, lastMs;
+-    static float spinDeg[3];
+-    static bool punchHeld, bestPosted;
++    static timeMs_t punchCool, gCool, fullSince;
++    static bool punchHeld, bestPosted, zoomed;
+ 
+     const bool nowArmed = ARMING_FLAG(ARMED);
+     const bool nowAir = isAirmodeEnabled();
+@@ -2249,6 +2322,9 @@ static void frogFeedDetect(timeMs_t now)
+         }
+     }
+     if (!nowArmed) {
++        frogTrickPending = 0;
++        frogPeakG10 = 0;
++        fullSince = 0;
+         return;
+     }
+ 
+@@ -2263,15 +2339,30 @@ static void frogFeedDetect(timeMs_t now)
+     } else if (thr < 70) {
+         punchHeld = false;
+     }
++    // ZOOM: full throttle (95%+) held for more than a second, once per hold
++    if (thr >= 95) {
++        if (!fullSince) {
++            fullSince = now ? now : 1;
++        } else if (!zoomed && now - fullSince > 1000) {
++            frogFeedPost("ZOOM", DISPLAYPORT_SEVERITY_WARNING);
++            zoomed = true;
++        }
++    } else {
++        fullSince = 0;
++        zoomed = false;
++    }
+ #if defined(USE_ACC)
+-    // G: big hit, crash, new record
++    // G: big hit, crash (peak G since the last look, sampled at full rate so short hits aren't missed);
++    // the record uses the same G as the readout and the stats
+     const int g10 = lrintf(osdGForce * 10.0f);
+-    if (g10 >= 45 && cmp32(now, gCool) >= 0) {
++    const int peak10 = frogPeakG10;
++    frogPeakG10 = 0;
++    if (peak10 >= FROG_CRASH_G10 && cmp32(now, gCool) >= 0) {
+         frogFeedPost("CRASH", DISPLAYPORT_SEVERITY_CRITICAL);
+         gCool = now + 2000;
+-    } else if (g10 >= 30 && cmp32(now, gCool) >= 0) {
++    } else if (peak10 >= FROG_BIGG_G10 && cmp32(now, gCool) >= 0) {
+         char t[8];
+-        tfp_sprintf(t, "%d.%dG!", g10 / 10, g10 % 10);
++        tfp_sprintf(t, "%d.%dG!", peak10 / 10, peak10 % 10);
+         frogFeedPost(t, DISPLAYPORT_SEVERITY_WARNING);
+         gCool = now + 1500;
+     }
+@@ -2283,21 +2374,13 @@ static void frogFeedDetect(timeMs_t now)
+ #endif
+ #endif
+ 
+-    // tricks: a full 360 on an axis. Integrate the gyro while it keeps turning one way (150 deg/s+);
+-    // reset when it slows or reverses. 330 deg counts (the OSD samples at ~20 Hz).
++    // tricks found by frogMotionTick since the last look
+     static const char *const tricks[3] = { "ROLL", "FLIP", "SPIN" };
+-    const float dt = lastMs ? (now - lastMs) / 1000.0f : 0.0f;
+-    lastMs = now;
++    const uint8_t pending = frogTrickPending;
++    frogTrickPending = 0;
+     for (int axis = 0; axis < 3; axis++) {
+-        const float rate = gyro.gyroADCf[axis];
+-        if (fabsf(rate) < 150.0f || (spinDeg[axis] != 0.0f && (rate > 0) != (spinDeg[axis] > 0)) || dt > 0.2f) {
+-            spinDeg[axis] = 0.0f;
+-            continue;
+-        }
+-        spinDeg[axis] += rate * dt;
+-        if (fabsf(spinDeg[axis]) >= 330.0f) {
++        if (pending & (1 << axis)) {
+             frogFeedPost(tricks[axis], DISPLAYPORT_SEVERITY_NORMAL);
+-            spinDeg[axis] = 0.0f;
+         }
+     }
+ }
+diff --git a/src/main/sensors/acceleration.c b/src/main/sensors/acceleration.c
+index fe2d33d..f996aa4 100644
+--- a/src/main/sensors/acceleration.c
++++ b/src/main/sensors/acceleration.c
+@@ -40,6 +40,7 @@
+ #include "acceleration.h"
+ 
+ FAST_DATA_ZERO_INIT acc_t acc;                       // acc access functions
++float frogAccPeakG = 0.0f;                  // fr0gOS: highest G since the frog last looked
+ #ifdef USE_CRSF_ACCGYRO_TELEMETRY
+ // Two-counter seqlock pattern for lock-free synchronization:
+ // - accelSeq: only incremented by accUpdate (accumulator writes)
+@@ -112,6 +113,9 @@ static inline void postProcessAccelerometer(void)
+     }
+ 
+     acc.accMagnitude = vector3Norm(&acc.accADC) * acc.dev.acc_1G_rec;
++    if (acc.accMagnitude > frogAccPeakG) {
++        frogAccPeakG = acc.accMagnitude;            // fr0gOS: peak G between OSD looks (crash detection)
++    }
+     acc.jerkMagnitude = vector3Norm(&acc.jerk) * acc.dev.acc_1G_rec;
+ 
+     DEBUG_SET(DEBUG_ACCELEROMETER, 2, lrintf(acc.accMagnitude * 1e3f));
+diff --git a/src/main/sensors/acceleration.h b/src/main/sensors/acceleration.h
+index cede2f6..d33dbf8 100644
+--- a/src/main/sensors/acceleration.h
++++ b/src/main/sensors/acceleration.h
+@@ -74,6 +74,7 @@ typedef struct acc_s {
+ } acc_t;
+ 
+ extern acc_t acc;
++extern float frogAccPeakG;
+ 
+ typedef struct rollAndPitchTrims_s {
+     int16_t roll;
