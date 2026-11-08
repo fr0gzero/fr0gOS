@@ -1,0 +1,211 @@
+diff --git a/src/main/cli/settings.c b/src/main/cli/settings.c
+index 37f0e31..1c050ee 100644
+--- a/src/main/cli/settings.c
++++ b/src/main/cli/settings.c
+@@ -1995,6 +1995,7 @@ const clivalue_t valueTable[] = {
+ #ifdef USE_PERSISTENT_STATS
+     { "stats_min_armed_time_s",   VAR_INT8   | MASTER_VALUE, .config.minmax = { STATS_OFF, INT8_MAX }, PG_STATS_CONFIG, offsetof(statsConfig_t, stats_min_armed_time_s) },
+     { "frog_best_g10",          VAR_UINT16 | MASTER_VALUE, .config.minmaxUnsigned = { 0, UINT16_MAX }, PG_STATS_CONFIG, offsetof(statsConfig_t, frog_best_g10) },
++    { "frog_best_combo",        VAR_UINT8  | MASTER_VALUE, .config.minmaxUnsigned = { 0, UINT8_MAX }, PG_STATS_CONFIG, offsetof(statsConfig_t, frog_best_combo) },
+     { "frog_best_rpm",          VAR_UINT32 | MASTER_VALUE, .config.u32Max = UINT32_MAX, PG_STATS_CONFIG, offsetof(statsConfig_t, frog_best_rpm) },
+     { "stats_total_flights",    VAR_UINT32 | MASTER_VALUE, .config.u32Max = UINT32_MAX, PG_STATS_CONFIG, offsetof(statsConfig_t, stats_total_flights) },
+ 
+diff --git a/src/main/fc/stats.c b/src/main/fc/stats.c
+index 5e80d9e..6203237 100644
+--- a/src/main/fc/stats.c
++++ b/src/main/fc/stats.c
+@@ -98,6 +98,9 @@ bool frogNewBestG = false;
+ bool frogNewBestRpm = false;
+ uint16_t frogPrevBestG10 = 0;    // the record before this flight, for the hi-score screen
+ uint32_t frogPrevBestRpm = 0;
++bool frogNewBestCombo = false;
++uint8_t frogPrevBestCombo = 0;
++uint8_t frogFlightCombo = 0;     // longest combo this flight (kept by the combo meter in osd_elements.c)
+ 
+ void statsOnArm(void)
+ {
+@@ -105,6 +108,9 @@ void statsOnArm(void)
+     frogNewBestRpm = false;
+     frogPrevBestG10 = statsConfig()->frog_best_g10;
+     frogPrevBestRpm = statsConfig()->frog_best_rpm;
++    frogNewBestCombo = false;
++    frogPrevBestCombo = statsConfig()->frog_best_combo;
++    frogFlightCombo = 0;
+     arm_millis      = millis();
+     arm_distance_cm = DISTANCE_FLOWN_CM;
+ }
+@@ -130,6 +136,10 @@ void statsOnDisarm(void)
+                 statsConfigMutable()->frog_best_rpm = flight->max_esc_rpm;
+                 frogNewBestRpm = true;
+             }
++            if (frogFlightCombo > statsConfig()->frog_best_combo) {
++                statsConfigMutable()->frog_best_combo = frogFlightCombo;
++                frogNewBestCombo = true;
++            }
+ #endif
+ #ifdef USE_BATTERY_CONTINUE
+             statsConfigMutable()->stats_mah_used = getMAhDrawn();
+diff --git a/src/main/fc/stats.h b/src/main/fc/stats.h
+index 3514ca6..4580e2c 100644
+--- a/src/main/fc/stats.h
++++ b/src/main/fc/stats.h
+@@ -30,3 +30,6 @@ extern bool frogNewBestG;
+ extern bool frogNewBestRpm;
+ extern uint16_t frogPrevBestG10;
+ extern uint32_t frogPrevBestRpm;
++extern bool frogNewBestCombo;
++extern uint8_t frogPrevBestCombo;
++extern uint8_t frogFlightCombo;
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 0c8bb6b..9b49f06 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R20"
++#define FROGOS_VERSION   "V1.3 R21"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+@@ -1046,7 +1046,7 @@ static void osdDisplayStatisticLabel(uint8_t x, uint8_t y, const char * text, co
+ static int frogHighScoreLines(void)
+ {
+ #ifdef USE_PERSISTENT_STATS
+-    return (frogNewBestG ? 1 : 0) + (frogNewBestRpm ? 1 : 0);
++    return (frogNewBestG ? 1 : 0) + (frogNewBestRpm ? 1 : 0) + (frogNewBestCombo ? 1 : 0);
+ #else
+     return 0;
+ #endif
+@@ -1437,7 +1437,7 @@ static bool osdRenderStatsContinue(void)
+ }
+ 
+ // ---------------- fr0gOS HISCORE.EXE (replaces the post-flight stats) ----------------
+-// Only the arcade numbers: best G (with this flight and the record it beat), a BEST LAP placeholder,
++// Only the arcade numbers: best G and longest combo (each with this flight and the record it beat),
+ // lifetime flights and air time. A new record gets a decoding, colour-chasing banner with star-eyed
+ // frogs hopping either side. Drawn at 10 fps from the hold loop.
+ static timeUs_t frogScoreStartUs = 0;
+@@ -1491,9 +1491,16 @@ static void frogDrawHiScore(timeUs_t now, bool clear)
+     flights = statsConfig()->stats_total_flights;
+     totalS = statsConfig()->stats_total_time_s;
+ #endif
+-    const bool anyNew = newG;
+-    // header, banner, G block, BEST LAP, blank, flights, air time, prompt
+-    int lines = 1 + (anyNew ? 3 : 1) + (newG ? 3 : 2) + 1 + 1 + 2 + 1;
++    bool newCombo = false;
++    uint8_t bestCombo = frogFlightCombo, prevCombo = 0;
++#ifdef USE_PERSISTENT_STATS
++    newCombo = frogNewBestCombo;
++    bestCombo = statsConfig()->frog_best_combo;
++    prevCombo = frogPrevBestCombo;
++#endif
++    const bool anyNew = newG || newCombo;
++    // header, banner, G block, COMBO block, blank, flights, air time, prompt
++    int lines = 1 + (anyNew ? 3 : 1) + (newG ? 3 : 2) + (newCombo ? 3 : 2) + 1 + 2 + 1;
+     // short screens (analog, 13 rows): drop blank lines until it fits
+     const bool tightBanner = lines > rows;
+     lines -= tightBanner ? 1 : 0;
+@@ -1579,11 +1586,24 @@ static void frogDrawHiScore(timeUs_t now, bool clear)
+         }
+         y++;
+     }
+-    // lap timer placeholder: shows --.-- until the lap timer lands
++    // longest combo: best ever, this flight, and the record it beat
++    if (FROG_SHOW()) {
++        tfp_sprintf(v, bestCombo >= 2 ? "X%d" : "---", bestCombo);
++        frogScoreLine(x, y, "BEST COMBO", v, newCombo ? flash : DISPLAYPORT_SEVERITY_NORMAL);
++    }
++    y++;
+     if (FROG_SHOW()) {
+-        frogScoreLine(x, y, "BEST LAP", "--.--", DISPLAYPORT_SEVERITY_NORMAL);
++        tfp_sprintf(v, frogFlightCombo >= 2 ? "X%d" : "---", frogFlightCombo);
++        frogScoreLine(x, y, "  THIS FLIGHT", v, DISPLAYPORT_SEVERITY_NORMAL);
+     }
+     y++;
++    if (newCombo) {
++        if (FROG_SHOW()) {
++            tfp_sprintf(v, prevCombo >= 2 ? "X%d" : "---", prevCombo);
++            frogScoreLine(x, y, "  OLD RECORD", v, DISPLAYPORT_SEVERITY_NORMAL);
++        }
++        y++;
++    }
+     y += tightFooter ? 0 : 1;
+     if (FROG_SHOW()) {
+         tfp_sprintf(v, "#%d", (int)flights);
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index d2eb881..99ac7c4 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -182,6 +182,7 @@
+ 
+ #include "rx/rx.h"
+ 
++#include "fc/stats.h"
+ #include "sensors/acceleration.h"
+ #include "sensors/adcinternal.h"
+ #include "sensors/barometer.h"
+@@ -2113,6 +2114,9 @@ static void frogComboEvent(const char *text, timeMs_t now)
+         if (frogCombo < 99) {
+             frogCombo++;
+         }
++        if (frogCombo > frogFlightCombo) {
++            frogFlightCombo = frogCombo;            // for HISCORE.EXE
++        }
+         frogComboBumpAt = now ? now : 1;
+         frogComboEndAt = 0;
+     } else {
+@@ -2281,7 +2285,7 @@ static void frogFeedDetect(timeMs_t now)
+     static bool armed, air, flip, beep;
+     static uint8_t mode;                       // 0 acro, 1 angle, 2 horizon
+     static timeMs_t punchCool, gCool, fullSince;
+-    static bool punchHeld, bestPosted, zoomed;
++    static bool punchHeld, zoomed;
+ 
+     const bool nowArmed = ARMING_FLAG(ARMED);
+     const bool nowAir = isAirmodeEnabled();
+@@ -2298,7 +2302,6 @@ static void frogFeedDetect(timeMs_t now)
+     if (nowArmed != armed) {
+         armed = nowArmed;
+         frogFeedPost(nowArmed ? "ARMED" : "SAFE", DISPLAYPORT_SEVERITY_NORMAL);
+-        bestPosted = false;
+     }
+     if (nowFlip != flip) {
+         flip = nowFlip;
+@@ -2352,9 +2355,7 @@ static void frogFeedDetect(timeMs_t now)
+         zoomed = false;
+     }
+ #if defined(USE_ACC)
+-    // G: big hit, crash (peak G since the last look, sampled at full rate so short hits aren't missed);
+-    // the record uses the same G as the readout and the stats
+-    const int g10 = lrintf(osdGForce * 10.0f);
++    // G: big hit, crash (peak G since the last look, sampled at full rate so short hits aren't missed)
+     const int peak10 = frogPeakG10;
+     frogPeakG10 = 0;
+     if (peak10 >= FROG_CRASH_G10 && cmp32(now, gCool) >= 0) {
+@@ -2366,12 +2367,6 @@ static void frogFeedDetect(timeMs_t now)
+         frogFeedPost(t, DISPLAYPORT_SEVERITY_WARNING);
+         gCool = now + 1500;
+     }
+-#ifdef USE_PERSISTENT_STATS
+-    if (!bestPosted && statsConfig()->frog_best_g10 > 0 && g10 > statsConfig()->frog_best_g10) {
+-        frogFeedPost("RECRD", DISPLAYPORT_SEVERITY_CRITICAL);
+-        bestPosted = true;
+-    }
+-#endif
+ #endif
+ 
+     // tricks found by frogMotionTick since the last look
+diff --git a/src/main/pg/stats.h b/src/main/pg/stats.h
+index 3cbb39d..b5fbab4 100644
+--- a/src/main/pg/stats.h
++++ b/src/main/pg/stats.h
+@@ -34,6 +34,7 @@ typedef struct statsConfig_s {
+     uint8_t statsSaveMoveLimit; // gyro rate limit for saving stats upon disarm
+     uint16_t frog_best_g10;     // fr0gOS high score: best max g-force x10
+     uint32_t frog_best_rpm;     // fr0gOS high score: best max average motor RPM
++    uint8_t frog_best_combo;    // fr0gOS high score: longest combo (appended, so the PG keeps its version)
+ } statsConfig_t;
+ 
+ PG_DECLARE(statsConfig_t, statsConfig);

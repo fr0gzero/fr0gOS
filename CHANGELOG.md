@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r21 - 2026-11-08 (MK4-2, MK5-1)
+- HISCORE.EXE: `BEST LAP` is gone; **`BEST COMBO`** takes its place, with `THIS FLIGHT` under it (and `OLD RECORD` when you beat it). A new best combo flashes and brings up the NEW HIGH SCORE banner, same as G. Stored with the other high scores (`frog_best_combo`, added to the end of the stats so nothing gets reset).
+- The in-flight `RECRD` event is gone (the score screen does the celebrating).
+
 ## v1.3 r20 - 2026-11-08 (MK4-2, MK5-1)
 - **Easier tricks.** FLIP / ROLL / SPIN now need 300 degrees one way (was 330), turning at 100 deg/s+ (was 150), within 3 s, and a slow patch of up to 0.5 s mid-trick no longer cancels it. Detection moved from the OSD (which only looks 10-20 times a second, and threw the count away whenever a frame took over 0.2 s) to the IMU task at 100 Hz.
 - **More sensitive crash.** CRASH uses the peak G since the last OSD frame, captured on every accelerometer sample (short hits used to fall between OSD frames), at 3.8 G (was 4.5 G sampled). The `3.xG!` message uses the same peak.
