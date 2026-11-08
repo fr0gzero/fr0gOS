@@ -26,7 +26,6 @@ SQUASH = A.ANIMS["squash"][1]
 ANIMS = [
     ("CRT", [(f, max(60, ms // 2)) for f, ms in A.ANIMS["boot"][1][:8]]),      # boot: CRT line opens
     ("REST", A.ANIMS["rest"][1]),
-    ("PEEK", A.ANIMS["peekaboo"][1]),
     ("FLIP_IN", FLIP[1:11]),                                                     # spins over, rocks on its back
     ("FLIP_HOLD", FLIP[11:]),                                                    # looks around, kicks (loops)
     ("FLIP_OUT", [(f, 60) for f in reversed(SPIN_FR)] + [(A.IDLE, 200)]),
@@ -92,6 +91,12 @@ HOP_SLOTS = [(name, [(slot(a), slot(b)) for a, b in pairs]) for name, pairs in H
 for _n, fr in TABLES:
     for _g, ms in fr:
         assert 10 <= ms <= 2550 and ms % 10 == 0, (_n, ms)
+
+
+def free_slots():
+    """slots in SLOTS the frog didn't need (for the stick-code glyphs)"""
+    used = {v[0] for v in _glyphs.values()}
+    return [x for x in SLOTS if x not in used]
 
 
 def cells():

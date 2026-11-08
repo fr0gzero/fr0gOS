@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r27 - 2026-11-08 (MK4-2, MK5-1) - needs the r27 goggle font
+- **Stick code.** The four stick positions are written into the bottom OSD row (5 cells each side, in the black bars) as dim three-band glyphs, 3 bits a cell, 6 bits a stick, with a frame count and a checksum. The goggles' DVR records them, and `tools/stickcode_decode.py` reads them back off the video into a CSV of stick positions over time, for a stick overlay. Tested on a synthetic DVR at H.264 CRF 32: 75 of 75 OSD frames read exactly.
+- Peekaboo's glyphs are gone from the font (unused since r15); their slots and the last free ones hold the 8 stick-code glyphs. **The frog glyph slots moved: update the goggle font with r27, and older builds will show the wrong frog.**
+
 ## v1.3 r26 - 2026-11-08 (MK4-2, MK5-1)
 - **A crash clears the slate:** every event under `CRASH` in the log disintegrates straight away, top to bottom, along with the combo breaker.
 
