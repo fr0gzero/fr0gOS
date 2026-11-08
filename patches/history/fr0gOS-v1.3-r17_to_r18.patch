@@ -1,0 +1,67 @@
+diff --git a/src/main/io/vtx_msp.c b/src/main/io/vtx_msp.c
+index 8309ad4..2fc5294 100644
+--- a/src/main/io/vtx_msp.c
++++ b/src/main/io/vtx_msp.c
+@@ -102,6 +102,20 @@ void setMspVtxDeviceStatusReady(const int descriptor)
+     }
+ }
+ 
++// fr0gOS: the flight controller's VTX settings win. A VTX that couldn't reach the FC at power-up falls back to
++// its own last channel (R1) and then reports that back with MSP_SET_VTX_CONFIG, which Betaflight adopts and
++// saves, so the quad stays stuck on the wrong channel. Settings coming from the VTX's own port are ignored and
++// the FC's settings are pushed back instead (the configurator and the OSD menu still change them as normal).
++bool mspVtxIsVtxPort(const int descriptor)
++{
++    return mspVtxPortIdentifier != 255 && getMspSerialPortDescriptor(mspVtxPortIdentifier) == descriptor;
++}
++
++void mspVtxPushConfig(void)
++{
++    mspVtxConfigChanged = true;
++}
++
+ void prepareMspFrame(uint8_t *mspFrame)
+ {
+     mspFrame[0] = VTXDEV_MSP;
+diff --git a/src/main/io/vtx_msp.h b/src/main/io/vtx_msp.h
+index c769b18..81751f4 100644
+--- a/src/main/io/vtx_msp.h
++++ b/src/main/io/vtx_msp.h
+@@ -33,3 +33,5 @@ typedef enum {
+ bool vtxMspInit(void);
+ void setMspVtxDeviceStatusReady(const int descriptor);
+ void prepareMspFrame(uint8_t *mspFrame);
++bool mspVtxIsVtxPort(const int descriptor);
++void mspVtxPushConfig(void);
+diff --git a/src/main/msp/msp.c b/src/main/msp/msp.c
+index 61d49bf..a24b8d3 100644
+--- a/src/main/msp/msp.c
++++ b/src/main/msp/msp.c
+@@ -3667,6 +3667,14 @@ RAM_CODE static mspResult_e mspProcessInCommand(mspDescriptor_t srcDesc, int16_t
+ #ifdef USE_VTX_COMMON
+     case MSP_SET_VTX_CONFIG:
+         {
++#ifdef USE_VTX_MSP
++            if (mspVtxIsVtxPort(srcDesc)) {
++                // fr0gOS: the VTX reporting its own settings; keep the FC's and send them back to it
++                setMspVtxDeviceStatusReady(srcDesc);
++                mspVtxPushConfig();
++                break;
++            }
++#endif
+             vtxDevice_t *vtxDevice = vtxCommonDevice();
+             vtxDevType_e vtxType = VTXDEV_UNKNOWN;
+             if (vtxDevice) {
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 92fc83c..f2dc4b0 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R17"
++#define FROGOS_VERSION   "V1.3 R18"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 

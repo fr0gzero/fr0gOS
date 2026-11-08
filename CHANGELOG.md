@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r18 - 2026-11-08 (MK4-2, MK5-1)
+- **Fix: stuck on R1.** When the VTX couldn't reach the FC at power-up (the r10-r12 link flooding), it fell back to its own last channel, R1, then reported R1 back to the FC with MSP_SET_VTX_CONFIG. Betaflight adopts that and saves it (the high-score save on disarm writes it to flash), so every boot after agreed on R1. Now settings coming from the VTX's own port are ignored and the FC sends its own (R8) back to the VTX. The Configurator's Video Transmitter tab and the OSD menu still change the channel as normal.
+- Same settings and goggle font as r17. After flashing, set R8 back once if the FC already saved R1: `set vtx_band = 5`, `set vtx_channel = 8`, `set vtx_freq = 5917`, `save`.
+
 ## v1.3 r17 - 2026-11-08 (MK4-2, MK5-1)
 - Combo meter: the word `COMBO` appears under the count once the chain reaches X5 (decodes in, same colour as the count).
 - Layout C left side moved down for it: feed rows 1-5, combo 6-7, blank 8, voltage / mAh / current 9-11, blank 12, links 13-16. Paste the r17 CLI (or `quads/mk4-2/layouts/layout_C.txt`).
