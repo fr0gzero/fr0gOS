@@ -1,0 +1,9 @@
+# fr0gOS song cue sheet: a test song (no music needed). Flip the SONG switch and watch.
+title  TEST SONG
+tick   1.0
+0:08   BUILD
+0:12   DROP
+0:24   CHORUS
+0:34   TEXT SEND IT
+0:45   BIGDROP
+1:00   END

@@ -4,6 +4,13 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r23 - 2026-11-08 (MK4-2, MK5-1)
+- **Song cues.** A song's drops, choruses and build-ups are baked into the build and called on the OSD, centred in the upper middle, decoding in and out like ARMED. Drops count in (`DROP IN 3 2 1`, one bar apart at the song's BPM) so you can time the send. Cue types: DROP, BIGDROP, CHORUS, BUILD, END (OUTRO), TEXT (your own words). See `songs/README.md`.
+- The **SONG switch** (Betaflight mode USER1, AUX 5) starts the cue clock; the radio starts the track on the same switch (EdgeTX Play Track), so they stay in sync.
+- **fr0gOS Songbook** (`tools/songbook/`): a page that analyses a track (BPM, drops, choruses, builds, outro), lets you fix the cues against the waveform with a live goggle preview, sends the cue sheet to Dax, and makes the EdgeTX radio pack (32 kHz mono WAV).
+- `tools/make_song.py`: cue sheet -> `frog_song.h`. This build carries `songs/test.txt` (no music: flip the switch and watch).
+- CLIs add `aux ... 40 4 1700 2100` (SONG on AUX 5).
+
 ## v1.3 r22 - 2026-11-08 (MK4-2, MK5-1)
 - **New event: `PERCH`** when you set down softly on something: upright, throttle under 20%, gyro under 40 deg/s and about 1 G for 0.7 s. Once per landing (it has to fly again before the next one counts). The frog smiles; it counts for the combo.
 - **CRASH is decided, not guessed.** A hit of 3.8 G+ opens a 0.5 s look: CRASH only if the hit was 7 G+, or the quad tumbled (500 deg/s+), or it ended up tilted past about 45 degrees. A hard touchdown that stays upright just shows the G (`4.6G!`) and then PERCH.
