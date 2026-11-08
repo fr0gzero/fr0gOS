@@ -1,0 +1,144 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 9b49f06..0696ec9 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R21"
++#define FROGOS_VERSION   "V1.3 R22"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 99ac7c4..2cad88d 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1765,7 +1765,7 @@ static void frogReact(const char *text)
+         { "CRASH", FROG_ANIM_CRASH, 6 }, { "RECRD", FROG_ANIM_RECORD, 5 },
+         { "FLIP", FROG_ANIM_TRICK, 4 },  { "ROLL", FROG_ANIM_TRICK, 4 }, { "SPIN", FROG_ANIM_SPIN, 4 },
+         { "ARMED", FROG_ANIM_ARMED, 3 }, { "SAFE", FROG_ANIM_SAFE, 3 },
+-        { "PUNCH", FROG_ANIM_PUNCH, 2 }, { "ZOOM", FROG_ANIM_PUNCH, 2 },
++        { "PUNCH", FROG_ANIM_PUNCH, 2 }, { "ZOOM", FROG_ANIM_PUNCH, 2 }, { "PERCH", FROG_ANIM_FIL_SMILE, 2 },
+         { "ACRO", FROG_ANIM_MODE, 1 }, { "ANGLE", FROG_ANIM_MODE, 1 }, { "HORZN", FROG_ANIM_MODE, 1 },
+         { "AIR", FROG_ANIM_MODE, 1 },  { "NOAIR", FROG_ANIM_MODE, 1 },
+     };
+@@ -2213,10 +2213,25 @@ static bool frogFeedIgnored(const char *w)
+ #define FROG_TRICK_RATE      100.0f     // deg/s to count as turning
+ #define FROG_TRICK_SLOW_MS   500
+ #define FROG_TRICK_MAX_MS    3000
+-#define FROG_CRASH_G10       38         // peak 3.8 G (sampled at full rate) = crash
++// Crash vs perch. A hit of 3.8 G+ opens a 0.5 s look: it's a CRASH if the hit was huge (7 G+), or the quad
++// tumbled (500 deg/s+) or ended up tilted past ~45 degrees. Otherwise it was a touchdown. PERCH is posted when
++// the quad comes to rest upright: throttle under 20%, gyro under 40 deg/s and about 1 G for 0.7 s, once per
++// landing (it has to fly again before the next one counts).
++#define FROG_IMPACT_G10      38
++#define FROG_SMASH_G10       70
+ #define FROG_BIGG_G10        30
+-static uint8_t frogTrickPending = 0;    // bit 0 roll, 1 flip (pitch), 2 spin (yaw)
+-static uint16_t frogPeakG10 = 0;
++#define FROG_IMPACT_LOOK_MS  500
++#define FROG_TUMBLE_DPS      500.0f
++#define FROG_UPRIGHT_COS     0.7f
++#define FROG_PERCH_DPS       40.0f
++#define FROG_PERCH_THR       20
++#define FROG_PERCH_MS        700
++#define FROG_EV_CRASH        0x08
++#define FROG_EV_PERCH        0x10
++static uint8_t frogTrickPending = 0;    // bit 0 roll, 1 flip (pitch), 2 spin (yaw), FROG_EV_CRASH, FROG_EV_PERCH
++static uint16_t frogPeakG10 = 0;        // peak G since the last look, below the impact level (for "3.4G!")
++static timeUs_t frogMotionArmedAt = 0;
++static bool frogMotionFresh = false;
+ 
+ void frogMotionTick(timeUs_t nowUs)
+ {
+@@ -2228,12 +2243,68 @@ void frogMotionTick(timeUs_t nowUs)
+     if (!ARMING_FLAG(ARMED) || isCrashFlipModeActive()) {
+         deg[0] = deg[1] = deg[2] = 0.0f;
+         last = 0;
++        frogMotionArmedAt = 0;
+         return;
+     }
++    if (!frogMotionArmedAt) {
++        frogMotionArmedAt = nowUs ? nowUs : 1;
++        frogMotionFresh = true;            // just armed: on the ground, not perched anywhere yet
++    }
+     const uint16_t g10 = (uint16_t)lrintf(peak * 10.0f);
+-    if (g10 > frogPeakG10) {
++    const float maxRate = MAX(fabsf(gyro.gyroADCf[0]), MAX(fabsf(gyro.gyroADCf[1]), fabsf(gyro.gyroADCf[2])));
++    static timeUs_t impactAt = 0, stillSince = 0;
++    static uint16_t impactG10 = 0;
++    static float impactRate = 0.0f;
++    static bool perched = true;            // on the ground until it has flown
++    if (frogMotionFresh) {
++        perched = true;
++        impactAt = 0;
++        impactG10 = 0;
++        stillSince = 0;
++        frogMotionFresh = false;
++    }
++#if defined(USE_ACC)
++    const bool upright = getCosTiltAngle() >= FROG_UPRIGHT_COS;
++#else
++    const bool upright = true;
++#endif
++    const int thr = calculateThrottlePercent();
++    // impact: look for 0.5 s, then decide crash or touchdown
++    if (g10 >= FROG_IMPACT_G10) {
++        if (!impactAt) {
++            impactAt = nowUs ? nowUs : 1;
++            impactRate = 0.0f;
++        }
++        impactG10 = MAX(impactG10, g10);
++    } else if (g10 > frogPeakG10) {
+         frogPeakG10 = g10;
+     }
++    if (impactAt) {
++        impactRate = MAX(impactRate, maxRate);
++        if (cmpTimeUs(nowUs, impactAt) >= FROG_IMPACT_LOOK_MS * 1000) {
++            if (impactG10 >= FROG_SMASH_G10 || impactRate >= FROG_TUMBLE_DPS || !upright) {
++                frogTrickPending |= FROG_EV_CRASH;
++                perched = true;            // a crash isn't a perch
++            } else {
++                frogPeakG10 = MAX(frogPeakG10, impactG10);   // a hard touchdown: just the G message
++            }
++            impactAt = 0;
++            impactG10 = 0;
++        }
++    }
++    // perch: settled, upright, throttle down, after flying
++    const bool still = upright && thr < FROG_PERCH_THR && maxRate < FROG_PERCH_DPS && peak > 0.8f && peak < 1.2f;
++    if (!still) {
++        stillSince = 0;
++        if (thr >= 30 || maxRate >= 150.0f) {
++            perched = false;               // flying again
++        }
++    } else if (!stillSince) {
++        stillSince = nowUs ? nowUs : 1;
++    } else if (!perched && !impactAt && cmpTimeUs(nowUs, stillSince) >= FROG_PERCH_MS * 1000) {
++        frogTrickPending |= FROG_EV_PERCH;
++        perched = true;
++    }
+     const float dt = last ? cmpTimeUs(nowUs, last) * 1e-6f : 0.0f;
+     last = nowUs;
+     if (dt <= 0.0f || dt > 0.1f) {
+@@ -2358,7 +2429,7 @@ static void frogFeedDetect(timeMs_t now)
+     // G: big hit, crash (peak G since the last look, sampled at full rate so short hits aren't missed)
+     const int peak10 = frogPeakG10;
+     frogPeakG10 = 0;
+-    if (peak10 >= FROG_CRASH_G10 && cmp32(now, gCool) >= 0) {
++    if (frogTrickPending & FROG_EV_CRASH) {
+         frogFeedPost("CRASH", DISPLAYPORT_SEVERITY_CRITICAL);
+         gCool = now + 2000;
+     } else if (peak10 >= FROG_BIGG_G10 && cmp32(now, gCool) >= 0) {
+@@ -2378,6 +2449,9 @@ static void frogFeedDetect(timeMs_t now)
+             frogFeedPost(tricks[axis], DISPLAYPORT_SEVERITY_NORMAL);
+         }
+     }
++    if (pending & FROG_EV_PERCH) {
++        frogFeedPost("PERCH", DISPLAYPORT_SEVERITY_NORMAL);
++    }
+ }
+ 
+ // frog on row 0 (HD), then five event lines (newest on top), drawn as repeated calls of the same element

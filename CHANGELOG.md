@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r22 - 2026-11-08 (MK4-2, MK5-1)
+- **New event: `PERCH`** when you set down softly on something: upright, throttle under 20%, gyro under 40 deg/s and about 1 G for 0.7 s. Once per landing (it has to fly again before the next one counts). The frog smiles; it counts for the combo.
+- **CRASH is decided, not guessed.** A hit of 3.8 G+ opens a 0.5 s look: CRASH only if the hit was 7 G+, or the quad tumbled (500 deg/s+), or it ended up tilted past about 45 degrees. A hard touchdown that stays upright just shows the G (`4.6G!`) and then PERCH.
+
 ## v1.3 r21 - 2026-11-08 (MK4-2, MK5-1)
 - HISCORE.EXE: `BEST LAP` is gone; **`BEST COMBO`** takes its place, with `THIS FLIGHT` under it (and `OLD RECORD` when you beat it). A new best combo flashes and brings up the NEW HIGH SCORE banner, same as G. Stored with the other high scores (`frog_best_combo`, added to the end of the stats so nothing gets reset).
 - The in-flight `RECRD` event is gone (the score screen does the celebrating).
