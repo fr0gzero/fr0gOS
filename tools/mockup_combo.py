@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fr0gOS r17 combo meter mockup: the left bar during a flurry of events (mirrors the firmware logic).
+"""fr0gOS r25 combo meter mockup (4 s chain, time-left meter, crash breaks it): the left bar during a flurry of events (mirrors the firmware logic).
 
 usage: mockup_combo.py <frog_charmap.h> <frog_anim.h> <out.gif>
 """
@@ -23,8 +23,9 @@ G_SCR = [0xFD, 0xFE, 0xFF]
 G_RSCR = [0x1D, 0x1E, 0x1F]
 IDLE = int(re.search(r"#define FROG_G_IDLE\s+0x([0-9A-F]+)", open(ANIMH).read()).group(1), 16)
 N, W, C = 0, 1, 2
-HOLD, OUT_MS, GAP = 4000, 300, 5000
-WINDOW = HOLD + OUT_MS + GAP
+HOLD, OUT_MS = 7000, 300
+WINDOW = 4000
+CRASH_MS = 1500
 COLS_SHOWN = 14
 
 
@@ -39,16 +40,17 @@ def noise(sev):
 
 
 # events: (time s, text, severity)
-EVENTS = [(1.0, "ARMED", N), (2.0, "PUNCH", W), (3.2, "FLIP", N), (4.6, "ROLL", N), (6.5, "ANGLE", N), (8.0, "ACRO", N),
-          (9.0, "SPIN", N), (10.0, "PUNCH", W), (10.8, "FLIP", N), (11.6, "ROLL", N), (12.5, "SPIN", N), (13.4, "PUNCH", W),
-          (14.3, "3.6G!", W), (15.2, "FLIP", N), (16.0, "RECRD", C), (25.5, "ANGLE", N)]
-END = 28.0
+EVENTS = [(1.0, "ARMED", N), (2.0, "PUNCH", W), (3.6, "FLIP", N), (5.4, "ROLL", N), (6.8, "ORBIT", N), (8.5, "ZOOM", W),
+          (10.0, "SPIN", N), (11.4, "LOOP", N), (13.0, "CRASH", C), (16.0, "PUNCH", W), (17.5, "FLIP", N), (19.0, "PERCH", N),
+          (20.5, "TRIPY", W), (22.0, "ROLL", N)]
+END = 30.0
 
 feed = []            # newest first: dict(text, sev, at)
 combo = 0
 combo_last = combo_bump = combo_end = 0
 combo_final = 0
 word_at = 0
+crash_at = None
 frames, durs = [], []
 ev_i = 0
 t_ms = 0
@@ -57,7 +59,11 @@ while t_ms < END * 1000:
         _, text, sev = EVENTS[ev_i]
         ev_i += 1
         # combo (as frogComboEvent)
-        if text != "ARMED":
+        if text == "CRASH":
+            if combo >= 2:
+                combo_final, crash_at, combo_end = combo, t_ms, 0
+            combo = 0
+        elif text != "ARMED":
             if combo and t_ms - combo_last <= WINDOW:
                 combo = min(99, combo + 1)
                 combo_bump = t_ms
@@ -77,7 +83,7 @@ while t_ms < END * 1000:
     img = HP.BASE.copy()
     # clear the left rows 0-6 (the base scene has a static feed in it)
     for r in range(0, 8):
-        for x in range(0, 6):
+        for x in range(0, 9):
             img.paste((0, 0, 0), (x * HP.FGW, r * HP.FGH, (x + 1) * HP.FGW, (r + 1) * HP.FGH))
     HP.put(img, 4, 0, HP.glyph(IDLE))
     for row, ev in enumerate(feed, start=1):
@@ -85,34 +91,70 @@ while t_ms < END * 1000:
         if age >= HOLD + OUT_MS:
             continue
         for i, ch in enumerate(ev["text"]):
-            if age < 60 * i + 150:
+            if age < 250 + 45 * i:
                 g = noise(ev["sev"])                     # types in through glyphs
             elif age >= HOLD + 50 * i:
                 g = noise(ev["sev"]) if age < HOLD + 50 * i + 120 else 0x20   # disintegrates
             else:
                 g = col(ord(ch), ev["sev"])
             HP.put(img, i, row, HP.glyph(g))
-    # combo line (as frogComboLine)
-    n = combo if combo >= 2 else (combo_final if combo_end and t_ms - combo_end < 400 else 0)
-    if n >= 2:
-        txt = ("X%d!" if n >= 10 else "X%d") % n
-        sev = C if n >= 10 else W if n >= 5 else N
-        ending = combo < 2
-        tt = (t_ms - combo_end) if ending else (t_ms - combo_bump if combo_bump else 260)
-        for i, ch in enumerate(txt):
-            scr = (tt >= 80 * i) if ending else (tt < 260 - 50 * i)
-            HP.put(img, i, 6, HP.glyph(noise(sev) if scr else col(ord(ch), sev)))
-        if n >= 5:
-            if not word_at:
-                word_at = t_ms
-            tw = (t_ms - combo_end) if ending else (t_ms - word_at)
-            for i, ch in enumerate("COMBO"):
-                scr = (tw >= 80 * i) if ending else (tw < 260 - 50 * i)
-                HP.put(img, i, 7, HP.glyph(noise(sev) if scr else col(ord(ch), sev)))
+    # combo lines (as frogComboLine / frogComboCrashLine)
+    if crash_at is not None and t_ms - crash_at < CRASH_MS:
+        ct = t_ms - crash_at
+        num = ("X%d!" if combo_final >= 10 else "X%d") % combo_final
+        if ct < 350:
+            off = 1 if (ct // 60) % 2 else 0
+            for i, ch in enumerate(num):
+                HP.put(img, i + off, 6, HP.glyph(col(ord(ch), C)))
+        elif ct < 800:
+            for i, ch in enumerate(num):
+                at = 350 + 70 * i
+                if ct < at:
+                    HP.put(img, i, 6, HP.glyph(col(ord(ch), C)))
+                elif ct < at + 110:
+                    HP.put(img, i, 6, HP.glyph(noise(C)))
+        if 420 <= ct < 900:
+            for i in range(len(num)):
+                at = 420 + 70 * i
+                if at <= ct < at + 240:
+                    HP.put(img, i, 7, HP.glyph(noise(C)))
+        elif ct >= 900:
+            tw, hold = ct - 900, CRASH_MS - 900
+            outT = tw - (hold - 400)
+            for i, ch in enumerate("BREAK"):
+                if outT >= 0 and outT >= 45 * i + 150:
+                    continue
+                g = noise(C) if ((outT >= 0 and outT >= 45 * i) or tw < 250 + 45 * i) else col(ord(ch), C)
+                HP.put(img, i, 7, HP.glyph(g))
+        word_at = 0
+    else:
+        n = combo if combo >= 2 else (combo_final if combo_end and t_ms - combo_end < 400 else 0)
+        if n >= 2:
+            txt = ("X%d!" if n >= 10 else "X%d") % n
+            sev = C if n >= 10 else W if n >= 5 else N
+            ending = combo < 2
+            tt = (t_ms - combo_end) if ending else (t_ms - combo_bump if combo_bump else 260)
+            for i, ch in enumerate(txt):
+                scr = (tt >= 80 * i) if ending else (tt < 260 - 50 * i)
+                HP.put(img, i, 6, HP.glyph(noise(sev) if scr else col(ord(ch), sev)))
+            if not ending:
+                left = WINDOW - (t_ms - combo_last)
+                ms = C if left < 1000 else sev
+                for i in range(4):
+                    c = "=" if left >= (i + 1) * 1000 else "-" if left >= i * 1000 + 500 else None
+                    if c:
+                        HP.put(img, len(txt) + 1 + i, 6, HP.glyph(col(ord(c), ms)))
+            if n >= 5:
+                if not word_at:
+                    word_at = t_ms
+                tw = (t_ms - combo_end) if ending else (t_ms - word_at)
+                for i, ch in enumerate("COMBO"):
+                    scr = (tw >= 80 * i) if ending else (tw < 260 - 50 * i)
+                    HP.put(img, i, 7, HP.glyph(noise(sev) if scr else col(ord(ch), sev)))
+            else:
+                word_at = 0
         else:
             word_at = 0
-    else:
-        word_at = 0
     crop = img.crop((0, 0, COLS_SHOWN * HP.FGW, img.height)).resize((COLS_SHOWN * HP.FGW // 2, img.height // 2), Image.LANCZOS)
     canvas = Image.new("RGB", (crop.width, crop.height + 22), (16, 16, 16))
     canvas.paste(crop, (0, 0))

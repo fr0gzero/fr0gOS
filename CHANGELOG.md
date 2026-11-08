@@ -4,6 +4,12 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r25 - 2026-11-08 (MK4-2, MK5-1)
+- **Combo breaker:** a crash shakes the count red, crumbles it left to right into debris that falls onto the line below, then `BREAK` flashes there (1.5 s).
+- **Time-left meter** after the count: four cells, one second each (`====` -> `=-`), in the count's colour, red in the last second.
+- The chain window is now **4 s from the last event** (was 5 s after it left the log).
+- Event log lines stay **7 s** (was 4 s) before they disintegrate.
+
 ## v1.3 r24 - 2026-11-08 (MK4-2, MK5-1)
 - **New tricks, told apart by how you fly them:**
   - `LOOP`: a pitch 360 that took 0.7 s+ with the throttle up (45%+ on average). A quick one off the throttle is still `FLIP`.

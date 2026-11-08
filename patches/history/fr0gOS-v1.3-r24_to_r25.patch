@@ -1,0 +1,216 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 0430a4b..bdd1cb0 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R24"
++#define FROGOS_VERSION   "V1.3 R25"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index de460ad..7fbbb5e 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1550,7 +1550,7 @@ uint8_t frogWarnSeverity = DISPLAYPORT_SEVERITY_NORMAL;   // set by the warnings
+ //   alerts    link / failsafe / arming warnings (RXLOS, FSAFE, LQ!...)
+ #define FROG_FEED_LEN 5
+ #define FROG_FEED_LINES 5
+-#define FROG_FEED_HOLD_MS 4000     // each message stays 4 s, then disintegrates into glyphs, then nothing
++#define FROG_FEED_HOLD_MS 7000     // each message stays 7 s, then disintegrates into glyphs, then nothing
+ #define FROG_FEED_OUT_MS  300
+ typedef struct {
+     char text[FROG_FEED_LEN + 1];
+@@ -2081,10 +2081,34 @@ uint32_t frogBootLengthMs(int hops, uint32_t doneMs)
+     return MAX(hopsEnd, doneMs + 900) + frogAnimTotal(FROG_ANIM_CELEBRATE) + 300;
+ }
+ 
++// same rhythm as the ARMED message: glyphs for 0.4 s, then the characters land left to right 45 ms apart;
++// going away, they turn to glyphs and drop out left to right
++#define FROG_FX_IN_MS   400
++#define FROG_FX_STEP_MS 45
++#define FROG_FX_OUT_MS  150
++
++// decode in (glyphs, then land left to right) and, in the last 0.4 s of `hold`, out again
++static void frogSongDecode(char *b, uint32_t t, uint32_t hold, uint8_t sev, bool hd)
++{
++    const int32_t outT = (int32_t)t - (int32_t)(hold > 400 ? hold - 400 : 0);
++    for (int i = 0; b[i]; i++) {
++        if (b[i] == ' ') {
++            continue;
++        }
++        if (outT >= 0 && outT >= FROG_FX_STEP_MS * i + FROG_FX_OUT_MS) {
++            b[i] = ' ';
++        } else if ((outT >= 0 && outT >= FROG_FX_STEP_MS * i) || t < 250u + FROG_FX_STEP_MS * i) {
++            b[i] = hd ? (char)frogColourNoiseChar(sev) : (char)frogNoiseChar(false);
++        } else if (hd) {
++            b[i] = (char)frogColourChar((uint8_t)b[i], sev);
++        }
++    }
++}
++
+ // combo meter, under the event log: every event that lands within 5 s of the previous one disappearing
+ // (4 s on screen + 0.3 s disintegrating + 5 s) keeps the chain going: X2, X3 ... X99. Only counts while armed;
+ // disarming or a gap ends it (the number disintegrates).
+-#define FROG_COMBO_WINDOW_MS (FROG_FEED_HOLD_MS + FROG_FEED_OUT_MS + 5000)
++#define FROG_COMBO_WINDOW_MS 4000         // r25: next event within 4 s of the last one
+ #define FROG_COMBO_BUMP_MS   260
+ #define FROG_COMBO_OUT_MS    400
+ static uint8_t frogCombo = 0;
+@@ -2092,6 +2116,8 @@ static uint8_t frogComboFinal = 0;
+ static timeMs_t frogComboLastAt = 0;
+ static timeMs_t frogComboBumpAt = 0;
+ static timeMs_t frogComboEndAt = 0;
++static timeMs_t frogComboCrashAt = 0;   // a crash broke it: shake, crumble, BREAK
++#define FROG_COMBO_CRASH_MS 1500
+ 
+ static void frogComboEnd(timeMs_t now)
+ {
+@@ -2104,8 +2130,17 @@ static void frogComboEnd(timeMs_t now)
+ 
+ static void frogComboEvent(const char *text, timeMs_t now)
+ {
+-    if (!ARMING_FLAG(ARMED) || strcmp(text, "SAFE") == 0 || strcmp(text, "CRASH") == 0) {
+-        frogComboEnd(now);              // disarming or crashing breaks the chain
++    if (strcmp(text, "CRASH") == 0) {
++        if (frogCombo >= 2) {
++            frogComboFinal = frogCombo;
++            frogComboCrashAt = now ? now : 1;   // the combo breaker animation
++            frogComboEndAt = 0;
++        }
++        frogCombo = 0;
++        return;
++    }
++    if (!ARMING_FLAG(ARMED) || strcmp(text, "SAFE") == 0) {
++        frogComboEnd(now);              // disarming breaks the chain
+         return;
+     }
+     if (strcmp(text, "ARMED") == 0) {
+@@ -2131,8 +2166,77 @@ static void frogComboEvent(const char *text, timeMs_t now)
+ // and under it the word COMBO once the chain reaches X5
+ #define FROG_COMBO_WORD_AT 5
+ static timeMs_t frogComboWordAt = 0;
++// combo broken by a crash: the count shakes red, crumbles into debris that falls onto the line below,
++// then BREAK flashes there
++static bool frogComboCrashLine(char *b, bool hd, timeMs_t now, bool word)
++{
++    if (!frogComboCrashAt) {
++        return false;
++    }
++    const uint32_t t = now - frogComboCrashAt;
++    if (t >= FROG_COMBO_CRASH_MS) {
++        frogComboCrashAt = 0;
++        return false;
++    }
++    const uint8_t red = DISPLAYPORT_SEVERITY_CRITICAL;
++    char num[8];
++    tfp_sprintf(num, frogComboFinal >= 10 ? "X%d!" : "X%d", frogComboFinal);
++    const int len = strlen(num);
++    b[0] = '\0';
++    if (!word) {
++        if (t < 350) {                                   // shake: jitter a cell left / right
++            const bool shift = (t / 60) % 2;
++            tfp_sprintf(b, "%s%s", shift ? " " : "", num);
++            for (int i = 0; b[i]; i++) {
++                if (b[i] != ' ' && hd) {
++                    b[i] = (char)frogColourChar((uint8_t)b[i], red);
++                }
++            }
++        } else if (t < 800) {                            // crumble, left to right
++            strcpy(b, num);
++            for (int i = 0; i < len; i++) {
++                const uint32_t at = 350 + 70 * i;
++                b[i] = t < at ? (hd ? (char)frogColourChar((uint8_t)b[i], red) : b[i])
++                     : t < at + 110 ? (hd ? (char)frogColourNoiseChar(red) : (char)frogNoiseChar(false)) : ' ';
++            }
++        }
++        return true;
++    }
++    if (t >= 420 && t < 900) {                           // the debris lands on the line below and fizzles
++        for (int i = 0; i < len; i++) {
++            const uint32_t at = 420 + 70 * i;
++            b[i] = (t >= at && t < at + 240) ? (hd ? (char)frogColourNoiseChar(red) : (char)frogNoiseChar(false)) : ' ';
++        }
++        b[len] = '\0';
++    } else if (t >= 900) {
++        strcpy(b, "BREAK");
++        frogSongDecode(b, t - 900, FROG_COMBO_CRASH_MS - 900, red, hd);
++    }
++    return true;
++}
++
++// time left in the chain, as 4 cells (1 s each, half cells as '-'), red in the last second
++static void frogComboMeter(char *b, uint8_t sev, bool hd, timeMs_t now)
++{
++    const int32_t left = (int32_t)FROG_COMBO_WINDOW_MS - (int32_t)(now - frogComboLastAt);
++    int len = strlen(b);
++    b[len++] = ' ';
++    const uint8_t s = left < 1000 ? DISPLAYPORT_SEVERITY_CRITICAL : sev;
++    for (int i = 0; i < 4 && len < 9; i++) {
++        const char c = left >= (i + 1) * 1000 ? '=' : left >= i * 1000 + 500 ? '-' : ' ';
++        b[len++] = (hd && c != ' ') ? (char)frogColourChar((uint8_t)c, s) : c;
++    }
++    while (len > 0 && b[len - 1] == ' ') {
++        len--;
++    }
++    b[len] = '\0';
++}
++
+ static void frogComboLine(char *b, bool hd, timeMs_t now, bool word)
+ {
++    if (frogComboCrashLine(b, hd, now, word)) {
++        return;
++    }
+     if (frogCombo && now - frogComboLastAt > FROG_COMBO_WINDOW_MS) {
+         frogComboEnd(now);
+     }
+@@ -2172,6 +2276,9 @@ static void frogComboLine(char *b, bool hd, timeMs_t now, bool word)
+             b[i] = (char)frogColourChar((uint8_t)b[i], sev);
+         }
+     }
++    if (!word && !ending) {
++        frogComboMeter(b, sev, hd, now);              // how long you've got for the next one
++    }
+ }
+ 
+ void frogFeedPost(const char *text, uint8_t sev)
+@@ -2579,12 +2686,6 @@ static void frogFeedLine(char *b, const frogFeedEvent_t *ev, bool newest, bool h
+ }
+ 
+ 
+-// same rhythm as the ARMED message: glyphs for 0.4 s, then the characters land left to right 45 ms apart;
+-// going away, they turn to glyphs and drop out left to right
+-#define FROG_FX_IN_MS   400
+-#define FROG_FX_STEP_MS 45
+-#define FROG_FX_OUT_MS  150
+-
+ // ---------------- song cues ----------------
+ // A song's cue points are baked in (tools/make_song.py -> frog_song.h). The SONG switch (mode USER1) starts the
+ // cue clock; the radio starts the song with the same switch, so they stay in sync. Turning it off stops it.
+@@ -2617,23 +2718,6 @@ static uint32_t frogCueHold(uint8_t kind)
+     }
+ }
+ 
+-// decode in (glyphs, then land left to right) and, in the last 0.4 s of `hold`, out again
+-static void frogSongDecode(char *b, uint32_t t, uint32_t hold, uint8_t sev, bool hd)
+-{
+-    const int32_t outT = (int32_t)t - (int32_t)(hold > 400 ? hold - 400 : 0);
+-    for (int i = 0; b[i]; i++) {
+-        if (b[i] == ' ') {
+-            continue;
+-        }
+-        if (outT >= 0 && outT >= FROG_FX_STEP_MS * i + FROG_FX_OUT_MS) {
+-            b[i] = ' ';
+-        } else if ((outT >= 0 && outT >= FROG_FX_STEP_MS * i) || t < 250u + FROG_FX_STEP_MS * i) {
+-            b[i] = hd ? (char)frogColourNoiseChar(sev) : (char)frogNoiseChar(false);
+-        } else if (hd) {
+-            b[i] = (char)frogColourChar((uint8_t)b[i], sev);
+-        }
+-    }
+-}
+ 
+ // the text to show `t` ms into the song (empty when nothing's due); *x / *y where to put it
+ static void frogSongLine(char *b, bool hd, timeMs_t now, int *x, int *y)
