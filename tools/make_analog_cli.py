@@ -94,7 +94,7 @@ if AUX_EXTRA:
 # everything else (per-quad overrides) goes straight after the shared block
 body[first_profile:first_profile] = ["", FR0GOS_HD_BLOCK] + (["# ---- this quad ----"] + OSD_EXTRA if OSD_EXTRA else []) + [""]
 
-head = [f"# fr0gOS v1.3 r27 (analog) - {CRAFT}",
+head = [f"# fr0gOS v1.3 r30 (analog) - {CRAFT}",
         f"# 1. Flash {HEX} with Full chip erase ticked",
         "# 2. Paste this whole file into the CLI, then recalibrate the accelerometer",
         "# Analog: stock OSD font, no frog / colour / stick code; everything else runs in plain white",

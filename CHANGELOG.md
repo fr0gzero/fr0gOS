@@ -4,6 +4,12 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r30 - 2026-11-08 (MK4-1, MK4-2, MK5-1) - same goggle font, MK4-1 CLI adds debug_mode FROG
+- **CRASH only when it actually stops flying** (r29 went off mid-flight on MK4-2). After a hit it's a CRASH only if it comes to rest upside down / on its side, comes to rest at all after a tumble, or you disarm / turtle while it isn't upright. Tumbles you fly out of, hard hits and "still pressing on something" no longer count; a hit you fly away from is a CLIP.
+- The prop thrust estimate now goes through the same 25 Hz filter as the accel, so a punch or a throttle chop can't open a gap between them that looks like a hit.
+- Hit threshold 3 G of contact (was 2.5) or 700 deg/s unasked rotation (was 600); tumble needs 0.3 s (was 0.2); 3 s to settle.
+- Simulated flights: 18 / 18 (adds a tumble you recover from and a bump followed by sloppy fast cruising).
+
 ## v1.3 r29 - 2026-11-08 (MK4-1, MK4-2, MK5-1) - same goggle font and CLI as r27
 - **Crash, perch and the new CLIP are worked out from physics, not G alone.** The accelerometer feels everything pushing on the quad except gravity; in the air that's only the props, and their thrust follows RPM squared (bidirectional DShot). So *contact force = accel - prop thrust* sits near 0 G the whole time it flies, however hard you fly, and anything left over is something touching it. The thrust scale is learned in flight. The other tell is rotation the sticks didn't ask for.
   - Hit: 2.5 G+ of contact, or 600 deg/s+ of rotation you didn't ask for. Then within 2 s it's a **CRASH** (tumbles, comes to rest upside down or on its side, rests after a 6 G+ hit, stays jammed against something, or you disarm / turtle while it isn't sitting upright), a **PERCH** (comes to rest upright: a firm landing) or a **CLIP** (the props carry it again with no contact: you hit something and flew on).

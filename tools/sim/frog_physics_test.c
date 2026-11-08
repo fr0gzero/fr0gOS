@@ -1,4 +1,4 @@
-// fr0gOS r29 crash / clip / perch / trick detector, run against simulated flights on the PC.
+// fr0gOS r30 crash / clip / perch / trick detector, run against simulated flights on the PC.
 // make the include:  awk '/^\/\/ r29: crash, clip and perch from the physics/{p=1} /^static void frogFeedDetect/{p=0} p' src/main/osd/osd_elements.c > phys_core.inc
 // then: gcc -O1 -o frog_physics_test frog_physics_test.c -lm && ./frog_physics_test
 #include <stdio.h>
@@ -33,7 +33,7 @@ static float motor[4]; static float getMotorOutputLow(void){return 0;} static fl
 #define FROG_TRICK_RATE      100.0f
 #define FROG_TRICK_SLOW_MS   500
 #define FROG_TRICK_MAX_MS    3000
-static float RPMg;
+static float RPMg, frogThrustProxyFilt;
 static float frogThrustProxy(bool *rpm){*rpm=true; return sq(RPMg*1e-4f);}
 #include "phys_core.inc"
 
@@ -48,7 +48,7 @@ static void tick(float thr_pct, float rpm, float ax, float ay, float az_extra, f
     gyro.gyroADCf[0] = gx; gyro.gyroADCf[1] = gy; gyro.gyroADCf[2] = gz;
     const float mag = sqrtf(ax*ax + ay*ay + sq(thrust + az_extra));
     frogAccPeakG = MAX(mag, spike > 0 ? sqrtf(sq(spike) + sq(thrust)) : 0);
-    RPMg = rpm;
+    RPMg = rpm; frogThrustProxyFilt = sq(rpm * 1e-4f);
     const float c = sqrtf(ax*ax + ay*ay + sq(thrust + az_extra - frogThrustK * sq(rpm * 1e-4f)));
     frogContactPeakG = MAX(c, spike);
     frogMotionTick(T);
@@ -123,5 +123,14 @@ int main(void)
     tick(50, 31000, 0,0,0, 50,0,0, 0.9f, 5.0f);
     for (int i=0;i<20;i++) tick(30, 3000, 0.6f,0, 0.4f, 90,40,20, 0.4f, 0);
     armed = 0; tick(0,0,0,0,1,0,0,0,0.4f,0); report("stuck in grass, disarm", "CRASH");
+    rearm(); hover(100); frogTrickPending=0;
+    // knocked into a tumble midair (900 unasked for 0.4 s), recovers and flies on
+    tick(50, 31000, 0,0,0, 900,300,0, 0.6f, 3.5f);
+    for (int i=0;i<40;i++) tick(50, 31000, 0.3f,0.3f,0, 900,300,100, 0.3f, 0);
+    hover(150); report("tumble midair, recovers", "CLIP");
+    // fast forward flight with sloppy thrust model (0.8 G drag / error) for 4 s after a 3.2 G bump
+    tick(70, 40000, 0,0,0, 50,0,0, 0.7f, 3.2f);
+    for (int i=0;i<400;i++) tick(70, 40000, 0.8f,0,-0.5f, 60,30,20, 0.6f, 0);
+    hover(100); report("bump then sloppy fast cruise", "");
     return 0;
 }

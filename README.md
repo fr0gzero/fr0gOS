@@ -13,9 +13,9 @@ fr0gOS is a set of patches on top of **Betaflight 2026.6.2**.
 
 | Craft | Quad | Board target | Video | Current build |
 |---|---|---|---|---|
-| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.3 r29 (analog) |
-| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.3 r29 (test) |
-| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.3 r29 |
+| MK4-1 | Air65 rebuild, BETAFPV Matrix 1S 5-in-1 II | `BETAFPVG473_V2` | Analog (Caddx Ant, NTSC 16:9) | v1.3 r30 (analog) |
+| MK4-2 | Mobula 6 HDZero | `CRAZYBEEF4SX1280` + ELRS 4 SPI | HDZero Eco 720P60 4:3 | v1.3 r30 (test) |
+| MK5-1 | Mobula 8, HDZero Whoop V2 + Nano 90 V2 | `CRAZYBEE473` | HDZero 540P90 crop | v1.3 r30 |
 
 ## What fr0gOS changes
 
@@ -64,7 +64,7 @@ The MK4-2 CLI here has its ELRS binding UID removed. Use your private copy, or s
 git clone --branch 2026.6.2 --depth 1 https://github.com/betaflight/betaflight.git
 cd betaflight
 git submodule update --init --depth 1 src/config
-git apply ../patches/fr0gOS-v1.3-r29_betaflight-2026.6.2.patch
+git apply ../patches/fr0gOS-v1.3-r30_betaflight-2026.6.2.patch
 make arm_sdk_install            # or point ARM_SDK_DIR at GCC 13.3.1
 make CONFIG=CRAZYBEE473
 make CONFIG=BETAFPVG473_V2

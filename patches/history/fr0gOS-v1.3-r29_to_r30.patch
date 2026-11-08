@@ -1,0 +1,171 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 32e8256..30919bb 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R29"
++#define FROGOS_VERSION   "V1.3 R30"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 04e5242..63650ad 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -2341,29 +2341,28 @@ static bool frogFeedIgnored(const char *w)
+ // learned while flying (throttle 35%+ for a while, not rotating hard, little sideways G).
+ // Rotation the sticks didn't ask for (gyro beyond anything the setpoint asked in the last ~0.2 s) is the
+ // other tell: you did it = trick, something else did it = a hit.
+-//   HIT    contact 2.5 G+ (3.8 G raw accel before the scale is learned), or 600 deg/s+ unasked rotation.
+-//          Then for up to 2 s:
+-//   CRASH  tumbling (500 deg/s+ unasked for 0.2 s), or it comes to rest upside down / on its side, or rests
+-//          after a 6 G+ hit, or it's still stuck against something at the end, or you disarm / turtle while
+-//          it isn't sitting upright and still
+-//   PERCH  it comes to rest upright after a lighter hit (a firm landing)
++//   HIT    contact 3 G+ (3.8 G raw accel before the scale is learned), or 700 deg/s+ unasked rotation.
++//          Then for up to 3 s:
++//   CRASH  r30: only when it actually stops flying - it comes to rest upside down / on its side, or comes to
++//          rest at all after tumbling (500 deg/s+ unasked for 0.3 s), or you disarm / turtle while it isn't
++//          sitting upright and still. A hit it flies away from is never a crash (r29 also called tumbles in
++//          the air, hard hits and "still pressing on something" crashes: false alarms on MK4-2).
++//   PERCH  it comes to rest upright after a hit without a tumble (a firm landing)
+ //   CLIP   it flew on: props carrying it again with no contact for 0.3 s after a real contact hit
+ //   PERCH  (no hit) settles upright on something with the motors near idle for 0.5 s: in the air, idle props
+ //          mean free fall (~0 G), so 1 G with idle props can only be something holding it up
+-#define FROG_HIT_G           2.5f
++#define FROG_HIT_G           3.0f
+ #define FROG_HIT_RAW_G       3.8f
+-#define FROG_SMASH_G         6.0f
+-#define FROG_WILD_DPS        600.0f
++#define FROG_WILD_DPS        700.0f
+ #define FROG_TUMBLE_DPS      500.0f
+-#define FROG_TUMBLE_MS       200
+-#define FROG_HIT_LOOK_MS     2000
++#define FROG_TUMBLE_MS       300
++#define FROG_HIT_LOOK_MS     3000
+ #define FROG_REST_DPS        60.0f
+ #define FROG_REST_MS         300
+ #define FROG_PERCH_MS        500
+ #define FROG_IDLE_G          0.35f
+ #define FROG_FLY_G           0.6f
+ #define FROG_AIR_CONTACT_G   0.4f
+-#define FROG_STUCK_G         0.6f
+ #define FROG_AIRBORNE_MS     500
+ #define FROG_CLIP_MS         300
+ #define FROG_UPRIGHT_COS     0.8f
+@@ -2400,7 +2399,6 @@ void frogMotionTick(timeUs_t nowUs)
+     static timeUs_t thrUpSince = 0;
+     // hit / rest state
+     static timeUs_t hitAt = 0, restSince = 0, stillSince = 0, flySince = 0, airSince = 0;
+-    static float hitG = 0.0f;
+     static bool hitContact = false;
+     static uint16_t wildMs = 0;
+     static bool airborne = false, perched = true;
+@@ -2418,7 +2416,7 @@ void frogMotionTick(timeUs_t nowUs)
+     const bool settled = maxRate < FROG_REST_DPS && peak > 0.8f && peak < 1.25f;
+ 
+     if (!ARMING_FLAG(ARMED) || isCrashFlipModeActive()) {
+-        if (hitAt && frogMotionArmedAt && (isCrashFlipModeActive() || !(upright && settled))) {
++        if (hitAt && frogMotionArmedAt && (isCrashFlipModeActive() || !upright)) {
+             frogTrickPending |= FROG_EV_CRASH;  // disarmed / turtled while still sorting out a hit
+         }
+         hitAt = 0;
+@@ -2455,7 +2453,8 @@ void frogMotionTick(timeUs_t nowUs)
+ 
+     // prop thrust in G
+     bool rpm = false;
+-    const float proxy = frogThrustProxy(&rpm);      // (sensors/acceleration.c, which also uses it at 1 kHz)
++    (void)frogThrustProxy(&rpm);
++    const float proxy = frogThrustProxyFilt;        // filtered like the accel, at full rate (sensors/acceleration.c)
+     if (rpm != thrustRpm) {
+         thrustRpm = rpm;
+         thrustK = 0.0f;
+@@ -2525,7 +2524,6 @@ void frogMotionTick(timeUs_t nowUs)
+     const uint16_t g10 = (uint16_t)lrintf(peak * 10.0f);
+     if (!hitAt && (touched || wild >= FROG_WILD_DPS)) {
+         hitAt = nowUs ? nowUs : 1;
+-        hitG = hitNow;
+         hitContact = touched;
+         wildMs = 0;
+         flySince = 0;
+@@ -2533,7 +2531,6 @@ void frogMotionTick(timeUs_t nowUs)
+         frogPeakG10 = g10;                       // just a big-G move: the "3.4G!" message
+     }
+     if (hitAt) {
+-        hitG = MAX(hitG, hitNow);
+         hitContact |= touched;
+         if (wild >= FROG_TUMBLE_DPS) {
+             wildMs += lrintf(dt * 1000.0f);
+@@ -2547,11 +2544,9 @@ void frogMotionTick(timeUs_t nowUs)
+             flySince = 0;
+         }
+         bool done = true;
+-        if (wildMs >= FROG_TUMBLE_MS) {
+-            frogTrickPending |= FROG_EV_CRASH;
+-        } else if (stillSince && cmpTimeUs(nowUs, stillSince) >= FROG_REST_MS * 1000) {
+-            if (!upright || hitG >= FROG_SMASH_G) {
+-                frogTrickPending |= FROG_EV_CRASH;
++        if (stillSince && cmpTimeUs(nowUs, stillSince) >= FROG_REST_MS * 1000) {
++            if (!upright || wildMs >= FROG_TUMBLE_MS) {
++                frogTrickPending |= FROG_EV_CRASH;     // came down and stayed down
+             } else if (!perched) {
+                 frogTrickPending |= FROG_EV_PERCH;     // a firm landing
+             }
+@@ -2560,9 +2555,7 @@ void frogMotionTick(timeUs_t nowUs)
+                 frogTrickPending |= FROG_EV_CLIP;      // hit something and flew on
+             }
+         } else if (since >= FROG_HIT_LOOK_MS) {
+-            if (known && contact >= FROG_STUCK_G) {
+-                frogTrickPending |= FROG_EV_CRASH;     // still jammed against something
+-            }
++            // never settled, never clearly flew on: say nothing
+         } else {
+             done = false;
+         }
+diff --git a/src/main/sensors/acceleration.c b/src/main/sensors/acceleration.c
+index 54c82da..d55b545 100644
+--- a/src/main/sensors/acceleration.c
++++ b/src/main/sensors/acceleration.c
+@@ -67,6 +67,7 @@ float frogThrustProxy(bool *rpm)
+     return s / n;
+ }                       // acc access functions
+ float frogAccPeakG = 0.0f;                  // fr0gOS: highest G since the frog last looked
++float frogThrustProxyFilt = 0.0f;           // fr0gOS: frogThrustProxy through the accel's own low-pass
+ float frogThrustK = 0.0f;                   // fr0gOS: prop thrust scale, G per unit of frogThrustProxy (0 = not learned)
+ float frogContactPeakG = 0.0f;              // fr0gOS: peak |accel - thrust| since the frog last looked
+ #ifdef USE_CRSF_ACCGYRO_TELEMETRY
+@@ -147,8 +148,18 @@ static inline void postProcessAccelerometer(void)
+     {
+         // fr0gOS: contact force = everything the accelerometer feels that the props don't explain
+         const float cx = acc.accADC.v[X] * acc.dev.acc_1G_rec, cy = acc.accADC.v[Y] * acc.dev.acc_1G_rec;
++        // r30: the thrust goes through the same filter as the accel, so a punch or a chop can't open a gap
++        // between them that looks like a hit
++        static pt2Filter_t thrustFilter;
++        static float thrustFilterHz = -1.0f;
++        if (thrustFilterHz != accelerationRuntime.accLpfCutHz) {
++            thrustFilterHz = accelerationRuntime.accLpfCutHz;
++            pt2FilterInit(&thrustFilter, thrustFilterHz > 0 ? pt2FilterGain(thrustFilterHz, HZ_TO_INTERVAL(acc.sampleRateHz)) : 1.0f);
++        }
+         bool rpm;
+-        const float cz = acc.accADC.v[Z] * acc.dev.acc_1G_rec - (frogThrustK > 0.0f ? frogThrustK * frogThrustProxy(&rpm) : 0.0f);
++        const float proxy = frogThrustProxy(&rpm);
++        frogThrustProxyFilt = thrustFilterHz > 0 ? pt2FilterApply(&thrustFilter, proxy) : proxy;
++        const float cz = acc.accADC.v[Z] * acc.dev.acc_1G_rec - frogThrustK * frogThrustProxyFilt;
+         const float c = sqrtf(cx * cx + cy * cy + cz * cz);
+         if (c > frogContactPeakG) {
+             frogContactPeakG = c;
+diff --git a/src/main/sensors/acceleration.h b/src/main/sensors/acceleration.h
+index 383b3d7..5e99fd6 100644
+--- a/src/main/sensors/acceleration.h
++++ b/src/main/sensors/acceleration.h
+@@ -76,6 +76,7 @@ typedef struct acc_s {
+ extern acc_t acc;
+ extern float frogAccPeakG;
+ extern float frogThrustK;
++extern float frogThrustProxyFilt;
+ float frogThrustProxy(bool *rpm);
+ extern float frogContactPeakG;
+ 
