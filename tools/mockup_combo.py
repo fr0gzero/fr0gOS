@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fr0gOS r25 combo meter mockup (4 s chain, time-left meter, crash breaks it): the left bar during a flurry of events (mirrors the firmware logic).
+"""fr0gOS r28 combo meter mockup (4 s chain, 5-cell time-left meter under the count, COMBO burns down from X5, crash breaks it): the left bar during a flurry of events (mirrors the firmware logic).
 
 usage: mockup_combo.py <frog_charmap.h> <frog_anim.h> <out.gif>
 """
@@ -26,7 +26,7 @@ N, W, C = 0, 1, 2
 HOLD, OUT_MS = 7000, 300
 WINDOW = 4000
 CRASH_MS = 1500
-COLS_SHOWN = 14
+COLS_SHOWN = 9
 
 
 def col(c, sev):
@@ -141,22 +141,22 @@ while t_ms < END * 1000:
             for i, ch in enumerate(txt):
                 scr = (tt >= 80 * i) if ending else (tt < 260 - 50 * i)
                 HP.put(img, i, 6, HP.glyph(noise(sev) if scr else col(ord(ch), sev)))
-            if not ending:
-                left = WINDOW - (t_ms - combo_last)
-                ms = C if left < 1000 else sev
-                for i in range(4):
-                    c = "=" if left >= (i + 1) * 1000 else "-" if left >= i * 1000 + 500 else None
-                    if c:
-                        HP.put(img, len(txt) + 1 + i, 6, HP.glyph(col(ord(c), ms)))
+            left = WINDOW - (t_ms - combo_last)
+            cells = 0 if left <= 0 else min(5, -(-left // (WINDOW // 5)))
+            ms = C if left < 1000 else sev
             if n >= 5:
                 if not word_at:
                     word_at = t_ms
                 tw = (t_ms - combo_end) if ending else (t_ms - word_at)
-                for i, ch in enumerate("COMBO"):
+                word = "COMBO" if ending else "COMBO"[:cells]
+                for i, ch in enumerate(word):
                     scr = (tw >= 80 * i) if ending else (tw < 260 - 50 * i)
-                    HP.put(img, i, 7, HP.glyph(noise(sev) if scr else col(ord(ch), sev)))
+                    HP.put(img, i, 7, HP.glyph(noise(sev) if scr else col(ord(ch), ms if tw >= 260 and not ending else sev)))
             else:
                 word_at = 0
+                if not ending:
+                    for i in range(cells):
+                        HP.put(img, i, 7, HP.glyph(col(ord("="), ms)))
         else:
             word_at = 0
     crop = img.crop((0, 0, COLS_SHOWN * HP.FGW, img.height)).resize((COLS_SHOWN * HP.FGW // 2, img.height // 2), Image.LANCZOS)

@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r28 - 2026-11-08 (MK4-1, MK4-2, MK5-1) - same goggle font as r27, no CLI changes
+- **Combo meter keeps to 5 cells.** The time-left meter moved off the count line (it ran out into the picture). It now sits on the line under the count: `=====` below X5, and from X5 the letters of `COMBO` itself, one cell burning off the right every 0.8 s, red in the last second.
+- **ORBIT actually fires.** The patient orbit counter follows the compass heading instead of the yaw gyro: leaned into an orbit, the yaw axis only sees cos(lean) of the turn, so it never reached 330. "Banked" is now any lean of 12-78 degrees (forward pitch counts), slow orbits count from 20 deg/s, and TRIPY needs 60 degrees of lean (was 45, which grabbed leaned-in orbits).
+
 ## v1.3 r27 analog - 2026-11-08 (MK4-1)
 - MK4-1 moves from v1.2 r03 to r27 on analog (MAX7456, NTSC 30x13). New `tools/make_analog_cli.py` builds the analog CLI the way `make_hd_cli.py` does the HD ones.
 - Runs: event log (rows 0-4), combo meter + COMBO + breaker (rows 5-6), tricks / ZOOM / PERCH / LOOP / ORBIT / TRIPY, crash detection, song cues (AUX5), battery stages, high-score + best combo, glyph-noise transitions. Not on analog: the frog, colour, stick code.

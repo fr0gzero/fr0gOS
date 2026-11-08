@@ -1,0 +1,165 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index fedd21f..cb2f2ca 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R27"
++#define FROGOS_VERSION   "V1.3 R28"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 690bb63..dbb3c12 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -2215,21 +2215,15 @@ static bool frogComboCrashLine(char *b, bool hd, timeMs_t now, bool word)
+     return true;
+ }
+ 
+-// time left in the chain, as 4 cells (1 s each, half cells as '-'), red in the last second
+-static void frogComboMeter(char *b, uint8_t sev, bool hd, timeMs_t now)
++// r28: time left in the chain, on the line under the count, never wider than 5 cells: "=====" below X5,
++// the letters of COMBO from X5, one cell burning off the right every 0.8 s, red in the last second
++static int frogComboCells(timeMs_t now, uint8_t *sev)
+ {
+     const int32_t left = (int32_t)FROG_COMBO_WINDOW_MS - (int32_t)(now - frogComboLastAt);
+-    int len = strlen(b);
+-    b[len++] = ' ';
+-    const uint8_t s = left < 1000 ? DISPLAYPORT_SEVERITY_CRITICAL : sev;
+-    for (int i = 0; i < 4 && len < 9; i++) {
+-        const char c = left >= (i + 1) * 1000 ? '=' : left >= i * 1000 + 500 ? '-' : ' ';
+-        b[len++] = (hd && c != ' ') ? (char)frogColourChar((uint8_t)c, s) : c;
+-    }
+-    while (len > 0 && b[len - 1] == ' ') {
+-        len--;
++    if (left < 1000) {
++        *sev = DISPLAYPORT_SEVERITY_CRITICAL;
+     }
+-    b[len] = '\0';
++    return left <= 0 ? 0 : MIN(5, (left + FROG_COMBO_WINDOW_MS / 5 - 1) / (FROG_COMBO_WINDOW_MS / 5));
+ }
+ 
+ static void frogComboLine(char *b, bool hd, timeMs_t now, bool word)
+@@ -2249,13 +2243,21 @@ static void frogComboLine(char *b, bool hd, timeMs_t now, bool word)
+         b[0] = '\0';
+         return;
+     }
+-    const uint8_t sev = n >= 10 ? DISPLAYPORT_SEVERITY_CRITICAL : n >= 5 ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_NORMAL;
++    uint8_t sev = n >= 10 ? DISPLAYPORT_SEVERITY_CRITICAL : n >= 5 ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_NORMAL;
+     const bool ending = frogCombo < 2;
+     uint32_t t = ending ? now - frogComboEndAt : (frogComboBumpAt ? now - frogComboBumpAt : FROG_COMBO_BUMP_MS);
+     if (word) {
+         if (n < FROG_COMBO_WORD_AT) {
+             frogComboWordAt = 0;
+             b[0] = '\0';
++            if (!ending) {                                // the bare meter until X5
++                uint8_t ms = sev;
++                const int cells = frogComboCells(now, &ms);
++                for (int i = 0; i < cells; i++) {
++                    b[i] = hd ? (char)frogColourChar('=', ms) : '=';
++                }
++                b[cells] = '\0';
++            }
+             return;
+         }
+         if (!frogComboWordAt) {
+@@ -2264,6 +2266,11 @@ static void frogComboLine(char *b, bool hd, timeMs_t now, bool word)
+         strcpy(b, "COMBO");
+         if (!ending) {
+             t = now - frogComboWordAt;
++            uint8_t ms = sev;
++            b[frogComboCells(now, &ms)] = '\0';         // COMBO burns down as the window runs out
++            if (t >= FROG_COMBO_BUMP_MS) {
++                sev = ms;
++            }
+         }
+     } else {
+         tfp_sprintf(b, n >= 10 ? "X%d!" : "X%d", n);
+@@ -2276,9 +2283,6 @@ static void frogComboLine(char *b, bool hd, timeMs_t now, bool word)
+             b[i] = (char)frogColourChar((uint8_t)b[i], sev);
+         }
+     }
+-    if (!word && !ending) {
+-        frogComboMeter(b, sev, hd, now);              // how long you've got for the next one
+-    }
+ }
+ 
+ void frogFeedPost(const char *text, uint8_t sev)
+@@ -2350,15 +2354,19 @@ static bool frogFeedIgnored(const char *w)
+ // What kind of trick: a pitch 360 that took 0.7 s+ with the throttle up (45%+ on average) is a power LOOP,
+ // otherwise a FLIP. A yaw 360 is a SPIN when flat, TRIPPY when the quad was way off level (45 degrees+) or
+ // rolling / pitching hard at the same time for most of it, and an ORBIT when it was banked 12-45 degrees for
+-// most of it at under 250 deg/s. Slow orbits (down to 30 deg/s, up to 15 s) are caught by a second, patient
+-// yaw counter that only counts while banked.
++// most of it at under 250 deg/s. Slow orbits (down to 20 deg/s, up to 15 s) are caught by a second, patient
++// counter. r28: that counter follows the compass heading (earth frame) instead of the yaw gyro - a quad leaning
++// into an orbit only sees part of the turn on its yaw axis (cos of the lean), so the old one never got to 330 -
++// and "banked" is any lean of 12-78 degrees (pitch counts: orbits are flown forward), TRIPY needs 60+.
+ #define FROG_LOOP_MS         700
+ #define FROG_LOOP_THR        45
+ #define FROG_BANK_DECI       120        // 12 degrees, attitude is in tenths
+-#define FROG_OFFLEVEL_COS    0.7f
++#define FROG_OFFLEVEL_COS    0.5f       // r28: 60 degrees (was 45, which caught leaned-in orbits)
+ #define FROG_TRIPPY_DPS      150.0f
+-#define FROG_ORBIT_DPS       30.0f
+-#define FROG_ORBIT_FAST_DPS  250.0f
++#define FROG_ORBIT_DPS       20.0f
++#define FROG_ORBIT_FAST_DPS  300.0f
++#define FROG_BANK_COS        0.978f     // 12 degrees of lean
++#define FROG_BANK_MAX_COS    0.2f       // 78 degrees
+ #define FROG_ORBIT_DEG       330.0f
+ #define FROG_ORBIT_MAX_MS    15000
+ #define FROG_ORBIT_GAP_MS    1500
+@@ -2375,12 +2383,15 @@ void frogMotionTick(timeUs_t nowUs)
+     static uint16_t samples[3], thrSum[3], banked[3], offLevel[3], wild[3];
+     static float orbitDeg = 0.0f;
+     static timeUs_t orbitAt = 0, orbitSeen = 0;
++    static int16_t lastHeading = -1;
+     const float peak = frogAccPeakG;
+     frogAccPeakG = 0.0f;
+     if (!ARMING_FLAG(ARMED) || isCrashFlipModeActive()) {
+         deg[0] = deg[1] = deg[2] = 0.0f;
+         last = 0;
+         frogMotionArmedAt = 0;
++        orbitDeg = 0.0f;
++        lastHeading = -1;
+         return;
+     }
+     if (!frogMotionArmedAt) {
+@@ -2446,17 +2457,28 @@ void frogMotionTick(timeUs_t nowUs)
+     last = nowUs;
+     if (dt <= 0.0f || dt > 0.1f) {
+         deg[0] = deg[1] = deg[2] = 0.0f;
++        lastHeading = attitude.values.yaw;
+         return;
+     }
+-    const bool isBanked = abs(attitude.values.roll) >= FROG_BANK_DECI;
+ #if defined(USE_ACC)
+-    const bool isOffLevel = getCosTiltAngle() < FROG_OFFLEVEL_COS;
++    const float cosTilt = getCosTiltAngle();
++    const bool isBanked = cosTilt < FROG_BANK_COS && cosTilt >= FROG_BANK_MAX_COS;
++    const bool isOffLevel = cosTilt < FROG_OFFLEVEL_COS;
+ #else
++    const bool isBanked = abs(attitude.values.roll) >= FROG_BANK_DECI;
+     const bool isOffLevel = false;
+ #endif
+-    // the patient orbit counter: yaw one way while banked
+-    const float yawRate = gyro.gyroADCf[FD_YAW];
+-    if (isBanked && !isOffLevel && fabsf(yawRate) >= FROG_ORBIT_DPS && fabsf(yawRate) < FROG_ORBIT_FAST_DPS
++    // the patient orbit counter: the heading turning one way while leaned in
++    int heading = attitude.values.yaw;                  // tenths of a degree, 0-3599
++    int dHead = lastHeading < 0 ? 0 : heading - lastHeading;
++    lastHeading = heading;
++    if (dHead > 1800) {
++        dHead -= 3600;
++    } else if (dHead < -1800) {
++        dHead += 3600;
++    }
++    const float yawRate = dHead * 0.1f / dt;            // earth-frame turn rate, deg/s
++    if (isBanked && fabsf(yawRate) >= FROG_ORBIT_DPS && fabsf(yawRate) < FROG_ORBIT_FAST_DPS
+         && (orbitDeg == 0.0f || (yawRate > 0) == (orbitDeg > 0))) {
+         if (orbitDeg == 0.0f) {
+             orbitAt = nowUs;
