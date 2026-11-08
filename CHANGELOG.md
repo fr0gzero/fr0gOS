@@ -4,6 +4,14 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r29 - 2026-11-08 (MK4-1, MK4-2, MK5-1) - same goggle font and CLI as r27
+- **Crash, perch and the new CLIP are worked out from physics, not G alone.** The accelerometer feels everything pushing on the quad except gravity; in the air that's only the props, and their thrust follows RPM squared (bidirectional DShot). So *contact force = accel - prop thrust* sits near 0 G the whole time it flies, however hard you fly, and anything left over is something touching it. The thrust scale is learned in flight. The other tell is rotation the sticks didn't ask for.
+  - Hit: 2.5 G+ of contact, or 600 deg/s+ of rotation you didn't ask for. Then within 2 s it's a **CRASH** (tumbles, comes to rest upside down or on its side, rests after a 6 G+ hit, stays jammed against something, or you disarm / turtle while it isn't sitting upright), a **PERCH** (comes to rest upright: a firm landing) or a **CLIP** (the props carry it again with no contact: you hit something and flew on).
+  - Soft PERCH: upright, still, 1 G with the props near idle for 0.5 s. In the air idle props mean free fall, so that can only be something holding it up. Hovering no longer looks like a perch.
+- **ORBIT and TRIPY are gone** (without GPS they can't be told from a wide turn).
+- **Tricks have to be flown:** the sticks must be asking for that axis for most of the 360, so crash tumbles never count as FLIP / ROLL / SPIN.
+- `set debug_mode = FROG` logs the detector to blackbox (thrust G, contact G, hit G, unasked deg/s, state, learned scale, accel Z, events) for tuning on real flights. `tools/sim/frog_physics_test.c` runs the detector against 16 simulated flights (hover, cruise, dive, punch, flips with snap stops, clip, perch, firm landing, crashes, disarms): all pass.
+
 ## v1.3 r28 - 2026-11-08 (MK4-1, MK4-2, MK5-1) - same goggle font as r27, no CLI changes
 - **Combo meter keeps to 5 cells.** The time-left meter moved off the count line (it ran out into the picture). It now sits on the line under the count: `=====` below X5, and from X5 the letters of `COMBO` itself, one cell burning off the right every 0.8 s, red in the last second.
 - **ORBIT actually fires.** The patient orbit counter follows the compass heading instead of the yaw gyro: leaned into an orbit, the yaw axis only sees cos(lean) of the turn, so it never reached 330. "Banked" is now any lean of 12-78 degrees (forward pitch counts), slow orbits count from 20 deg/s, and TRIPY needs 60 degrees of lean (was 45, which grabbed leaned-in orbits).

@@ -1,0 +1,597 @@
+diff --git a/src/main/build/debug.c b/src/main/build/debug.c
+index f923309..3506df3 100644
+--- a/src/main/build/debug.c
++++ b/src/main/build/debug.c
+@@ -128,4 +128,5 @@ const char * const debugModeNames[DEBUG_COUNT] = {
+     [DEBUG_MAVLINK_TELEMETRY] = "MAVLINK_TELEMETRY",
+     [DEBUG_AUTOPILOT_PID] = "AUTOPILOT_PID",
+     [DEBUG_AUTOPILOT_STOP] = "AUTOPILOT_STOP",
++    [DEBUG_FROG] = "FROG",
+ };
+diff --git a/src/main/build/debug.h b/src/main/build/debug.h
+index dd6985f..966913f 100644
+--- a/src/main/build/debug.h
++++ b/src/main/build/debug.h
+@@ -131,6 +131,7 @@ typedef enum {
+     DEBUG_AUTOPILOT_PID,
+     DEBUG_POSITION_NAV,
+     DEBUG_AUTOPILOT_STOP,
++    DEBUG_FROG,
+     DEBUG_COUNT
+ } debugType_e;
+ 
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index cb2f2ca..32e8256 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R28"
++#define FROGOS_VERSION   "V1.3 R29"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index dbb3c12..04e5242 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -151,6 +151,7 @@
+ #include "fc/core.h"
+ #include "fc/gps_lap_timer.h"
+ #include "fc/rc_adjustments.h"
++#include "fc/rc.h"
+ #include "fc/rc_controls.h"
+ #include "fc/runtime_config.h"
+ 
+@@ -1766,7 +1767,7 @@ static void frogReact(const char *text)
+         { "FLIP", FROG_ANIM_TRICK, 4 },  { "ROLL", FROG_ANIM_TRICK, 4 }, { "SPIN", FROG_ANIM_SPIN, 4 },
+         { "ARMED", FROG_ANIM_ARMED, 3 }, { "SAFE", FROG_ANIM_SAFE, 3 },
+         { "PUNCH", FROG_ANIM_PUNCH, 2 }, { "ZOOM", FROG_ANIM_PUNCH, 2 }, { "PERCH", FROG_ANIM_FIL_SMILE, 2 },
+-        { "LOOP", FROG_ANIM_TRICK, 4 }, { "ORBIT", FROG_ANIM_SPIN, 4 }, { "TRIPY", FROG_ANIM_SPIN, 4 },
++        { "LOOP", FROG_ANIM_TRICK, 4 }, { "CLIP", FROG_ANIM_PUNCH, 3 },
+         { "ACRO", FROG_ANIM_MODE, 1 }, { "ANGLE", FROG_ANIM_MODE, 1 }, { "HORZN", FROG_ANIM_MODE, 1 },
+         { "AIR", FROG_ANIM_MODE, 1 },  { "NOAIR", FROG_ANIM_MODE, 1 },
+     };
+@@ -2333,45 +2334,55 @@ static bool frogFeedIgnored(const char *w)
+ #define FROG_TRICK_RATE      100.0f     // deg/s to count as turning
+ #define FROG_TRICK_SLOW_MS   500
+ #define FROG_TRICK_MAX_MS    3000
+-// Crash vs perch. A hit of 3.8 G+ opens a 0.5 s look: it's a CRASH if the hit was huge (7 G+), or the quad
+-// tumbled (500 deg/s+) or ended up tilted past ~45 degrees. Otherwise it was a touchdown. PERCH is posted when
+-// the quad comes to rest upright: throttle under 20%, gyro under 40 deg/s and about 1 G for 0.7 s, once per
+-// landing (it has to fly again before the next one counts).
+-#define FROG_IMPACT_G10      38
+-#define FROG_SMASH_G10       70
+-#define FROG_BIGG_G10        30
+-#define FROG_IMPACT_LOOK_MS  500
++// r29: crash, clip and perch from the physics, not from G alone.
++// The accelerometer feels every push on the quad except gravity. In the air the only push is the props, and
++// prop thrust goes with RPM squared (bidirectional DShot), so  contact = accel - thrust  is ~0 G the whole time
++// it's flying, however hard you fly. Anything left over is something touching the quad. The thrust scale is
++// learned while flying (throttle 35%+ for a while, not rotating hard, little sideways G).
++// Rotation the sticks didn't ask for (gyro beyond anything the setpoint asked in the last ~0.2 s) is the
++// other tell: you did it = trick, something else did it = a hit.
++//   HIT    contact 2.5 G+ (3.8 G raw accel before the scale is learned), or 600 deg/s+ unasked rotation.
++//          Then for up to 2 s:
++//   CRASH  tumbling (500 deg/s+ unasked for 0.2 s), or it comes to rest upside down / on its side, or rests
++//          after a 6 G+ hit, or it's still stuck against something at the end, or you disarm / turtle while
++//          it isn't sitting upright and still
++//   PERCH  it comes to rest upright after a lighter hit (a firm landing)
++//   CLIP   it flew on: props carrying it again with no contact for 0.3 s after a real contact hit
++//   PERCH  (no hit) settles upright on something with the motors near idle for 0.5 s: in the air, idle props
++//          mean free fall (~0 G), so 1 G with idle props can only be something holding it up
++#define FROG_HIT_G           2.5f
++#define FROG_HIT_RAW_G       3.8f
++#define FROG_SMASH_G         6.0f
++#define FROG_WILD_DPS        600.0f
+ #define FROG_TUMBLE_DPS      500.0f
+-#define FROG_UPRIGHT_COS     0.6f
+-#define FROG_PERCH_DPS       70.0f
+-#define FROG_PERCH_THR       25
++#define FROG_TUMBLE_MS       200
++#define FROG_HIT_LOOK_MS     2000
++#define FROG_REST_DPS        60.0f
++#define FROG_REST_MS         300
+ #define FROG_PERCH_MS        500
++#define FROG_IDLE_G          0.35f
++#define FROG_FLY_G           0.6f
++#define FROG_AIR_CONTACT_G   0.4f
++#define FROG_STUCK_G         0.6f
++#define FROG_AIRBORNE_MS     500
++#define FROG_CLIP_MS         300
++#define FROG_UPRIGHT_COS     0.8f
++#define FROG_LEARN_THR       35
++#define FROG_LEARN_MS        400
++#define FROG_LEARN_N         50
++#define FROG_SP_DECAY        5000.0f    // deg/s per s: how fast "what the sticks asked for" lets go
++#define FROG_BIGG_G10        30
+ #define FROG_EV_CRASH        0x08
+ #define FROG_EV_PERCH        0x10
+ #define FROG_EV_LOOP         0x20
+-#define FROG_EV_ORBIT        0x40
+-#define FROG_EV_TRIPPY       0x80
+-// What kind of trick: a pitch 360 that took 0.7 s+ with the throttle up (45%+ on average) is a power LOOP,
+-// otherwise a FLIP. A yaw 360 is a SPIN when flat, TRIPPY when the quad was way off level (45 degrees+) or
+-// rolling / pitching hard at the same time for most of it, and an ORBIT when it was banked 12-45 degrees for
+-// most of it at under 250 deg/s. Slow orbits (down to 20 deg/s, up to 15 s) are caught by a second, patient
+-// counter. r28: that counter follows the compass heading (earth frame) instead of the yaw gyro - a quad leaning
+-// into an orbit only sees part of the turn on its yaw axis (cos of the lean), so the old one never got to 330 -
+-// and "banked" is any lean of 12-78 degrees (pitch counts: orbits are flown forward), TRIPY needs 60+.
++#define FROG_EV_CLIP         0x40
++// A pitch 360 that took 0.7 s+ with the throttle up (45%+ on average) is a power LOOP, otherwise a FLIP.
++// r29: a trick has to be flown - the sticks asking for that axis for most of it - so a tumble never counts.
++// (ORBIT and TRIPY are gone: without GPS they can't be told from a wide turn.)
+ #define FROG_LOOP_MS         700
+ #define FROG_LOOP_THR        45
+-#define FROG_BANK_DECI       120        // 12 degrees, attitude is in tenths
+-#define FROG_OFFLEVEL_COS    0.5f       // r28: 60 degrees (was 45, which caught leaned-in orbits)
+-#define FROG_TRIPPY_DPS      150.0f
+-#define FROG_ORBIT_DPS       20.0f
+-#define FROG_ORBIT_FAST_DPS  300.0f
+-#define FROG_BANK_COS        0.978f     // 12 degrees of lean
+-#define FROG_BANK_MAX_COS    0.2f       // 78 degrees
+-#define FROG_ORBIT_DEG       330.0f
+-#define FROG_ORBIT_MAX_MS    15000
+-#define FROG_ORBIT_GAP_MS    1500
+-static uint8_t frogTrickPending = 0;    // bit 0 roll, 1 flip (pitch), 2 spin (yaw), FROG_EV_CRASH, FROG_EV_PERCH
+-static uint16_t frogPeakG10 = 0;        // peak G since the last look, below the impact level (for "3.4G!")
++static uint8_t frogTrickPending = 0;    // bit 0 roll, 1 flip (pitch), 2 spin (yaw), FROG_EV_*
++static uint16_t frogPeakG10 = 0;        // peak G since the last look, below the hit level (for "3.4G!")
+ static timeUs_t frogMotionArmedAt = 0;
+ static bool frogMotionFresh = false;
+ 
+@@ -2380,144 +2391,216 @@ void frogMotionTick(timeUs_t nowUs)
+     static timeUs_t last = 0;
+     static float deg[3];
+     static timeUs_t startAt[3], slowAt[3];
+-    static uint16_t samples[3], thrSum[3], banked[3], offLevel[3], wild[3];
+-    static float orbitDeg = 0.0f;
+-    static timeUs_t orbitAt = 0, orbitSeen = 0;
+-    static int16_t lastHeading = -1;
++    static uint16_t samples[3], thrSum[3], asked[3];
++    static float spEnv[3];
++    // thrust scale (kept across packs: it's the props, not the battery)
++    static float thrustK = 0.0f;
++    static uint16_t thrustN = 0;
++    static bool thrustRpm = false;
++    static timeUs_t thrUpSince = 0;
++    // hit / rest state
++    static timeUs_t hitAt = 0, restSince = 0, stillSince = 0, flySince = 0, airSince = 0;
++    static float hitG = 0.0f;
++    static bool hitContact = false;
++    static uint16_t wildMs = 0;
++    static bool airborne = false, perched = true;
++
+     const float peak = frogAccPeakG;
+     frogAccPeakG = 0.0f;
++    const float contactPeak = frogContactPeakG;
++    frogContactPeakG = 0.0f;
++    const float maxRate = MAX(fabsf(gyro.gyroADCf[0]), MAX(fabsf(gyro.gyroADCf[1]), fabsf(gyro.gyroADCf[2])));
++#if defined(USE_ACC)
++    const bool upright = getCosTiltAngle() >= FROG_UPRIGHT_COS;
++#else
++    const bool upright = true;
++#endif
++    const bool settled = maxRate < FROG_REST_DPS && peak > 0.8f && peak < 1.25f;
++
+     if (!ARMING_FLAG(ARMED) || isCrashFlipModeActive()) {
++        if (hitAt && frogMotionArmedAt && (isCrashFlipModeActive() || !(upright && settled))) {
++            frogTrickPending |= FROG_EV_CRASH;  // disarmed / turtled while still sorting out a hit
++        }
++        hitAt = 0;
+         deg[0] = deg[1] = deg[2] = 0.0f;
+         last = 0;
+         frogMotionArmedAt = 0;
+-        orbitDeg = 0.0f;
+-        lastHeading = -1;
++        frogThrustK = 0.0f;
+         return;
+     }
+     if (!frogMotionArmedAt) {
+         frogMotionArmedAt = nowUs ? nowUs : 1;
+-        frogMotionFresh = true;            // just armed: on the ground, not perched anywhere yet
++        frogMotionFresh = true;
+     }
+-    const uint16_t g10 = (uint16_t)lrintf(peak * 10.0f);
+-    const float maxRate = MAX(fabsf(gyro.gyroADCf[0]), MAX(fabsf(gyro.gyroADCf[1]), fabsf(gyro.gyroADCf[2])));
+-    static timeUs_t impactAt = 0, stillSince = 0;
+-    static uint16_t impactG10 = 0;
+-    static float impactRate = 0.0f;
+-    static bool perched = true;            // on the ground until it has flown
+-    if (frogMotionFresh) {
++    if (frogMotionFresh) {                       // just armed: on the ground, not perched anywhere new yet
+         perched = true;
+-        impactAt = 0;
+-        impactG10 = 0;
+-        stillSince = 0;
++        airborne = false;
++        hitAt = restSince = stillSince = flySince = airSince = thrUpSince = 0;
+         frogMotionFresh = false;
+     }
+-#if defined(USE_ACC)
+-    const bool upright = getCosTiltAngle() >= FROG_UPRIGHT_COS;
+-#else
+-    const bool upright = true;
+-#endif
+-    const int thr = calculateThrottlePercent();
+-    // impact: look for 0.5 s, then decide crash or touchdown
+-    if (g10 >= FROG_IMPACT_G10) {
+-        if (!impactAt) {
+-            impactAt = nowUs ? nowUs : 1;
+-            impactRate = 0.0f;
+-        }
+-        impactG10 = MAX(impactG10, g10);
+-    } else if (g10 > frogPeakG10) {
+-        frogPeakG10 = g10;
+-    }
+-    if (impactAt) {
+-        impactRate = MAX(impactRate, maxRate);
+-        if (cmpTimeUs(nowUs, impactAt) >= FROG_IMPACT_LOOK_MS * 1000) {
+-            if (impactG10 >= FROG_SMASH_G10 || impactRate >= FROG_TUMBLE_DPS || !upright) {
+-                frogTrickPending |= FROG_EV_CRASH;
+-                perched = true;            // a crash isn't a perch
+-            } else {
+-                frogPeakG10 = MAX(frogPeakG10, impactG10);   // a hard touchdown: just the G message
+-            }
+-            impactAt = 0;
+-            impactG10 = 0;
+-        }
+-    }
+-    // perch: settled, upright, throttle down, after flying
+-    const bool still = upright && thr < FROG_PERCH_THR && maxRate < FROG_PERCH_DPS && peak > 0.7f && peak < 1.4f;
+-    if (!still) {
+-        stillSince = 0;
+-        if (thr >= 30 || maxRate >= 150.0f) {
+-            perched = false;               // flying again
+-        }
+-    } else if (!stillSince) {
+-        stillSince = nowUs ? nowUs : 1;
+-    } else if (!perched && !impactAt && cmpTimeUs(nowUs, stillSince) >= FROG_PERCH_MS * 1000) {
+-        frogTrickPending |= FROG_EV_PERCH;
+-        perched = true;
+-    }
+     const float dt = last ? cmpTimeUs(nowUs, last) * 1e-6f : 0.0f;
+     last = nowUs;
+     if (dt <= 0.0f || dt > 0.1f) {
+         deg[0] = deg[1] = deg[2] = 0.0f;
+-        lastHeading = attitude.values.yaw;
+         return;
+     }
++    const int thr = calculateThrottlePercent();
++
++    // what the sticks asked for, held for a moment (the gyro lags the setpoint on a snap and a stop)
++    float wild = 0.0f;
++    for (int a = 0; a < 3; a++) {
++        spEnv[a] = MAX(fabsf(getSetpointRate(a)), spEnv[a] - FROG_SP_DECAY * dt);
++        wild = MAX(wild, fabsf(gyro.gyroADCf[a]) - spEnv[a]);
++    }
++
++    // prop thrust in G
++    bool rpm = false;
++    const float proxy = frogThrustProxy(&rpm);      // (sensors/acceleration.c, which also uses it at 1 kHz)
++    if (rpm != thrustRpm) {
++        thrustRpm = rpm;
++        thrustK = 0.0f;
++        thrustN = 0;
++    }
+ #if defined(USE_ACC)
+-    const float cosTilt = getCosTiltAngle();
+-    const bool isBanked = cosTilt < FROG_BANK_COS && cosTilt >= FROG_BANK_MAX_COS;
+-    const bool isOffLevel = cosTilt < FROG_OFFLEVEL_COS;
++    const float g1 = acc.dev.acc_1G_rec;
++    const float accZ = acc.accADC.v[Z] * g1;
++    const float lat = sqrtf(sq(acc.accADC.v[X] * g1) + sq(acc.accADC.v[Y] * g1));
+ #else
+-    const bool isBanked = abs(attitude.values.roll) >= FROG_BANK_DECI;
+-    const bool isOffLevel = false;
++    const float accZ = 1.0f, lat = 0.0f;
+ #endif
+-    // the patient orbit counter: the heading turning one way while leaned in
+-    int heading = attitude.values.yaw;                  // tenths of a degree, 0-3599
+-    int dHead = lastHeading < 0 ? 0 : heading - lastHeading;
+-    lastHeading = heading;
+-    if (dHead > 1800) {
+-        dHead -= 3600;
+-    } else if (dHead < -1800) {
+-        dHead += 3600;
+-    }
+-    const float yawRate = dHead * 0.1f / dt;            // earth-frame turn rate, deg/s
+-    if (isBanked && fabsf(yawRate) >= FROG_ORBIT_DPS && fabsf(yawRate) < FROG_ORBIT_FAST_DPS
+-        && (orbitDeg == 0.0f || (yawRate > 0) == (orbitDeg > 0))) {
+-        if (orbitDeg == 0.0f) {
+-            orbitAt = nowUs;
+-        }
+-        orbitDeg += yawRate * dt;
+-        orbitSeen = nowUs;
+-    }
+-    if (orbitDeg != 0.0f && (cmpTimeUs(nowUs, orbitSeen) > FROG_ORBIT_GAP_MS * 1000 || cmpTimeUs(nowUs, orbitAt) > FROG_ORBIT_MAX_MS * 1000
+-        || ((yawRate > 0) != (orbitDeg > 0) && fabsf(yawRate) >= FROG_TRICK_RATE))) {
+-        orbitDeg = 0.0f;
+-    } else if (fabsf(orbitDeg) >= FROG_ORBIT_DEG) {
+-        frogTrickPending |= FROG_EV_ORBIT;
+-        orbitDeg = 0.0f;
+-        deg[FD_YAW] = 0.0f;
++    if (thr >= FROG_LEARN_THR) {
++        if (!thrUpSince) {
++            thrUpSince = nowUs ? nowUs : 1;
++        }
++    } else {
++        thrUpSince = 0;
++    }
++    if (thrUpSince && cmpTimeUs(nowUs, thrUpSince) >= FROG_LEARN_MS * 1000 && !hitAt && maxRate < 400.0f && lat < 0.6f
++        && accZ > 0.5f && accZ < 4.0f && proxy > 1e-4f) {
++        const float k = accZ / proxy;
++        if (thrustN < FROG_LEARN_N) {
++            thrustK += (k - thrustK) / (thrustN + 1);
++            thrustN++;
++        } else {
++            thrustK += (k - thrustK) * (dt / (dt + 2.0f));
++        }
++        perched = false;                         // 35%+ for 0.4 s: it's flying
+     }
++    const bool known = thrustN >= FROG_LEARN_N;
++    const float thrustG = known ? thrustK * proxy : 0.0f;
++    frogThrustK = known ? thrustK : 0.0f;          // accUpdate works out the contact force at full rate with it
++    const float contact = sqrtf(sq(lat) + sq(accZ - thrustG));
++
++    // flying = the props carrying it with nothing touching it
++    if (known && thrustG >= FROG_FLY_G && contact < FROG_AIR_CONTACT_G) {
++        if (!airSince) {
++            airSince = nowUs ? nowUs : 1;
++        } else if (cmpTimeUs(nowUs, airSince) >= FROG_AIRBORNE_MS * 1000) {
++            airborne = true;
++            perched = false;
++        }
++    } else {
++        airSince = 0;
++    }
++    // still on something: not turning, ~1 G, props near idle
++    const bool still = settled && (known ? thrustG < FROG_IDLE_G : thr < 25);
++    if (still) {
++        if (!stillSince) {
++            stillSince = nowUs ? nowUs : 1;
++        }
++    } else {
++        stillSince = 0;
++    }
++    if (still && upright) {
++        if (!restSince) {
++            restSince = nowUs ? nowUs : 1;
++        }
++    } else {
++        restSince = 0;
++    }
++
++    // hits
++    const float hitNow = known ? contactPeak : peak;
++    const bool touched = hitNow >= (known ? FROG_HIT_G : FROG_HIT_RAW_G);
++    const uint16_t g10 = (uint16_t)lrintf(peak * 10.0f);
++    if (!hitAt && (touched || wild >= FROG_WILD_DPS)) {
++        hitAt = nowUs ? nowUs : 1;
++        hitG = hitNow;
++        hitContact = touched;
++        wildMs = 0;
++        flySince = 0;
++    } else if (!hitAt && g10 > frogPeakG10) {
++        frogPeakG10 = g10;                       // just a big-G move: the "3.4G!" message
++    }
++    if (hitAt) {
++        hitG = MAX(hitG, hitNow);
++        hitContact |= touched;
++        if (wild >= FROG_TUMBLE_DPS) {
++            wildMs += lrintf(dt * 1000.0f);
++        }
++        const uint32_t since = cmpTimeUs(nowUs, hitAt) / 1000;
++        if (known && since >= 150 && thrustG >= FROG_FLY_G && contact < FROG_AIR_CONTACT_G && wild < FROG_TUMBLE_DPS) {
++            if (!flySince) {
++                flySince = nowUs ? nowUs : 1;
++            }
++        } else {
++            flySince = 0;
++        }
++        bool done = true;
++        if (wildMs >= FROG_TUMBLE_MS) {
++            frogTrickPending |= FROG_EV_CRASH;
++        } else if (stillSince && cmpTimeUs(nowUs, stillSince) >= FROG_REST_MS * 1000) {
++            if (!upright || hitG >= FROG_SMASH_G) {
++                frogTrickPending |= FROG_EV_CRASH;
++            } else if (!perched) {
++                frogTrickPending |= FROG_EV_PERCH;     // a firm landing
++            }
++        } else if (flySince && cmpTimeUs(nowUs, flySince) >= FROG_CLIP_MS * 1000) {
++            if (hitContact) {
++                frogTrickPending |= FROG_EV_CLIP;      // hit something and flew on
++            }
++        } else if (since >= FROG_HIT_LOOK_MS) {
++            if (known && contact >= FROG_STUCK_G) {
++                frogTrickPending |= FROG_EV_CRASH;     // still jammed against something
++            }
++        } else {
++            done = false;
++        }
++        if (done) {
++            if (frogTrickPending & (FROG_EV_CRASH | FROG_EV_PERCH)) {
++                perched = true;
++                airborne = false;
++            }
++            hitAt = 0;
++            deg[0] = deg[1] = deg[2] = 0.0f;
++        }
++    } else if (known && airborne && !perched && restSince && cmpTimeUs(nowUs, restSince) >= FROG_PERCH_MS * 1000) {
++        frogTrickPending |= FROG_EV_PERCH;             // a soft perch
++        perched = true;
++        airborne = false;
++    }
++
++    // tricks: 300 degrees one way on one axis, flown with the sticks
+     for (int axis = 0; axis < 3; axis++) {
+         const float rate = gyro.gyroADCf[axis];
+         const bool turning = fabsf(rate) >= FROG_TRICK_RATE;
++        if (hitAt) {
++            deg[axis] = 0.0f;
++            continue;
++        }
+         if (deg[axis] == 0.0f || (turning && (rate > 0) != (deg[axis] > 0))) {
+             if (turning) {                       // starting, or hard the other way: start over in that direction
+                 startAt[axis] = nowUs;
+                 slowAt[axis] = 0;
+                 deg[axis] = rate * dt;
+-                samples[axis] = thrSum[axis] = banked[axis] = offLevel[axis] = wild[axis] = 0;
++                samples[axis] = thrSum[axis] = asked[axis] = 0;
+             }
+             continue;
+         }
+         if (samples[axis] < 1000) {
+-            float other = 0.0f;
+-            for (int k = 0; k < 3; k++) {
+-                if (k != axis) {
+-                    other = MAX(other, fabsf(gyro.gyroADCf[k]));
+-                }
+-            }
+             samples[axis]++;
+             thrSum[axis] += MIN(thr, 100);
+-            banked[axis] += isBanked && !isOffLevel;
+-            offLevel[axis] += isOffLevel;
+-            wild[axis] += other >= FROG_TRIPPY_DPS;
++            asked[axis] += spEnv[axis] >= FROG_TRICK_RATE * 0.8f;
+         }
+         if (!turning) {
+             if (!slowAt[axis]) {
+@@ -2537,22 +2620,26 @@ void frogMotionTick(timeUs_t nowUs)
+         } else if (fabsf(deg[axis]) >= FROG_TRICK_DEG) {
+             const uint32_t ms = cmpTimeUs(nowUs, startAt[axis]) / 1000;
+             const uint16_t n = MAX(samples[axis], 1);
+-            if (axis == FD_PITCH && ms >= FROG_LOOP_MS && thrSum[axis] / n >= FROG_LOOP_THR) {
+-                frogTrickPending |= FROG_EV_LOOP;
+-            } else if (axis == FD_YAW && (offLevel[axis] * 2 > n || wild[axis] * 2 > n)) {
+-                frogTrickPending |= FROG_EV_TRIPPY;
+-            } else if (axis == FD_YAW && banked[axis] * 5 > n * 3 && FROG_TRICK_DEG * 1000.0f / MAX(ms, 1u) < FROG_ORBIT_FAST_DPS) {
+-                frogTrickPending |= FROG_EV_ORBIT;
+-                orbitDeg = 0.0f;
+-            } else {
+-                frogTrickPending |= 1 << axis;
+-                if (axis == FD_YAW) {
+-                    orbitDeg = 0.0f;
++            if (asked[axis] * 10 >= n * 6) {
++                if (axis == FD_PITCH && ms >= FROG_LOOP_MS && thrSum[axis] / n >= FROG_LOOP_THR) {
++                    frogTrickPending |= FROG_EV_LOOP;
++                } else {
++                    frogTrickPending |= 1 << axis;
+                 }
+             }
+             deg[axis] = 0.0f;
+         }
+     }
++
++    // blackbox: set debug_mode = FROG to log all of this for tuning
++    DEBUG_SET(DEBUG_FROG, 0, lrintf(thrustG * 100.0f));
++    DEBUG_SET(DEBUG_FROG, 1, lrintf(contact * 100.0f));
++    DEBUG_SET(DEBUG_FROG, 2, lrintf(hitNow * 100.0f));
++    DEBUG_SET(DEBUG_FROG, 3, lrintf(wild));
++    DEBUG_SET(DEBUG_FROG, 4, known | (airborne << 1) | (perched << 2) | ((hitAt != 0) << 3) | ((restSince != 0) << 4) | (rpm << 5));
++    DEBUG_SET(DEBUG_FROG, 5, lrintf(thrustK * 100.0f));
++    DEBUG_SET(DEBUG_FROG, 6, lrintf(accZ * 100.0f));
++    DEBUG_SET(DEBUG_FROG, 7, frogTrickPending);
+ }
+ 
+ static void frogFeedDetect(timeMs_t now)
+@@ -2601,6 +2688,9 @@ static void frogFeedDetect(timeMs_t now)
+         }
+     }
+     if (!nowArmed) {
++        if (frogTrickPending & FROG_EV_CRASH) {
++            frogFeedPost("CRASH", DISPLAYPORT_SEVERITY_CRITICAL);   // disarmed straight after a hit
++        }
+         frogTrickPending = 0;
+         frogPeakG10 = 0;
+         fullSince = 0;
+@@ -2657,11 +2747,8 @@ static void frogFeedDetect(timeMs_t now)
+     if (pending & FROG_EV_LOOP) {
+         frogFeedPost("LOOP", DISPLAYPORT_SEVERITY_NORMAL);
+     }
+-    if (pending & FROG_EV_ORBIT) {
+-        frogFeedPost("ORBIT", DISPLAYPORT_SEVERITY_NORMAL);
+-    }
+-    if (pending & FROG_EV_TRIPPY) {
+-        frogFeedPost("TRIPY", DISPLAYPORT_SEVERITY_WARNING);
++    if (pending & FROG_EV_CLIP) {
++        frogFeedPost("CLIP", DISPLAYPORT_SEVERITY_WARNING);
+     }
+     if (pending & FROG_EV_PERCH) {
+         frogFeedPost("PERCH", DISPLAYPORT_SEVERITY_NORMAL);
+diff --git a/src/main/sensors/acceleration.c b/src/main/sensors/acceleration.c
+index f996aa4..54c82da 100644
+--- a/src/main/sensors/acceleration.c
++++ b/src/main/sensors/acceleration.c
+@@ -38,9 +38,37 @@
+ #include "sensors/gyro.h"
+ 
+ #include "acceleration.h"
++#include "drivers/dshot.h"
++#include "flight/mixer.h"
+ 
+-FAST_DATA_ZERO_INIT acc_t acc;                       // acc access functions
++FAST_DATA_ZERO_INIT acc_t acc;
++
++// fr0gOS: mean (RPM / 10000)^2 over the motors (or output^2 without RPM telemetry): prop thrust up to a scale
++float frogThrustProxy(bool *rpm)
++{
++    const int n = MAX(getMotorCount(), 1);
++    float s = 0.0f;
++#ifdef USE_DSHOT_TELEMETRY
++    if (isDshotTelemetryActive()) {
++        for (int i = 0; i < n; i++) {
++            const float r = getDshotRpm(i) * 1e-4f;
++            s += r * r;
++        }
++        *rpm = true;
++        return s / n;
++    }
++#endif
++    const float lo = getMotorOutputLow(), span = MAX(getMotorOutputHigh() - lo, 1.0f);
++    for (int i = 0; i < n; i++) {
++        const float u = constrainf((motor[i] - lo) / span, 0.0f, 1.0f);
++        s += u * u;
++    }
++    *rpm = false;
++    return s / n;
++}                       // acc access functions
+ float frogAccPeakG = 0.0f;                  // fr0gOS: highest G since the frog last looked
++float frogThrustK = 0.0f;                   // fr0gOS: prop thrust scale, G per unit of frogThrustProxy (0 = not learned)
++float frogContactPeakG = 0.0f;              // fr0gOS: peak |accel - thrust| since the frog last looked
+ #ifdef USE_CRSF_ACCGYRO_TELEMETRY
+ // Two-counter seqlock pattern for lock-free synchronization:
+ // - accelSeq: only incremented by accUpdate (accumulator writes)
+@@ -116,6 +144,16 @@ static inline void postProcessAccelerometer(void)
+     if (acc.accMagnitude > frogAccPeakG) {
+         frogAccPeakG = acc.accMagnitude;            // fr0gOS: peak G between OSD looks (crash detection)
+     }
++    {
++        // fr0gOS: contact force = everything the accelerometer feels that the props don't explain
++        const float cx = acc.accADC.v[X] * acc.dev.acc_1G_rec, cy = acc.accADC.v[Y] * acc.dev.acc_1G_rec;
++        bool rpm;
++        const float cz = acc.accADC.v[Z] * acc.dev.acc_1G_rec - (frogThrustK > 0.0f ? frogThrustK * frogThrustProxy(&rpm) : 0.0f);
++        const float c = sqrtf(cx * cx + cy * cy + cz * cz);
++        if (c > frogContactPeakG) {
++            frogContactPeakG = c;
++        }
++    }
+     acc.jerkMagnitude = vector3Norm(&acc.jerk) * acc.dev.acc_1G_rec;
+ 
+     DEBUG_SET(DEBUG_ACCELEROMETER, 2, lrintf(acc.accMagnitude * 1e3f));
+diff --git a/src/main/sensors/acceleration.h b/src/main/sensors/acceleration.h
+index d33dbf8..383b3d7 100644
+--- a/src/main/sensors/acceleration.h
++++ b/src/main/sensors/acceleration.h
+@@ -75,6 +75,9 @@ typedef struct acc_s {
+ 
+ extern acc_t acc;
+ extern float frogAccPeakG;
++extern float frogThrustK;
++float frogThrustProxy(bool *rpm);
++extern float frogContactPeakG;
+ 
+ typedef struct rollAndPitchTrims_s {
+     int16_t roll;
