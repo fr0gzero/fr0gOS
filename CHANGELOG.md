@@ -4,6 +4,12 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r19 - 2026-11-08 (MK4-2, MK5-1)
+- **Side bars stay up.** The ARMED message and HISCORE.EXE are now drawn over the live side bars instead of blanking the whole screen (HD). Only the boot screen takes over the screen.
+- Matrix rain screensaver off, so the telemetry stays visible while disarmed.
+- **Transitions like ARMED everywhere.** Things appearing or vanishing (after boot) and value changes (mode, AIR, rate, VTX power, ARMED/SAFE) now use the ARMED rhythm: glyphs, then the characters land left to right 45 ms apart; going away they turn to glyphs and drop out left to right. Before, the appear effect was over in under 0.3 s and showed as a frame or two of random junk on the goggles; the mode change's colour chase is gone.
+- VTX power readout: `25MW` instead of `25 MW` (the table labels are space-padded).
+
 ## v1.3 r18 - 2026-11-08 (MK4-2, MK5-1)
 - **Fix: stuck on R1.** When the VTX couldn't reach the FC at power-up (the r10-r12 link flooding), it fell back to its own last channel, R1, then reported R1 back to the FC with MSP_SET_VTX_CONFIG. Betaflight adopts that and saves it (the high-score save on disarm writes it to flash), so every boot after agreed on R1. Now settings coming from the VTX's own port are ignored and the FC sends its own (R8) back to the VTX. The Configurator's Video Transmitter tab and the OSD menu still change the channel as normal.
 - Same settings and goggle font as r17. After flashing, set R8 back once if the FC already saved R1: `set vtx_band = 5`, `set vtx_channel = 8`, `set vtx_freq = 5917`, `save`.
