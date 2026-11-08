@@ -4,6 +4,11 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r15 - 2026-11-08 (MK4-2, MK5-1)
+- No peekaboo in the idle any more: the frog just rests (blink, look around, smile) between wanders.
+- MK5-1 CLI: crash flip (FLIP OVER AFTER CRASH) moved to AUX 4.
+- Same settings and goggle font: flash without Full chip erase.
+
 ## v1.3 r14 - 2026-11-08 (MK4-2, MK5-1)
 - The frog only runs to the voltage when it's getting real: average cell 3.44 V or less for 1.5 s (a punch that sags it for a moment doesn't count). It goes back to wandering once the pack is above 3.52 V for 3 s. The voltage colours and warnings are unchanged (3.50 V / 3.35 V).
 - Same settings and goggle font as r13: flash without Full chip erase (or with it, then paste the r13 CLI).

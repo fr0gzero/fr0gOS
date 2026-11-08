@@ -1,0 +1,38 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index c3ee6ef..4a51fa2 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R14"
++#define FROGOS_VERSION   "V1.3 R15"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 9a66248..95ac03e 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1572,7 +1572,7 @@ static timeMs_t frogFeedAt = 0;
+ //   feed events                               ARMED SAFE mode-hop PUNCH FLIP/ROLL SPIN CRASH RECORD
+ //   low battery                               goes to the voltage ledge and jumps with a red !
+ //   disarmed (after a flight)                 eyes closed
+-//   otherwise                                 rests (blink, look around, smile), peekaboo, wanders every 15-20 s
++//   otherwise                                 rests (blink, look around, smile), wanders every 15-20 s
+ #define FROG_MAX_LEDGES   8
+ // each phase lasts two OSD frames at 20 fps, so every frame of the hop is actually seen
+ #define FROG_HOP_CROUCH   100
+@@ -2003,9 +2003,9 @@ static int frogTick(timeMs_t now, int *cx, uint8_t *cg)
+         frog.nextWander = now + 15000 + frogRand() % 5000;
+         return frogTick(now, cx, cg);
+     }
+-    // rest; now and then a peekaboo instead
++    // rest (blink, look around, smile), over and over
+     if (frogAnimDone(frog.anim, frog.animAt, now)) {
+-        frogPlay((frogRand() % 3) == 0 ? FROG_ANIM_PEEK : FROG_ANIM_REST, 0, now);
++        frogPlay(FROG_ANIM_REST, 0, now);
+     }
+     cx[0] = frog.x;
+     cg[0] = frogAnimGlyph(frog.anim, now - frog.animAt, false);
