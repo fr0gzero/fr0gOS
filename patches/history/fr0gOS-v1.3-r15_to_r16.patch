@@ -1,0 +1,177 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 4a51fa2..7643b76 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R15"
++#define FROGOS_VERSION   "V1.3 R16"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+@@ -1687,7 +1687,7 @@ static void frogArmFxLine(int row, const char *text, uint32_t ms, bool hd, bool
+             g = (ms >= FROG_ARMFX_HOLD_MS + 45 * (uint32_t)i + 150) ? ' '
+                 : (flip ? frogFlipNoiseChar(hd) : frogNoiseChar(hd));        // glyph out, left to right
+         } else if (hd && flip) {
+-            g = frogColourChar((uint8_t)c, ((i + ms / 90) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING);
++            g = frogColourChar((uint8_t)c, ((ms / 250) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING);
+         } else {
+             g = (uint8_t)c;
+         }
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 95ac03e..f1cfab3 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -1310,7 +1310,7 @@ static void osdElementEscRpmValue(osdElementParms_t *element)
+     for (int i = 0; element->buff[i]; i++) {
+         uint8_t sev = DISPLAYPORT_SEVERITY_NORMAL;
+         if (pct >= 100) {
+-            sev = ((i + now / 80) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
++            sev = ((now / 200) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
+         } else if (pct >= 97) {
+             sev = DISPLAYPORT_SEVERITY_CRITICAL;
+         } else if (pct >= 90) {
+@@ -2082,12 +2082,85 @@ uint32_t frogBootLengthMs(int hops, uint32_t doneMs)
+     return MAX(hopsEnd, doneMs + 900) + frogAnimTotal(FROG_ANIM_CELEBRATE) + 300;
+ }
+ 
++// combo meter, under the event log: every event that lands within 5 s of the previous one disappearing
++// (4 s on screen + 0.3 s disintegrating + 5 s) keeps the chain going: X2, X3 ... X99. Only counts while armed;
++// disarming or a gap ends it (the number disintegrates).
++#define FROG_COMBO_WINDOW_MS (FROG_FEED_HOLD_MS + FROG_FEED_OUT_MS + 5000)
++#define FROG_COMBO_BUMP_MS   260
++#define FROG_COMBO_OUT_MS    400
++static uint8_t frogCombo = 0;
++static uint8_t frogComboFinal = 0;
++static timeMs_t frogComboLastAt = 0;
++static timeMs_t frogComboBumpAt = 0;
++static timeMs_t frogComboEndAt = 0;
++
++static void frogComboEnd(timeMs_t now)
++{
++    if (frogCombo >= 2) {
++        frogComboFinal = frogCombo;
++        frogComboEndAt = now ? now : 1;
++    }
++    frogCombo = 0;
++}
++
++static void frogComboEvent(const char *text, timeMs_t now)
++{
++    if (!ARMING_FLAG(ARMED) || strcmp(text, "SAFE") == 0) {
++        frogComboEnd(now);
++        return;
++    }
++    if (strcmp(text, "ARMED") == 0) {
++        return;
++    }
++    if (frogCombo && now - frogComboLastAt <= FROG_COMBO_WINDOW_MS) {
++        if (frogCombo < 99) {
++            frogCombo++;
++        }
++        frogComboBumpAt = now ? now : 1;
++        frogComboEndAt = 0;
++    } else {
++        frogComboEnd(now);
++        frogCombo = 1;
++    }
++    frogComboLastAt = now;
++}
++
++// the combo line: X2-X4 green, X5-X9 amber, X10+ red with a "!", decoding in on every step up
++static void frogComboLine(char *b, bool hd, timeMs_t now)
++{
++    if (frogCombo && now - frogComboLastAt > FROG_COMBO_WINDOW_MS) {
++        frogComboEnd(now);
++    }
++    if (!ARMING_FLAG(ARMED) && frogCombo) {
++        frogComboEnd(now);
++    }
++    const uint8_t n = frogCombo >= 2 ? frogCombo : (frogComboEndAt && now - frogComboEndAt < FROG_COMBO_OUT_MS ? frogComboFinal : 0);
++    if (n < 2) {
++        frogComboEndAt = 0;
++        b[0] = '\0';
++        return;
++    }
++    tfp_sprintf(b, n >= 10 ? "X%d!" : "X%d", n);
++    const uint8_t sev = n >= 10 ? DISPLAYPORT_SEVERITY_CRITICAL : n >= 5 ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_NORMAL;
++    const bool ending = frogCombo < 2;
++    const uint32_t t = ending ? now - frogComboEndAt : (frogComboBumpAt ? now - frogComboBumpAt : FROG_COMBO_BUMP_MS);
++    for (int i = 0; b[i]; i++) {
++        const bool scrambled = ending ? (t >= 80u * i) : (t < FROG_COMBO_BUMP_MS - 50u * i);
++        if (scrambled) {
++            b[i] = hd ? (char)frogColourNoiseChar(sev) : (char)frogNoiseChar(false);
++        } else if (hd) {
++            b[i] = (char)frogColourChar((uint8_t)b[i], sev);
++        }
++    }
++}
++
+ void frogFeedPost(const char *text, uint8_t sev)
+ {
+     if (!text || !text[0]) {
+         return;
+     }
+     const timeMs_t now = millis();
++    frogComboEvent(text, now);
+     if (strncmp(frogFeed[0].text, text, FROG_FEED_LEN) != 0) {
+         // new message pops in at the top and pushes the older ones down (the oldest falls off)
+         for (int i = FROG_FEED_LINES - 1; i > 0; i--) {
+@@ -2307,12 +2380,16 @@ static void osdElementFrogTag(osdElementParms_t *element)
+             element->elemOffsetX = anchor - element->elemPosX;
+             element->elemOffsetY = frog.y - element->elemPosY;
+         }
+-    } else {
++    } else if (call < frogRows + FROG_FEED_LINES) {
+         frogFeedLine(element->buff, &frogFeed[call - frogRows], call == frogRows, hd, now);
+         element->elemOffsetX = 0;
+         element->elemOffsetY = call;
++    } else {
++        frogComboLine(element->buff, hd, now);      // the combo meter, the line under the log
++        element->elemOffsetX = 0;
++        element->elemOffsetY = call;
+     }
+-    if (++call < frogRows + FROG_FEED_LINES) {
++    if (++call < frogRows + FROG_FEED_LINES + 1) {
+         element->rendered = false;
+     } else {
+         call = 0;
+@@ -2420,7 +2497,8 @@ static uint8_t frogBattSeverity(frogBattStage_e st, int i, timeMs_t now)
+     case FROG_BATT_LOW:
+         return ((now / 700) % 2) ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_NORMAL;      // slow breathe
+     case FROG_BATT_LAND:
+-        return ((i + now / 220) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING; // pulse chase
++        UNUSED(i);
++        return ((now / 220) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;    // whole readout pulses red / amber
+     case FROG_BATT_DEAD:
+         return ((now / 90) % 3) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;      // flicker
+     default:
+@@ -2494,7 +2572,7 @@ static void osdElementGForce(osdElementParms_t *element)
+         if (record) {
+             sev = chase[(i + now / 70) % 3];
+         } else if (violent) {
+-            sev = ((i + now / 80) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
++            sev = ((now / 200) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
+         } else if (g10 >= 25) {
+             sev = DISPLAYPORT_SEVERITY_CRITICAL;
+         } else if (g10 >= 15) {
+@@ -3442,7 +3520,7 @@ static void osdElementWarnings(osdElementParms_t *element)
+     }
+     frogDecodeWarning(element);
+     if (strcmp(element->buff, "TURTL") == 0) {
+-        // crash flip: no blinking, the text glitches instead. HD: red/amber chase with scrambles.
++        // crash flip: no blinking, the text glitches instead. HD: the whole word swaps red / amber, with scrambles.
+         // Analog: one character of the text scrambles now and then, nothing outside it.
+         elementBlinking = false;
+         const bool hd = frogHdFont(element->osdDisplayPort);
+@@ -3450,7 +3528,7 @@ static void osdElementWarnings(osdElementParms_t *element)
+         const uint32_t r = frogRand();
+         const int glitchAt = ((r & 3) == 0) ? (int)((r >> 2) % 5) : -1;
+         for (int i = 0; element->buff[i]; i++) {
+-            const uint8_t sev = ((i + now / 90) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
++            const uint8_t sev = ((now / 250) % 2) ? DISPLAYPORT_SEVERITY_CRITICAL : DISPLAYPORT_SEVERITY_WARNING;
+             if (i == glitchAt) {
+                 element->buff[i] = hd ? (char)frogColourNoiseChar(sev) : (char)frogNoiseChar(false);
+             } else if (hd) {
