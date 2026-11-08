@@ -4,6 +4,9 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r26 - 2026-11-08 (MK4-2, MK5-1)
+- **A crash clears the slate:** every event under `CRASH` in the log disintegrates straight away, top to bottom, along with the combo breaker.
+
 ## v1.3 r25 - 2026-11-08 (MK4-2, MK5-1)
 - **Combo breaker:** a crash shakes the count red, crumbles it left to right into debris that falls onto the line below, then `BREAK` flashes there (1.5 s).
 - **Time-left meter** after the count: four cells, one second each (`====` -> `=-`), in the count's colour, red in the last second.

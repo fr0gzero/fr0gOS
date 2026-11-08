@@ -75,6 +75,10 @@ while t_ms < END * 1000:
             combo_last = t_ms
         feed.insert(0, dict(text=text, sev=sev, at=t_ms))
         feed = feed[:5]
+        if text == "CRASH":     # r26: a crash wipes everything under it, top to bottom
+            for i, ev in enumerate(feed[1:], start=1):
+                if t_ms - ev["at"] < HOLD:
+                    ev["at"] = t_ms - HOLD + 90 * (i - 1)
     if combo and t_ms - combo_last > WINDOW:
         if combo >= 2:
             combo_final, combo_end = combo, t_ms

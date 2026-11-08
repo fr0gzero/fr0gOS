@@ -1,0 +1,32 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index bdd1cb0..595a3fd 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R25"
++#define FROGOS_VERSION   "V1.3 R26"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index 7fbbb5e..7130edd 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -2299,6 +2299,14 @@ void frogFeedPost(const char *text, uint8_t sev)
+     frogFeed[0].sev = sev;
+     frogFeedAt = now ? now : 1;                 // same event again just replays the type-in
+     frogFeed[0].at = frogFeedAt;
++    if (strcmp(text, "CRASH") == 0) {
++        // a crash wipes the slate: everything under it disintegrates now, top to bottom
++        for (int i = 1; i < FROG_FEED_LINES; i++) {
++            if (frogFeed[i].text[0] && now - frogFeed[i].at < FROG_FEED_HOLD_MS) {
++                frogFeed[i].at = now - FROG_FEED_HOLD_MS + 90 * (i - 1);
++            }
++        }
++    }
+     frogReact(frogFeed[0].text);
+ }
+ 
