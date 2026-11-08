@@ -17,7 +17,6 @@ serial UART4 0 115200 57600 0 115200
 aux 0 0 0 1700 2100 0 0
 aux 1 1 1 900 1200 0 0
 aux 2 28 7 1800 2100 0 0
-aux 3 35 2 1700 2100 0 0
 aux 3 35 3 1700 2100 0 0
 vtxtable bands 6
 vtxtable channels 8
