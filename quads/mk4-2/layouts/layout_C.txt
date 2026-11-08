@@ -1,9 +1,9 @@
 # fr0gOS MK4-2 layout option C (paste into the CLI, no reflash)
 # layout option C: frog + activity feed top left (frog hops around the bars), craft name top right
 set osd_frog_feed_pos = 2048
-set osd_vbat_pos = 2144
-set osd_mah_drawn_pos = 2176
-set osd_current_pos = 2208
+set osd_vbat_pos = 2336
+set osd_mah_drawn_pos = 2368
+set osd_current_pos = 2400
 set osd_link_quality_pos = 2464
 set osd_frog_rate_pos = 2496
 set osd_vtx_channel_pos = 2528

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""fr0gOS r16 combo meter mockup: the left bar during a flurry of events (mirrors the firmware logic).
+"""fr0gOS r17 combo meter mockup: the left bar during a flurry of events (mirrors the firmware logic).
 
 usage: mockup_combo.py <frog_charmap.h> <frog_anim.h> <out.gif>
 """
@@ -11,6 +11,10 @@ from PIL import Image, ImageDraw
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 import frog_hop as HP  # noqa: E402
+
+# r17 layout C left side: feed 1-5, combo 6-7, blank 8, power 9-11, links 13-16
+HP.LEFT = {9: "3.71V", 10: "135\x07", 11: "6.81A", 13: "LQ100", 14: "F1000", 15: "R8", 16: "200MW"}
+HP.BASE = HP.scene()
 
 CHARMAP, ANIMH, OUT = sys.argv[1:4]
 hdr = open(CHARMAP).read()
@@ -44,6 +48,7 @@ feed = []            # newest first: dict(text, sev, at)
 combo = 0
 combo_last = combo_bump = combo_end = 0
 combo_final = 0
+word_at = 0
 frames, durs = [], []
 ev_i = 0
 t_ms = 0
@@ -71,7 +76,7 @@ while t_ms < END * 1000:
 
     img = HP.BASE.copy()
     # clear the left rows 0-6 (the base scene has a static feed in it)
-    for r in range(0, 7):
+    for r in range(0, 8):
         for x in range(0, 6):
             img.paste((0, 0, 0), (x * HP.FGW, r * HP.FGH, (x + 1) * HP.FGW, (r + 1) * HP.FGH))
     HP.put(img, 4, 0, HP.glyph(IDLE))
@@ -97,6 +102,17 @@ while t_ms < END * 1000:
         for i, ch in enumerate(txt):
             scr = (tt >= 80 * i) if ending else (tt < 260 - 50 * i)
             HP.put(img, i, 6, HP.glyph(noise(sev) if scr else col(ord(ch), sev)))
+        if n >= 5:
+            if not word_at:
+                word_at = t_ms
+            tw = (t_ms - combo_end) if ending else (t_ms - word_at)
+            for i, ch in enumerate("COMBO"):
+                scr = (tw >= 80 * i) if ending else (tw < 260 - 50 * i)
+                HP.put(img, i, 7, HP.glyph(noise(sev) if scr else col(ord(ch), sev)))
+        else:
+            word_at = 0
+    else:
+        word_at = 0
     crop = img.crop((0, 0, COLS_SHOWN * HP.FGW, img.height)).resize((COLS_SHOWN * HP.FGW // 2, img.height // 2), Image.LANCZOS)
     canvas = Image.new("RGB", (crop.width, crop.height + 22), (16, 16, 16))
     canvas.paste(crop, (0, 0))

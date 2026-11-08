@@ -4,6 +4,10 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 r17 - 2026-11-08 (MK4-2, MK5-1)
+- Combo meter: the word `COMBO` appears under the count once the chain reaches X5 (decodes in, same colour as the count).
+- Layout C left side moved down for it: feed rows 1-5, combo 6-7, blank 8, voltage / mAh / current 9-11, blank 12, links 13-16. Paste the r17 CLI (or `quads/mk4-2/layouts/layout_C.txt`).
+
 ## v1.3 r16 - 2026-11-08 (MK4-2, MK5-1)
 - **Combo meter** on the line under the event log. Every event that lands within 5 s of the previous one disappearing keeps the chain going: `X2`, `X3` ... up to `X99`. Each step up decodes in from glyphs. X2-X4 green, X5-X9 amber, X10+ red with a `!`. A gap or disarming ends it (it disintegrates). Only counts while armed; ARMED itself doesn't count.
 - Red/amber flashing is now the whole word at once, never alternate letters: crash flip (`TURTL` and the centre `>CRASH FLIP<`), battery LAND stage, G at 3.5+, RPM past your record.

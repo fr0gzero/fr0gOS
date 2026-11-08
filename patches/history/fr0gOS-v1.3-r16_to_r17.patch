@@ -1,0 +1,74 @@
+diff --git a/src/main/osd/osd.c b/src/main/osd/osd.c
+index 7643b76..92fc83c 100644
+--- a/src/main/osd/osd.c
++++ b/src/main/osd/osd.c
+@@ -526,7 +526,7 @@ static void osdDrawLogo(int x, int y, displayPortSeverity_e fontSel)
+ }
+ 
+ // ---------------- fr0gOS boot screen ----------------
+-#define FROGOS_VERSION   "V1.3 R16"
++#define FROGOS_VERSION   "V1.3 R17"
+ #define FROG_BOOT_WIDTH  22
+ #define FROG_BOOT_LINES  9
+ 
+diff --git a/src/main/osd/osd_elements.c b/src/main/osd/osd_elements.c
+index f1cfab3..36377b2 100644
+--- a/src/main/osd/osd_elements.c
++++ b/src/main/osd/osd_elements.c
+@@ -2125,8 +2125,11 @@ static void frogComboEvent(const char *text, timeMs_t now)
+     frogComboLastAt = now;
+ }
+ 
+-// the combo line: X2-X4 green, X5-X9 amber, X10+ red with a "!", decoding in on every step up
+-static void frogComboLine(char *b, bool hd, timeMs_t now)
++// the combo lines: the count (X2-X4 green, X5-X9 amber, X10+ red with a "!", decoding in on every step up),
++// and under it the word COMBO once the chain reaches X5
++#define FROG_COMBO_WORD_AT 5
++static timeMs_t frogComboWordAt = 0;
++static void frogComboLine(char *b, bool hd, timeMs_t now, bool word)
+ {
+     if (frogCombo && now - frogComboLastAt > FROG_COMBO_WINDOW_MS) {
+         frogComboEnd(now);
+@@ -2140,10 +2143,25 @@ static void frogComboLine(char *b, bool hd, timeMs_t now)
+         b[0] = '\0';
+         return;
+     }
+-    tfp_sprintf(b, n >= 10 ? "X%d!" : "X%d", n);
+     const uint8_t sev = n >= 10 ? DISPLAYPORT_SEVERITY_CRITICAL : n >= 5 ? DISPLAYPORT_SEVERITY_WARNING : DISPLAYPORT_SEVERITY_NORMAL;
+     const bool ending = frogCombo < 2;
+-    const uint32_t t = ending ? now - frogComboEndAt : (frogComboBumpAt ? now - frogComboBumpAt : FROG_COMBO_BUMP_MS);
++    uint32_t t = ending ? now - frogComboEndAt : (frogComboBumpAt ? now - frogComboBumpAt : FROG_COMBO_BUMP_MS);
++    if (word) {
++        if (n < FROG_COMBO_WORD_AT) {
++            frogComboWordAt = 0;
++            b[0] = '\0';
++            return;
++        }
++        if (!frogComboWordAt) {
++            frogComboWordAt = now ? now : 1;           // decodes in once, when the chain first hits X5
++        }
++        strcpy(b, "COMBO");
++        if (!ending) {
++            t = now - frogComboWordAt;
++        }
++    } else {
++        tfp_sprintf(b, n >= 10 ? "X%d!" : "X%d", n);
++    }
+     for (int i = 0; b[i]; i++) {
+         const bool scrambled = ending ? (t >= 80u * i) : (t < FROG_COMBO_BUMP_MS - 50u * i);
+         if (scrambled) {
+@@ -2385,11 +2403,12 @@ static void osdElementFrogTag(osdElementParms_t *element)
+         element->elemOffsetX = 0;
+         element->elemOffsetY = call;
+     } else {
+-        frogComboLine(element->buff, hd, now);      // the combo meter, the line under the log
++        // the combo meter: the count on the line under the log, COMBO under that from X5
++        frogComboLine(element->buff, hd, now, call > frogRows + FROG_FEED_LINES);
+         element->elemOffsetX = 0;
+         element->elemOffsetY = call;
+     }
+-    if (++call < frogRows + FROG_FEED_LINES + 1) {
++    if (++call < frogRows + FROG_FEED_LINES + 2) {
+         element->rendered = false;
+     } else {
+         call = 0;
