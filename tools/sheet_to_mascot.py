@@ -85,17 +85,20 @@ def main():
     sheet = Image.open(sys.argv[1]).convert("RGB")
     out_dir = sys.argv[2]
     os.makedirs(out_dir, exist_ok=True)
+    flip_last = "--flip-last" in sys.argv          # frame 17 drawn upright -> flip it for turtle mode
+    frac = float(sys.argv[sys.argv.index("--label-frac") + 1]) if "--label-frac" in sys.argv else LABEL_FRAC
+    topm = float(sys.argv[sys.argv.index("--top") + 1]) if "--top" in sys.argv else 0.065
     W, H = sheet.size
     cw, ch = W / COLS, H / ROWS
     frames = []
     for i in range(N):
         r, c = i // COLS, i % COLS
-        x0, y0 = int(round(c * cw)), int(round(r * ch + ch * 0.065))
-        x1, y1 = int(round((c + 1) * cw)), int(round(y0 + ch * LABEL_FRAC))
+        x0, y0 = int(round(c * cw)), int(round(r * ch + ch * topm))
+        x1, y1 = int(round((c + 1) * cw)), int(round(y0 + ch * frac))
         cell = band_crop(key_black(sheet.crop((x0, y0, x1, y1))))
         bbox = cell.getbbox()
         cell = cell.crop(bbox) if bbox else cell
-        if NAMES[i] == "upsidedown":
+        if NAMES[i] == "upsidedown" and flip_last:
             cell = cell.transpose(Image.FLIP_TOP_BOTTOM)
         frames.append(cell)
     # register: common canvas = max content size + pad, each centred
