@@ -1,8 +1,9 @@
 <title>LCARS Rail Frame</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: two big 16:9 "goggle view" OSDs wrapped in an LCARS rail frame, DS9 Ops palette, live-animated.
-   A control strip drives the states (power-on, combo, red alert). Single dark world — LCARS is black-ground. */
+/* Layout: 16:9 goggle view. LCARS lives in VERTICAL rails down the LEFT and RIGHT edges; the black
+   letterbox bars top and bottom carry the telemetry. Center stays clear video. DS9 Ops palette, animated.
+   Single dark world on purpose — LCARS is black-ground. */
 :root{
   --bg:#050406; --ink:#f0ead8; --dim:#8c8398; --line:#241d2a;
   --amber:#ffb24a; --amber2:#ff9a2e; --lav:#bea2e8; --lav2:#9f86d9;
@@ -27,7 +28,6 @@ h1 em{font-style:normal;color:var(--amber)}
 .lede{color:var(--dim);max-width:62ch;line-height:1.5;font-size:clamp(13.5px,2.3vw,15.5px)}
 .lede b{color:var(--ink);font-weight:500}
 
-/* control strip */
 .ctrl{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;flex-wrap:wrap;gap:8px;
   padding-block:14px;margin-top:10px;background:linear-gradient(var(--bg) 70%,transparent)}
 button{font-family:var(--lcars);font-weight:700;text-transform:uppercase;letter-spacing:.12em;
@@ -42,121 +42,99 @@ button:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
 .stack{display:flex;flex-direction:column;gap:clamp(26px,5vw,44px);padding-block:14px clamp(26px,5vw,48px)}
 figure{margin:0;display:flex;flex-direction:column;gap:12px}
 
-/* ===== the OSD frame ===== */
+/* ===== OSD ===== */
 .osd{position:relative;aspect-ratio:16/9;width:100%;background:#000;border-radius:5px;overflow:hidden;
   container-type:size;font-family:var(--lcars)}
-.view{position:absolute;inset:0;background:
-  linear-gradient(#070a12 0%,#0b1020 46%,#140f08 46%,#0a0706 100%)}
+.view{position:absolute;inset:0;background:linear-gradient(#070a12 0%,#0b1020 46%,#141008 46%,#0a0706 100%)}
 .view::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;
   background:repeating-linear-gradient(0deg,#fff0 0 3px,#0000000d 3px 4px)}
 
-/* rails are built from --g (grid unit = 1cqw). Pieces animate via width/transform. */
-.rail,.seg,.elbow,.bar,.spine,.cap,.badge{position:absolute;background:var(--amber)}
-.seg b,.bar b,.badge b{font-weight:700;color:#120c05;letter-spacing:.04em;line-height:1}
+/* --- black telemetry letterbox bars --- */
+.tbar{position:absolute;left:0;right:0;background:#000;display:flex;align-items:center;gap:1.8cqw;
+  padding:0 2.6cqw;z-index:3;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
+.tbar.top{top:0;height:11cqw;border-bottom:0.3cqw solid #16120b}
+.tbar.bot{bottom:0;height:12.5cqw;border-top:0.3cqw solid #16120b}
+.tbar .nm{color:var(--lav);font-weight:700;font-size:4.7cqw;letter-spacing:.02em}
+.tbar .d{color:var(--amber);font-weight:700;font-size:3.9cqw;letter-spacing:.02em}
+.tbar .d small,.tbar .u{font-size:2.1cqw;color:var(--ink);opacity:.8;font-weight:600;margin-left:.25cqw}
+.tbar .k{font-family:var(--ui);font-weight:600;letter-spacing:.14em;font-size:2.1cqw;color:var(--dim);
+  text-transform:uppercase;align-self:center}
+.tbar .ev{color:var(--lav);font-weight:700;font-size:3.9cqw}
+.tbar .sys{margin-left:auto;font-family:var(--ui);font-weight:600;font-size:2.2cqw;letter-spacing:.16em;color:var(--dim)}
+.tbar .live{margin-left:auto;background:var(--amber);color:#120c05;font-weight:700;font-size:2.4cqw;
+  letter-spacing:.12em;padding:.5cqw 1.5cqw;border-radius:3cqw}
 
-/* --- left column --- */
-.elbow{left:2.2cqw;top:2.6cqw;width:19cqw;height:11cqw;background:var(--amber);
-  border-top-left-radius:7cqw;border-bottom-left-radius:2.4cqw}
-.elbow::after{content:"";position:absolute;right:0;bottom:0;width:11cqw;height:6cqw;background:#000;
-  border-top-left-radius:4.4cqw}
-.elbow b{position:absolute;left:1.5cqw;bottom:1cqw;color:#120c05;font-weight:700;font-size:4.6cqw}
+/* --- vertical LCARS rails between the bars --- */
+.rail{position:absolute;top:11cqw;bottom:12.5cqw;width:7.4cqw;display:flex;flex-direction:column;
+  gap:0.9cqw;padding:1.1cqw 0;z-index:2}
+.railL{left:2cqw}.railR{right:2cqw}
+.rseg{background:var(--amber);border-radius:1.1cqw;position:relative;overflow:hidden;transform-origin:top;
+  display:flex;align-items:center;justify-content:center}
+.rseg.s1{background:var(--lav)}.rseg.s2{background:var(--tan)}.rseg.s3{background:var(--rust)}
+.rseg.s4{background:var(--amber2)}
+.rseg .vlbl{writing-mode:vertical-rl;transform:rotate(180deg);color:#120c05;font-weight:700;
+  letter-spacing:.14em;font-size:2.5cqw;text-transform:uppercase;opacity:.92}
+.cap-t{border-top-left-radius:5.5cqw;border-top-right-radius:5.5cqw}
+.cap-b{border-bottom-left-radius:5.5cqw;border-bottom-right-radius:5.5cqw}
+.num{color:#120c05;font-weight:700;font-size:3.2cqw}
 
-.leftcol{position:absolute;left:2.2cqw;top:14.2cqw;width:7.4cqw;display:flex;flex-direction:column;gap:1cqw}
-.seg{position:relative;height:var(--h,7cqw);display:flex;align-items:flex-end;justify-content:flex-end;
-  padding:.7cqw .7cqw;transform-origin:left center;overflow:hidden}
-.seg b{font-size:2.15cqw;text-transform:uppercase;opacity:.9;white-space:nowrap}
-.seg.s1{background:var(--lav)}.seg.s2{background:var(--tan)}.seg.s3{background:var(--rust)}
-.seg.cap{height:5cqw;border-bottom-left-radius:5cqw;background:var(--amber)}
+/* mascot badge nested in the left rail */
+.badge{flex:0 0 7.4cqw;background:#0b0b10;border:0.7cqw solid var(--amber);border-radius:1.6cqw;
+  display:grid;place-items:center;overflow:hidden}
+.frog{width:74%;height:74%}
+.frog .g{fill:#2ad14f}.frog .o{fill:#11121a;stroke:var(--amber);stroke-width:5}
+.frog .e{fill:#eafff0}.frog .p{fill:#0a0a0a}
 
-/* mascot badge nested in the frame (the frog's 2x2 slot) */
-.badge{left:23cqw;top:2.6cqw;width:9cqw;height:9cqw;background:#0b0b10;border:0.7cqw solid var(--amber);
-  border-radius:1.6cqw;display:grid;place-items:center;overflow:hidden}
-.frog{width:64%;height:64%}
-.frog .g{fill:#2ad14f}.frog .o{fill:#11121a;stroke:var(--amber);stroke-width:5}.frog .e{fill:#eafff0}.frog .p{fill:#0a0a0a}
+/* right-rail vertical combo fill */
+.vcombo{flex:1;background:#140f1c;border-radius:1.1cqw;display:flex;align-items:flex-end;overflow:hidden}
+.vfill{width:100%;height:62%;background:linear-gradient(0deg,var(--lav2),var(--lav));border-radius:1.1cqw;
+  transition:height .5s cubic-bezier(.3,.9,.3,1)}
+/* status pips */
+.pip{flex:0 0 3.4cqw;border-radius:1cqw;background:#140f1c}
+.pip.on{background:var(--tan)}.pip.on.a{background:var(--lav)}
 
-/* --- top bar --- */
-.topbar{position:absolute;left:33.4cqw;top:2.6cqw;right:2.2cqw;height:8.6cqw;background:var(--amber);
-  border-top-right-radius:6cqw;display:flex;align-items:center;gap:1.6cqw;padding:0 2cqw 0 2.4cqw;overflow:hidden}
-.topbar .nm{color:#120c05;font-weight:700;font-size:5.4cqw;letter-spacing:.02em;white-space:nowrap}
-.topbar .sys{margin-left:auto;font-family:var(--ui);font-weight:600;font-size:2.4cqw;letter-spacing:.18em;
-  color:#2a1d08;opacity:.85;white-space:nowrap}
-.topbar .shim{position:absolute;top:0;bottom:0;width:22%;pointer-events:none;
-  background:linear-gradient(100deg,transparent,#fff7 45%,#fff9 50%,transparent);mix-blend-mode:screen}
+/* ambient shimmer: a bright block sliding down a rail */
+.shim{position:absolute;left:0;right:0;height:26%;pointer-events:none;z-index:2;
+  background:linear-gradient(#fff0,#fff8 48%,#fff9 52%,#fff0);mix-blend-mode:screen}
 
-/* --- bottom bar --- */
-.botbar{position:absolute;left:12cqw;right:2.2cqw;bottom:2.6cqw;height:7cqw;background:var(--rust);
-  border-bottom-right-radius:6cqw;border-bottom-left-radius:2cqw;display:flex;align-items:center;gap:2cqw;
-  padding:0 2cqw;overflow:hidden}
-.botbar b{color:#1a0f06;font-weight:700;font-size:2.9cqw;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap}
-.alert{margin-left:auto;background:#000;color:var(--amber);font-weight:700;font-size:2.7cqw;letter-spacing:.14em;
-  padding:.5cqw 1.6cqw;border-radius:3cqw;white-space:nowrap}
-
-/* --- floating readouts in the view --- */
-.read{position:absolute;display:flex;align-items:baseline;gap:1cqw;font-variant-numeric:tabular-nums}
-.read .lbl{font-family:var(--ui);font-weight:600;letter-spacing:.18em;font-size:2.3cqw;color:var(--dim)}
-.read .v{font-weight:700;font-size:6.4cqw;line-height:.8;color:var(--amber)}
-.read .v small{font-size:2.8cqw;color:var(--ink);margin-left:.4cqw}
-.r-volt{right:3cqw;top:13cqw;flex-direction:column;align-items:flex-end;gap:.4cqw}
-.r-cell{right:3cqw;top:23cqw;flex-direction:column;align-items:flex-end;gap:.4cqw}
-.r-ev{left:12cqw;top:32cqw}.r-ev .v{color:var(--lav)}
-.combo{position:absolute;left:12cqw;top:39.5cqw;display:flex;align-items:center;gap:1.2cqw}
-.combo .cap2{font-family:var(--ui);font-weight:600;letter-spacing:.16em;font-size:2.3cqw;color:var(--lav)}
-.combo .track{width:26cqw;height:2.6cqw;background:#1b1622;border-radius:2cqw;overflow:hidden}
-.combo .fill{height:100%;width:62%;background:linear-gradient(90deg,var(--lav2),var(--lav));border-radius:2cqw;
-  transition:width .5s cubic-bezier(.3,.9,.3,1)}
-
-/* ===== variant 2: minimal spine ===== */
-.osd.spine .leftcol,.osd.spine .botbar{display:none}
-.osd.spine .elbow{width:15cqw;height:9cqw}
-.osd.spine .spine{left:2.2cqw;top:12.8cqw;bottom:2.6cqw;width:3.2cqw;background:var(--amber);
-  border-bottom-left-radius:2.6cqw;display:flex;flex-direction:column;justify-content:space-between;padding:1cqw 0}
-.osd.spine .spine i{display:block;height:20%;margin:.5cqw .6cqw;border-radius:1cqw;background:#120c05;opacity:.22}
-.osd.spine .spine i.on{background:var(--lav);opacity:1}
-.osd.spine .topbar{left:33.4cqw}
-.osd.spine .badge{left:19cqw}
-.osd.spine .r-ev,.osd.spine .combo{left:7cqw}
+/* ===== variant 2: asymmetric (heavy left, slim right spine) ===== */
+.osd.asym .railR{width:3.2cqw;gap:0.7cqw}
+.osd.asym .railR .rseg,.osd.asym .railR .vcombo{border-radius:2cqw}
+.osd.asym .railL{width:9cqw}
 
 /* ====== ANIMATION ====== */
-@keyframes sweep{0%{transform:translateX(-120%)}60%{transform:translateX(560%)}100%{transform:translateX(560%)}}
-@keyframes lowpulse{0%,100%{background:var(--amber)}50%{background:var(--red)}}
+@keyframes sweepV{0%{transform:translateY(-120%)}60%{transform:translateY(520%)}100%{transform:translateY(520%)}}
 @keyframes lowtext{0%,100%{color:var(--amber)}50%{color:var(--red)}}
-@keyframes alarm{0%,100%{background:var(--amber)}50%{background:var(--red)}}
-@keyframes alarmR{0%,100%{background:var(--rust)}50%{background:var(--red)}}
+@keyframes blink{50%{opacity:.25}}
+@keyframes alarmA{0%,100%{background:var(--amber)}50%{background:var(--red)}}
 @keyframes alarmL{0%,100%{background:var(--lav)}50%{background:var(--red)}}
 @keyframes alarmT{0%,100%{background:var(--tan)}50%{background:var(--red)}}
-@keyframes blink{50%{opacity:.2}}
+@keyframes alarmR{0%,100%{background:var(--rust)}50%{background:var(--red)}}
 @media (prefers-reduced-motion:no-preference){
-  .shim{animation:sweep 4.6s ease-in-out .3s infinite}
-  .osd.low .r-volt .v{animation:lowtext 1s steps(1,end) infinite}
-  .alert.live{animation:blink 1.2s steps(1,end) infinite}
+  .shim{animation:sweepV 4.8s ease-in-out .4s infinite}
+  .railR .shim{animation-delay:2.4s}
+  .osd.low .v-volt{animation:lowtext 1s steps(1,end) infinite}
+  .live{animation:blink 1.2s steps(1,end) infinite}
 }
-/* power-on draw: pieces grow from zero, staggered */
-.osd.boot .elbow{animation:ei .5s both}
-.osd.boot .badge{animation:bi .4s .35s both}
-.osd.boot .topbar{animation:ri .55s .12s both}
-.osd.boot .botbar{animation:ri .55s .26s both}
-.osd.boot .leftcol .seg{animation:si .4s both}
-.osd.boot .leftcol .seg:nth-child(1){animation-delay:.30s}
-.osd.boot .leftcol .seg:nth-child(2){animation-delay:.38s}
-.osd.boot .leftcol .seg:nth-child(3){animation-delay:.46s}
-.osd.boot .leftcol .seg:nth-child(4){animation-delay:.54s}
-.osd.boot .spine{animation:ri2 .6s .2s both}
-.osd.boot .read,.osd.boot .combo{animation:fin .4s both}
-.osd.boot .r-volt{animation-delay:.6s}.osd.boot .r-cell{animation-delay:.68s}
-.osd.boot .r-ev{animation-delay:.76s}.osd.boot .combo{animation-delay:.84s}
-@keyframes ei{from{clip-path:inset(0 100% 100% 0)}to{clip-path:inset(0 0 0 0)}}
-@keyframes ri{from{transform:scaleX(0);transform-origin:left}to{transform:scaleX(1)}}
-@keyframes ri2{from{transform:scaleY(0);transform-origin:top}to{transform:scaleY(1)}}
-@keyframes si{from{transform:scaleX(0)}to{transform:scaleX(1)}}
-@keyframes bi{from{transform:scale(0);opacity:0}to{transform:scale(1);opacity:1}}
-@keyframes fin{from{opacity:0}to{opacity:1}}
-/* red alert */
-.osd.alert-on .elbow,.osd.alert-on .topbar{animation:alarm .5s steps(1,end) infinite}
-.osd.alert-on .seg.s1{animation:alarmL .5s steps(1,end) infinite}
-.osd.alert-on .seg.s2{animation:alarmT .5s steps(1,end) infinite}
-.osd.alert-on .seg.s3,.osd.alert-on .botbar,.osd.alert-on .elbow2{animation:alarmR .5s steps(1,end) infinite}
-.osd.alert-on .spine i.on{animation:alarmL .5s steps(1,end) infinite}
-.osd.alert-on .r-ev .v{color:var(--red)}
+.osd.boot .rail{animation:growY .6s both}
+.osd.boot .tbar.top{animation:fade .5s .1s both}
+.osd.boot .tbar.bot{animation:fade .5s .24s both}
+.osd.boot .rseg,.osd.boot .badge,.osd.boot .pip,.osd.boot .vcombo{animation:segIn .4s both}
+.osd.boot .rail .rseg:nth-child(1){animation-delay:.14s}
+.osd.boot .rail>:nth-child(2){animation-delay:.22s}
+.osd.boot .rail>:nth-child(3){animation-delay:.3s}
+.osd.boot .rail>:nth-child(4){animation-delay:.38s}
+.osd.boot .rail>:nth-child(5){animation-delay:.46s}
+@keyframes growY{from{transform:scaleY(0);transform-origin:top}to{transform:scaleY(1)}}
+@keyframes segIn{from{transform:scaleX(0);opacity:0}to{transform:scaleX(1);opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
+.osd.alert-on .rseg,.osd.alert-on .cap-t,.osd.alert-on .cap-b{animation:alarmA .5s steps(1,end) infinite}
+.osd.alert-on .s1{animation:alarmL .5s steps(1,end) infinite}
+.osd.alert-on .s2{animation:alarmT .5s steps(1,end) infinite}
+.osd.alert-on .s3{animation:alarmR .5s steps(1,end) infinite}
+.osd.alert-on .pip.on{animation:alarmL .5s steps(1,end) infinite}
+.osd.alert-on .live{background:var(--red);color:#1a0a06}
+.osd.alert-on .v-ev{color:var(--red)}
 
 figcaption{display:flex;flex-direction:column;gap:6px}
 .cap-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -164,7 +142,6 @@ figcaption{display:flex;flex-direction:column;gap:6px}
 .cap-h .t{color:var(--dim);font-size:13px}
 .cap-b{color:var(--dim);font-size:13.5px;line-height:1.5;max-width:64ch}
 .cap-b b{color:var(--ink);font-weight:500}
-
 footer{border-top:1px solid var(--line);margin-top:6px;padding-block:22px 42px;color:var(--dim);
   font-size:13px;line-height:1.6;max-width:72ch}
 footer b{color:var(--ink);font-weight:500}
@@ -176,8 +153,8 @@ footer b{color:var(--ink);font-weight:500}
 <div class="wrap">
   <header>
     <div class="kick">fr0gOS · DS9 OPS · stage 2</div>
-    <h1>LCARS <em>Rail Frame</em></h1>
-    <p class="lede">The frame that makes it LCARS — the elbow sweep, segmented rails, the mascot nested in its own badge. Two takes for <b>Four Dash Two</b>, animated the way a real Okudagram behaves: it powers on, it shimmers while live, it pulses when the battery sags, and the whole board goes to red alert on a crash. Hit the controls to see it move.</p>
+    <h1>LCARS <em>Side Rails</em></h1>
+    <p class="lede">LCARS down both edges, telemetry in the black letterbox bars top and bottom, video clean in the middle. Two takes for <b>Four Dash Two</b> — animated the way a real Okudagram moves: the rails power on, a light shimmers down them while live, a segment pulses when the pack sags, and both rails cascade to red on a crash. Use the controls to drive it.</p>
   </header>
 
   <div class="ctrl" role="group" aria-label="demo controls">
@@ -191,9 +168,9 @@ footer b{color:var(--ink);font-weight:500}
   <div class="stack" id="stack"></div>
 
   <footer>
-    <b>All of this is doable on the goggle.</b> The FC redraws the OSD every frame, so these are character-grid moves, not video effects: the power-on draw is segments printing cell-by-cell; the shimmer is one brighter block travelling the top rail; the low-batt pulse and red alert are colour-map flips (swap the glyph to its red copy); the combo bar is a row of block glyphs growing by one. The curves read as stepped blocks on the grid — the sweep is the feel, not the geometry.
-    <div class="anim-list"><span>power-on draw</span><span>ambient shimmer</span><span>low-batt pulse</span><span>combo fill</span><span>red-alert cascade</span></div>
-    Tell me which frame — <b>Ops Frame</b> or <b>Spine</b> — and which animations to ship first, and I'll build the block-glyph rails + the state machine into the firmware.
+    <b>All of this works on the goggle.</b> The FC redraws the OSD every frame, so these are character-grid moves, not video effects: the side rails are columns of block glyphs, the telemetry is ordinary text in the black bars; the power-on is segments printing top-down, the shimmer is one brighter block sliding down a rail, the low-batt pulse and red alert are colour-map swaps (glyph → its red copy), the combo bar is a column of blocks growing by one. The rounded caps read as stepped blocks on the grid — the sweep is the feel, not the exact curve.
+    <div class="anim-list"><span>power-on draw</span><span>rail shimmer</span><span>low-batt pulse</span><span>combo climb</span><span>red-alert cascade</span></div>
+    Tell me which — <b>Twin Rails</b> or <b>Asymmetric</b> — and which animations to ship first, and I'll build the block-glyph rails + the state machine into the firmware.
   </footer>
 </div>
 
@@ -206,32 +183,53 @@ const FROG = `<svg class="frog" viewBox="0 0 100 100" aria-hidden="true">
   <circle class="p" cx="36" cy="50" r="4"/><circle class="p" cx="68" cy="50" r="4"/>
 </svg>`;
 
-function frame(spine){
-  return `<div class="osd${spine?' spine':''}">
+function frame(asym){
+  return `<div class="osd${asym?' asym':''}">
     <div class="view"></div>
-    <div class="elbow"><b>47</b></div>
-    <div class="badge">${FROG}</div>
-    ${spine?`<div class="spine"><i class="on"></i><i></i><i class="on"></i><i></i></div>`:
-      `<div class="leftcol">
-        <div class="seg s1" style="--h:9cqw"><b>PWR</b></div>
-        <div class="seg s2" style="--h:7cqw"><b>LINK</b></div>
-        <div class="seg s3" style="--h:7cqw"><b>MODE</b></div>
-        <div class="seg cap"></div>
-      </div>`}
-    <div class="topbar"><span class="nm">MK4-2</span><span class="sys">NCC-4·2</span><div class="shim"></div></div>
-    ${spine?'':`<div class="botbar"><b>ARM 04:12</b><b>ACRO</b><b>F1000</b><span class="alert live">● LIVE</span></div>`}
-    <div class="read r-volt"><span class="lbl">VOLT</span><span class="v">16.4<small>V</small></span></div>
-    <div class="read r-cell"><span class="lbl">CELL</span><span class="v">78<small>%</small></span></div>
-    <div class="read r-ev"><span class="lbl">EVENT</span><span class="v">FLIP</span></div>
-    <div class="combo"><span class="cap2">COMBO</span><div class="track"><div class="fill"></div></div></div>
+
+    <div class="tbar top">
+      <span class="nm">MK4-2</span>
+      <span class="d">ACRO</span>
+      <span class="d">F1000</span>
+      <span class="d">200<span class="u">MW</span></span>
+      <span class="sys">NCC-4·2 · 04:12</span>
+    </div>
+
+    <div class="rail railL">
+      <div class="rseg cap-t s1" style="flex:0 0 11cqw"><span class="vlbl">PWR</span></div>
+      <div class="badge">${FROG}</div>
+      <div class="rseg s2" style="flex:1"><span class="vlbl">Link</span></div>
+      <div class="rseg cap-b" style="flex:0 0 9cqw"><span class="num">47</span></div>
+      <div class="shim"></div>
+    </div>
+
+    <div class="rail railR">
+      <div class="rseg cap-t s3" style="flex:0 0 8cqw"></div>
+      ${asym
+        ? `<div class="pip on"></div><div class="pip on a"></div><div class="pip"></div><div class="pip on"></div>
+           <div class="vcombo"><div class="vfill"></div></div>`
+        : `<div class="rseg s4" style="flex:0 0 8cqw"><span class="vlbl">Rssi</span></div>
+           <div class="vcombo"><div class="vfill"></div></div>
+           <div class="rseg s1" style="flex:0 0 8cqw"><span class="vlbl">Gps</span></div>`}
+      <div class="rseg cap-b" style="flex:0 0 7cqw"></div>
+      <div class="shim"></div>
+    </div>
+
+    <div class="tbar bot">
+      <span class="d v-volt">16.4<span class="u">V</span></span>
+      <span class="d">78<span class="u">%</span></span>
+      <span class="d">1250<span class="u">MAH</span></span>
+      <span class="k">Ev</span><span class="ev v-ev">FLIP</span>
+      <span class="ev">X7</span>
+      <span class="live">● LIVE</span>
+    </div>
   </div>`;
 }
+
 const stack = document.getElementById('stack');
-const data = [
-  ['Ops Frame','Antonio · full wrap','The complete board — elbow, three-segment left rail, top + bottom bars, the mascot in its badge. Most LCARS, most pixels used; readouts tuck against the rails so the centre stays clear.'],
-  ['Spine','Antonio · minimal','Just the elbow and a slim left spine with status pips. The video is almost untouched — the restrained read for racing, still unmistakably LCARS.'],
-];
-data.forEach((d,i)=>{
+[['Twin Rails','Antonio · both edges segmented','Matched LCARS columns down both sides — left carries the frog badge and power/link segments, right carries RSSI, the vertical combo climb and GPS. Balanced and unmistakably Okudagram.'],
+ ['Asymmetric','Antonio · heavy left / slim right','Classic LCARS asymmetry — a fatter left rail, a slim right spine of status pips plus the combo climb. Gives the video a touch more width while keeping both edges Starfleet.']]
+.forEach((d,i)=>{
   const f=document.createElement('figure');
   f.innerHTML = frame(i===1) + `<figcaption>
     <div class="cap-h"><span class="n">${d[0]}</span><span class="t">${d[1]}</span></div>
@@ -239,15 +237,13 @@ data.forEach((d,i)=>{
   stack.appendChild(f);
 });
 
-const osds = [...document.querySelectorAll('.osd')];
-const fills = [...document.querySelectorAll('.combo .fill')];
-let combo = 62;
-function pulseBoot(){ osds.forEach(o=>{ o.classList.remove('boot'); void o.offsetWidth; o.classList.add('boot'); }); }
-document.getElementById('power').onclick = pulseBoot;
-document.getElementById('combo').onclick = ()=>{ combo = combo>=100?30:combo+14; fills.forEach(f=>f.style.width=combo+'%'); };
-document.getElementById('alert').onclick = ()=> osds.forEach(o=>o.classList.toggle('alert-on'));
-document.getElementById('low').onclick = ()=> osds.forEach(o=>o.classList.toggle('low'));
-document.getElementById('reset').onclick = ()=>{ osds.forEach(o=>o.classList.remove('alert-on','low','boot')); combo=62; fills.forEach(f=>f.style.width='62%'); };
-// play the power-on once on load
-addEventListener('load', ()=> setTimeout(pulseBoot, 250));
+const osds=[...document.querySelectorAll('.osd')], fills=[...document.querySelectorAll('.vfill')];
+let combo=62;
+function boot(){ osds.forEach(o=>{o.classList.remove('boot');void o.offsetWidth;o.classList.add('boot');}); }
+document.getElementById('power').onclick=boot;
+document.getElementById('combo').onclick=()=>{combo=combo>=100?30:combo+14;fills.forEach(f=>f.style.height=combo+'%');};
+document.getElementById('alert').onclick=()=>osds.forEach(o=>o.classList.toggle('alert-on'));
+document.getElementById('low').onclick=()=>osds.forEach(o=>o.classList.toggle('low'));
+document.getElementById('reset').onclick=()=>{osds.forEach(o=>o.classList.remove('alert-on','low','boot'));combo=62;fills.forEach(f=>f.style.height='62%');};
+addEventListener('load',()=>setTimeout(boot,250));
 </script>
