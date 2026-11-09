@@ -51,7 +51,7 @@ input[type=number] { width: 84px; }
 canvas#wave { width: 100%; height: 190px; display: block; background: #050707; border: 1px solid var(--line); border-radius: 3px; cursor: crosshair; touch-action: none; }
 canvas#over { width: 100%; height: 34px; display: block; margin-top: 6px; background: #050707; border: 1px solid var(--line); border-radius: 3px; cursor: grab; touch-action: none; }
 .note-pop { position: absolute; top: 34px; z-index: 5; display: flex; gap: 6px; align-items: center; background: #0a0f0e; border: 1px solid var(--cyan); border-radius: 3px; padding: 6px; box-shadow: 0 4px 18px #000a; }
-.note-pop input { width: 12ch; text-transform: uppercase; }
+.note-pop textarea { width: 18ch; text-transform: uppercase; resize: vertical; line-height: 1.3; }
 .note-pop .t { color: var(--cyan); font-variant-numeric: tabular-nums; font-size: 12px; }
 .time { font-family: var(--display); font-size: 30px; line-height: 1; color: var(--green); font-variant-numeric: tabular-nums; min-width: 6.5ch; }
 .grid2 { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.15fr); gap: 18px; }
@@ -70,6 +70,7 @@ canvas#over { width: 100%; height: 34px; display: block; margin-top: 6px; backgr
 .cues tr.sel td { background: #12201a; }
 .cues input.t { width: 82px; font-variant-numeric: tabular-nums; }
 .cues input.l { width: 110px; text-transform: uppercase; }
+  .cues textarea.l { width: 150px; min-height: 2.1em; text-transform: uppercase; resize: vertical; line-height: 1.3; white-space: pre; }
 .chip { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 6px; vertical-align: -1px; }
 .sug { color: var(--violet); font-size: 11px; margin-left: 4px; }
 .scroll { overflow-x: auto; }
@@ -125,7 +126,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     <div class="wave-box" id="waveBox"><canvas id="wave" tabindex="0" aria-label="Song timeline. Click to move the playhead, double-click to type a note there, drag a marker to move a cue, scroll to zoom."></canvas>
       <canvas id="over" aria-label="Whole song overview. Drag to scroll the timeline."></canvas></div>
     <div class="row" id="addRow"></div>
-    <p class="note"><b>Notes:</b> double-click (or long-press) anywhere on the timeline, type up to 9 characters, Enter: fr0gOS puts it on the goggles at that moment. Scroll or pinch to zoom, drag the strip underneath to move along the song. Click the waveform to jump there. Drag a marker to move it. Keys while playing: <code>D</code> drop, <code>B</code> big drop, <code>C</code> chorus, <code>U</code> build, <code>T</code> text, <code>E</code> outro, <code>N</code> note, <code>Space</code> play/pause, <code>Delete</code> removes the selected cue.</p>
+    <p class="note"><b>Notes:</b> double-click (or long-press) anywhere on the timeline, type your text (<b>Shift+Enter</b> for another line), Enter: fr0gOS glyphs it on the goggles at that moment, one line after the next. Scroll or pinch to zoom, drag the strip underneath to move along the song. Click the waveform to jump there. Drag a marker to move it. Keys while playing: <code>D</code> drop, <code>B</code> big drop, <code>C</code> chorus, <code>U</code> build, <code>T</code> text, <code>E</code> outro, <code>N</code> note, <code>Space</code> play/pause, <code>Delete</code> removes the selected cue.</p>
   </section>
 
   <div class="grid2">
@@ -145,7 +146,8 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   <section class="panel" aria-labelledby="h-send">
     <h2 id="h-send">3 &middot; Send it</h2>
     <div class="row">
-      <span class="label">Title on screen</span><input id="title" maxlength="12" value="TEST SONG" style="text-transform: uppercase; width: 150px">
+      <span class="label">Song title</span><input id="title" maxlength="30" value="TEST SONG" style="text-transform: uppercase; width: 150px">
+      <span class="label">Artist</span><input id="artist" maxlength="30" value="" placeholder="(optional)" style="text-transform: uppercase; width: 150px">
       <span class="label">Radio file name</span><input id="radioName" maxlength="8" value="SONG1" style="text-transform: uppercase; width: 100px">
     </div>
     <textarea id="sheet" spellcheck="false" aria-label="Cue sheet" readonly></textarea>
@@ -182,6 +184,9 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     END:     { label: "OUTRO",   color: "#b98cff", key: "e", name: "Outro" },
   };
   const FONT_OK = /^[ !#$%&'()*+,\-./0-9:;<=>?@A-Z\[\]^_]*$/;
+  const BAD = /[^ !#$%&'()*+,\-./0-9:;<=>?@A-Z\[\]^_]/g;
+  // a multi-line text cue: up to 8 lines, each up to 30 chars, only glyphs the OSD font has
+  const cleanLines = (v) => v.toUpperCase().split("\n").slice(0, 8).map((s) => s.replace(BAD, "").slice(0, 30)).join("\n");
   const $ = (id) => document.getElementById(id);
   const audio = $("audio");
   const state = {
@@ -236,6 +241,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
         Object.assign(state, { cues: saved.cues, bpm: saved.bpm || state.bpm, offset: saved.offset || 0 });
         $("bpm").value = state.bpm.toFixed(1);
         if (saved.title) $("title").value = saved.title;
+        if (saved.artist) $("artist").value = saved.artist;
         setStatus("Loaded " + file.name + ". Your saved cues for this track are back.", true);
       } else {
         suggest();
@@ -332,25 +338,64 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     }
     return out;
   }
+  const gIn = (txt, local, cls) => [...txt].map((ch, j) => ch === " " ? [" ", cls] : (local < 0.25 + 0.045 * j ? [noise(), cls] : [ch, cls]));
+  const gOut = (txt, o, cls) => [...txt].map((ch, j) => { if (ch === " ") return [" ", cls]; if (o >= 0.045 * j + 0.15) return [" ", cls]; if (o >= 0.045 * j) return [noise(), cls]; return [ch, cls]; });
+  // a multi-line TEXT cue: line i glyphs in only after line i-1 has, the block holds, then all decode out
+  function textSched(c) {
+    const lines = (c.label || "").split("\n").map((s) => s.slice(0, 30));
+    const starts = []; let acc = 0;
+    for (const l of lines) { starts.push(acc); acc += 0.25 + 0.045 * l.length + 0.15; }
+    const holdAfter = 1.6, outDur = 0.045 * lines.reduce((m, l) => Math.max(m, l.length), 0) + 0.4;
+    return { lines, starts, outStart: acc + holdAfter, total: acc + holdAfter + outDur };
+  }
+  function textRows(c, ct) {
+    const s = textSched(c);
+    return s.lines.map((l, i) => {
+      const local = ct - s.starts[i];
+      if (local < 0) return null;
+      return ct < s.outStart ? gIn(l, local, "c-g") : gOut(l, ct - s.outStart, "c-g");
+    });
+  }
+  // the song's own intro: ~1 s in, the title glyphs in; after it holds, the artist glyphs in below; then both go
+  function introRows(t) {
+    const title = ($("title").value || "").toUpperCase().replace(BAD, "").slice(0, 30);
+    const artist = ($("artist") ? $("artist").value || "" : "").toUpperCase().replace(BAD, "").slice(0, 30);
+    const start = 1.0; if (t < start || !title) return null;
+    const ct = t - start;
+    const inT = 0.25 + 0.045 * title.length, artStart = inT + 1.5, inA = 0.25 + 0.045 * artist.length;
+    const outStart = (artist ? artStart + inA : inT) + 1.8, outDur = 0.045 * Math.max(title.length, artist.length) + 0.4;
+    if (ct >= outStart + outDur) return null;
+    const rows = [];
+    if (ct < outStart) {
+      rows.push(gIn(title, ct, "c-g"));
+      if (artist) rows.push(ct >= artStart ? gIn(artist, ct - artStart, "c-a") : null);
+    } else {
+      rows.push(gOut(title, ct - outStart, "c-g"));
+      if (artist) rows.push(gOut(artist, ct - outStart, "c-a"));
+    }
+    return { rows };
+  }
+  const one = (line) => ({ rows: [line] });
   function cueAt(t) {
     for (const c of state.cues) {
-      const h = holdOf(c.kind); if (t < c.t || t >= c.t + h) continue;
+      const h = c.kind === "TEXT" ? textSched(c).total : holdOf(c.kind);
+      if (t < c.t || t >= c.t + h) continue;
       const ct = t - c.t;
-      if (c.kind === "DROP") return decode("DROP", ct, h, "c-r");
-      if (c.kind === "BIGDROP") return decode(">>>DROP<<<", ct, h, Math.floor(ct / 0.25) % 2 ? "c-a" : "c-r");
-      if (c.kind === "CHORUS") return decode(c.label, ct, h, "c-a");
-      if (c.kind === "BUILD") return decode(c.label + "...".slice(3 - Math.min(3, Math.floor(ct / 0.4))), ct, h, "c-g");
-      return decode(c.label, ct, h, "c-g");
+      if (c.kind === "DROP") return one(decode("DROP", ct, h, "c-r"));
+      if (c.kind === "BIGDROP") return one(decode(">>>DROP<<<", ct, h, Math.floor(ct / 0.25) % 2 ? "c-a" : "c-r"));
+      if (c.kind === "CHORUS") return one(decode(c.label.split("\n")[0], ct, h, "c-a"));
+      if (c.kind === "BUILD") return one(decode(c.label.split("\n")[0] + "...".slice(3 - Math.min(3, Math.floor(ct / 0.4))), ct, h, "c-g"));
+      if (c.kind === "TEXT") return { rows: textRows(c, ct) };
+      return one(decode(c.label.split("\n")[0], ct, h, "c-g"));
     }
     const tick = tickSec();
     for (const c of state.cues) {
       if ((c.kind !== "DROP" && c.kind !== "BIGDROP") || t >= c.t || c.t - t > 3 * tick) continue;
       const left = c.t - t, nn = Math.ceil(left / tick - 1e-6), tickT = tick - (left - (nn - 1) * tick), since = 3 * tick - left;
       const big = c.kind === "BIGDROP", s = (big ? "BIG DROP IN " : "DROP IN ") + nn, cls = big ? "c-r" : "c-a";
-      return [...s].map((ch, i) => [ch === " " ? " " : (i === s.length - 1 ? tickT < 0.18 : since < 0.25 + 0.045 * i) ? noise() : ch, cls]);
+      return one([...s].map((ch, i) => [ch === " " ? " " : (i === s.length - 1 ? tickT < 0.18 : since < 0.25 + 0.045 * i) ? noise() : ch, cls]));
     }
-    if (t < 2.5) return decode("> " + $("title").value.toUpperCase(), t, 2.5, "c-g");
-    return null;
+    return introRows(t);
   }
   const osd = $("osd"); const cells = [];
   for (let i = 0; i < 50 * 18; i++) { const s = document.createElement("span"); osd.appendChild(s); cells.push(s); }
@@ -360,8 +405,11 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     // a sketch of the fr0gOS bars for context
     put(0, 1, "ARMED"); put(0, 9, "3.81V"); put(0, 10, "212mAh"); put(0, 13, "LQ100"); put(0, 15, "R8"); put(0, 16, "200MW");
     put(45, 0, "MK4-2"); put(45, 1, fmt(t).padStart(5, " ").slice(-5)); put(46, 4, "ACRO"); put(47, 5, "AIR"); put(47, 12, "THR"); put(45, 13, "62.4%");
-    const line = cueAt(t);
-    if (line) { const x = Math.max(8, 25 - Math.floor(line.length / 2)); line.forEach(([ch, cls], i) => put(x + i, 4, ch, cls)); }
+    const res = cueAt(t);
+    if (res) {
+      const rows = res.rows, n = rows.length, y0 = Math.max(1, 4 - Math.floor((n - 1) / 2));
+      rows.forEach((line, r) => { if (!line) return; const x = Math.max(8, 25 - Math.floor(line.length / 2)); line.forEach(([ch, cls], i) => put(x + i, y0 + r, ch, cls)); });
+    }
   }
 
   // ---------- waveform ----------
@@ -397,7 +445,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       if (x < -200 * d || x > W + 10) return;
       g.font = (11 * d) + "px IBM Plex Mono, monospace";
       const ly = 13 * d + (i % 3) * 15 * d;
-      if (c.kind === "TEXT") { const tw = g.measureText(c.label).width; g.fillStyle = "#06201f"; g.fillRect(x + 2 * d, ly - 11 * d, tw + 6 * d, 14 * d); g.strokeStyle = col; g.lineWidth = 1 * d; g.strokeRect(x + 2 * d, ly - 11 * d, tw + 6 * d, 14 * d); g.fillStyle = col; g.fillText(c.label, x + 5 * d, ly); }
+      if (c.kind === "TEXT") { const lbl = c.label.split("\n")[0] + (c.label.indexOf("\n") >= 0 ? "…" : ""); const tw = g.measureText(lbl).width; g.fillStyle = "#06201f"; g.fillRect(x + 2 * d, ly - 11 * d, tw + 6 * d, 14 * d); g.strokeStyle = col; g.lineWidth = 1 * d; g.strokeRect(x + 2 * d, ly - 11 * d, tw + 6 * d, 14 * d); g.fillStyle = col; g.fillText(lbl, x + 5 * d, ly); }
       else { g.fillStyle = col; g.fillText(c.label, x + 4 * d, ly); }
     });
     // playhead
@@ -453,11 +501,11 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     pop = document.createElement("div"); pop.className = "note-pop";
     pop.style.left = Math.max(0, Math.min(bw - 230, xCss - 10)) + "px";
     const tl = document.createElement("span"); tl.className = "t"; tl.textContent = fmt(t);
-    const inp = document.createElement("input"); inp.maxLength = 9; inp.placeholder = "SEND IT"; inp.setAttribute("aria-label", "Note text, up to 9 characters");
+    const inp = document.createElement("textarea"); inp.rows = 2; inp.placeholder = "SEND IT"; inp.setAttribute("aria-label", "Note text; Enter to add, Shift+Enter for a new line");
     const ok = document.createElement("button"); ok.textContent = "Add";
-    const done = () => { const v = inp.value.toUpperCase().trim(); if (v) { state.cues.push({ t, kind: "TEXT", label: v }); sortCues(); state.sel = state.cues.findIndex((c) => c.kind === "TEXT" && c.t === t && c.label === v); changed(); } closeNote(); };
-    inp.addEventListener("input", () => { const v = inp.value.toUpperCase(); inp.value = FONT_OK.test(v) ? v : v.replace(/[^ !#$%&'()*+,\-./0-9:;<=>?@A-Z\[\]^_]/g, ""); });
-    inp.addEventListener("keydown", (e) => { if (e.key === "Enter") { e.preventDefault(); done(); } else if (e.key === "Escape") closeNote(); e.stopPropagation(); });
+    const done = () => { const v = cleanLines(inp.value).replace(/\n+$/, "").trim(); if (v) { state.cues.push({ t, kind: "TEXT", label: v }); sortCues(); state.sel = state.cues.findIndex((c) => c.kind === "TEXT" && c.t === t && c.label === v); changed(); } closeNote(); };
+    inp.addEventListener("input", () => { const p = inp.selectionStart, v = cleanLines(inp.value); if (v !== inp.value) { inp.value = v; try { inp.setSelectionRange(p, p); } catch (e) {} } inp.rows = Math.min(8, Math.max(2, v.split("\n").length)); });
+    inp.addEventListener("keydown", (e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); done(); } else if (e.key === "Escape") closeNote(); e.stopPropagation(); });
     ok.addEventListener("click", done);
     pop.append(tl, inp, ok); box.appendChild(pop); inp.focus();
   }
@@ -486,9 +534,18 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       s.addEventListener("change", () => { const old = KINDS[c.kind].label; c.kind = s.value; if (c.label === old || !c.label) c.label = KINDS[c.kind].label; c.sug = false; changed(); });
       const cell = td(); const chip = document.createElement("span"); chip.className = "chip"; chip.style.background = KINDS[c.kind].color; cell.append(chip, s);
       if (c.sug) { const sg = document.createElement("span"); sg.className = "sug"; sg.textContent = "suggested"; cell.appendChild(sg); }
-      const l = document.createElement("input"); l.className = "l"; l.maxLength = 9; l.value = c.label; l.id = "cue-l-" + i; l.setAttribute("aria-label", "Text on screen");
-      l.disabled = c.kind === "DROP" || c.kind === "BIGDROP";
-      l.addEventListener("input", () => { const v = l.value.toUpperCase(); if (!FONT_OK.test(v)) { l.value = c.label; return; } c.label = v; c.sug = false; changedSoft(); });
+      let l;
+      if (c.kind === "TEXT") {
+        l = document.createElement("textarea"); l.className = "l"; l.value = c.label; l.id = "cue-l-" + i;
+        l.rows = Math.min(8, Math.max(1, c.label.split("\n").length));
+        l.setAttribute("aria-label", "Text on screen; each line glyphs in after the one above. Shift+Enter for a new line");
+        l.addEventListener("input", () => { const p = l.selectionStart, v = cleanLines(l.value); c.label = v; c.sug = false; l.rows = Math.min(8, Math.max(1, v.split("\n").length)); if (v !== l.value) { l.value = v; try { l.setSelectionRange(p, p); } catch (e) {} } changedSoft(); });
+        l.addEventListener("keydown", (e) => e.stopPropagation());
+      } else {
+        l = document.createElement("input"); l.className = "l"; l.maxLength = 9; l.value = c.label; l.id = "cue-l-" + i; l.setAttribute("aria-label", "Text on screen");
+        l.disabled = c.kind === "DROP" || c.kind === "BIGDROP";
+        l.addEventListener("input", () => { const v = l.value.toUpperCase(); if (!FONT_OK.test(v)) { l.value = c.label; return; } c.label = v; c.sug = false; changedSoft(); });
+      }
       td().appendChild(l);
       const act = td(); const go = document.createElement("button"); go.textContent = "Play"; go.setAttribute("aria-label", "Play from 3 ticks before");
       go.addEventListener("click", () => { seek(Math.max(0, c.t - 3 * tickSec() - 1)); state.sel = i; if (state.hasAudio) audio.play(); render(); });
@@ -502,12 +559,16 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
 
   // ---------- cue sheet ----------
   function sheet() {
-    const title = $("title").value.toUpperCase().replace(/[^ !#$%&'()*+,\-./0-9:;<=>?@A-Z\[\]^_]/g, "").slice(0, 12) || "SONG";
+    const clean = (v, n) => v.toUpperCase().replace(BAD, "").slice(0, n);
+    const title = clean($("title").value, 30) || "SONG";
+    const artist = $("artist") ? clean($("artist").value, 30) : "";
     const mode = $("tickMode").value;
-    const lines = ["# fr0gOS song cue sheet" + (state.fileName ? " for " + state.fileName : ""),
-      "title  " + title, mode === "bar" ? "bpm    " + state.bpm.toFixed(1) : "tick   " + tickSec().toFixed(3)];
+    const lines = ["# fr0gOS song cue sheet" + (state.fileName ? " for " + state.fileName : ""), "title  " + title];
+    if (artist) lines.push("artist " + artist);
+    lines.push(mode === "bar" ? "bpm    " + state.bpm.toFixed(1) : "tick   " + tickSec().toFixed(3));
     for (const c of state.cues) {
-      const k = c.kind === "TEXT" ? "TEXT " + c.label : c.kind === "CHORUS" && c.label !== "CHORUS" ? "TEXT " + c.label : c.kind === "BUILD" && c.label !== "BUILD" ? "TEXT " + c.label : c.kind;
+      const lbl = c.label.replace(/\n/g, "|");
+      const k = c.kind === "TEXT" ? "TEXT " + lbl : c.kind === "CHORUS" && c.label !== "CHORUS" ? "TEXT " + lbl : c.kind === "BUILD" && c.label !== "BUILD" ? "TEXT " + lbl : c.kind;
       lines.push(fmt(c.t).padEnd(7) + k);
     }
     return lines.join("\n") + "\n";
@@ -536,7 +597,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
 
   function changedSoft() { $("sheet").value = sheet(); persist(); }
   function changed() { renderList(); changedSoft(); }
-  function persist() { if (state.fileName) store.set("cues:" + state.fileName, { cues: state.cues, bpm: state.bpm, offset: state.offset, title: $("title").value }); }
+  function persist() { if (state.fileName) store.set("cues:" + state.fileName, { cues: state.cues, bpm: state.bpm, offset: state.offset, title: $("title").value, artist: $("artist").value }); }
   function render() { renderList(); $("sheet").value = sheet(); }
 
   // ---------- inputs ----------
@@ -553,6 +614,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   $("bpm").addEventListener("change", () => { const v = +$("bpm").value; if (v >= 60 && v <= 220) { state.bpm = v; changed(); } });
   $("tickMode").addEventListener("change", changedSoft);
   $("title").addEventListener("input", changedSoft);
+  $("artist").addEventListener("input", changedSoft);
   document.addEventListener("keydown", (e) => {
     if (e.target.matches("input, textarea, select")) return;
     const k = e.key.toLowerCase();
@@ -582,7 +644,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     if (!db) { $("sendStatus").textContent = "Sending isn't available in this view. Copy the cue sheet and paste it to Dax instead."; return; }
     const id = fileTitle();
     try {
-      await db.doc("songs/" + id).set({ title: $("title").value.toUpperCase(), sheet: sheet(), bpm: state.bpm, tickMode: $("tickMode").value,
+      await db.doc("songs/" + id).set({ title: $("title").value.toUpperCase(), artist: ($("artist").value || "").toUpperCase(), sheet: sheet(), bpm: state.bpm, tickMode: $("tickMode").value,
         file: state.fileName || "", radioName: $("radioName").value.toUpperCase(), cues: state.cues.map(({ t, kind, label }) => ({ t: Math.round(t * 100) / 100, kind, label })), savedAt: new Date().toISOString() });
       $("sendStatus").textContent = "Sent as \"" + id + "\". Tell Dax to build it.";
     } catch (e) { $("sendStatus").textContent = "Couldn't send (" + ((e && e.code) || "error") + "). Copy the cue sheet instead."; }

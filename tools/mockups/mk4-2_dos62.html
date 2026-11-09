@@ -1,0 +1,177 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fr0gOS v1.2 — Mark 4-2</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root { color-scheme: dark; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #07090a; color: #c9d8d2; font-family: var(--mono); }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-left)) 48px; }
+  h1 { font-family: "VT323", monospace; font-weight: 400; font-size: 40px; line-height: 1; margin: 0 0 2px; color: #4ff07e; letter-spacing: 1px; }
+  h1 .cur { animation: cblink 1.1s steps(1) infinite; }
+  @keyframes cblink { 50% { opacity: 0; } }
+  .sub { color: #6f837c; margin: 0 0 16px; font-size: 14px; max-width: 70ch; }
+  .legend { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 14px 0 0; font-size: 13px; color: #6f837c; }
+  .legend b { color: #c9d8d2; font-weight: 600; }
+  .stageBox { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid #1f2b28; border-radius: 8px; overflow: hidden; }
+  .stage { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: top left; }
+
+  /* --- faux FPV background (the camera feed behind the OSD) --- */
+  .feed { position: absolute; left: 172px; top: 0; width: 936px; height: 720px; overflow: hidden; background: #5f646a; }
+  .feed > div { position: absolute; left: -60px; top: -45px; width: 1080px; height: 810px; transform: rotate(-3deg); }
+  .feed i { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+  .shade { position: absolute; inset: 0; background: rgba(0,0,0,.18); }
+
+  /* --- OSD text grid --- */
+  .osd { position: absolute; inset: 0; font-family: "VT323", monospace; font-size: 38px; line-height: 40px; z-index: 3; }
+  .cell { position: absolute; white-space: nowrap; }
+  .g { color: #ffffff; } .cy { color: #55ffff; } .gr { color: #55ff55; } .dim { color: #6a6f6f; } .am { color: #ffb43a; } .rd { color: #ff5555; } .mut { color: #aaaaaa; } .yl { color: #ffff55; }
+  .plate { position: absolute; background: #0000aa; }
+  .blink { animation: cblink 1s steps(1) infinite; }
+  .ev { display: inline-block; padding: 0 6px; }
+  .ev.trick { background: #ffff55; color: #000; }
+  .ev.crash { background: #ff5555; color: #000; }
+  .pop { animation: pop .5s ease-out; }
+  @keyframes pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+  .shake { animation: shake .4s linear 2; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+
+  /* --- the frog --- */
+  .frog { position: absolute; z-index: 4; transition: left .38s cubic-bezier(.3,.6,.4,1), top .38s cubic-bezier(.3,.6,.4,1); }
+  .fin { position: relative; width: 33px; height: 27px; transform-origin: 50% 60%; }
+  .hopA { animation: hop .38s ease-out; } .hopB { animation: hop .38s ease-out; }
+  @keyframes hop { 0% { transform: translateY(0); } 45% { transform: translateY(-24px); } 100% { transform: translateY(0); } }
+  .ev-flip { animation: evflip 1.3s ease-in-out; }
+  @keyframes evflip { 0% { transform: translateY(0) perspective(160px) rotateX(0); } 22% { transform: translateY(-30px) perspective(160px) rotateX(0); } 72% { transform: translateY(-30px) perspective(160px) rotateX(-360deg); } 100% { transform: translateY(0) perspective(160px) rotateX(-360deg); } }
+  .ev-roll { animation: evroll 1.3s ease-in-out; }
+  @keyframes evroll { 0% { transform: translateY(0) rotate(0); } 22% { transform: translateY(-30px) rotate(0); } 72% { transform: translateY(-30px) rotate(360deg); } 100% { transform: translateY(0) rotate(360deg); } }
+  .ev-spin { animation: evspin 1.3s ease-in-out; }
+  @keyframes evspin { 0% { transform: translateY(0) perspective(160px) rotateY(0); } 22% { transform: translateY(-30px) perspective(160px) rotateY(0); } 72% { transform: translateY(-30px) perspective(160px) rotateY(720deg); } 100% { transform: translateY(0) perspective(160px) rotateY(720deg); } }
+  .ev-crash { animation: evcrash 2.4s ease-out forwards; }
+  @keyframes evcrash { 0% { transform: none; } 12% { transform: translate(8px,-16px) rotate(50deg); } 38% { transform: translate(16px,46px) rotate(180deg); } 54%,100% { transform: translate(16px,46px) rotate(180deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>fr0gOS v1.2 &middot; MARK 4-2<span class="cur">_</span></h1>
+  <p class="sub">DOS 6.2 direction, as it would actually render on the HDZero OSD: text on black, craft name top-left with Frog&nbsp;Zero hopping on it, timer top-right. The frog is almost never still &mdash; it hops, then freezes to act out each trick. Cycles FLIP &rarr; ROLL &rarr; SPIN &rarr; CRASH every ~8&nbsp;s.</p>
+  <div class="stageBox" id="box">
+    <div class="stage" id="stage">
+      <div class="feed" aria-hidden="true">
+        <div>
+          <i style="background:#6c7177;clip-path:polygon(0 0,100% 0,66% 30%,34% 30%)"></i>
+          <i style="background:#3a3f45;clip-path:polygon(0 0,34% 30%,34% 64%,0 100%)"></i>
+          <i style="background:#42474d;clip-path:polygon(100% 0,66% 30%,66% 64%,100% 100%)"></i>
+          <i style="background:#4a3f36;clip-path:polygon(0 100%,100% 100%,66% 64%,34% 64%)"></i>
+          <i style="background:#8f9aa3;clip-path:polygon(8% 22%,22% 33%,22% 50%,8% 57%)"></i>
+          <i style="left:53%;top:38%;width:8%;height:26%;background:#26282b"></i>
+          <i style="left:39%;top:41%;width:18%;height:30%;border:12px solid #d9692a;border-bottom:none;border-radius:50% 50% 0 0/40% 40% 0 0"></i>
+        </div>
+        <div class="shade"></div>
+      </div>
+      <div class="osd" id="osd"></div>
+      <div class="frog" id="frog" aria-hidden="true"><div class="fin" id="fin"><div id="sprite" style="position:absolute;left:-3px;top:0;width:3px;height:3px"></div></div></div>
+    </div>
+  </div>
+  <div class="legend">
+    <span><b>Top-left</b> MK42 nameplate (frog's platform)</span>
+    <span><b>Top-right</b> flight timer</span>
+    <span><b>Left bar</b> mode, link, VTX, video</span>
+    <span><b>Right bar</b> battery, throttle, temp, G, RPM</span>
+  </div>
+</div>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  // --- static OSD cells: [x(px), y(px), text, class] ---
+  const L = 8, R = 1128;
+  const STATIC = [
+    [L, 44, "MK42", "g", "plate"],
+    [L, 168, "ARM", "gr"], [L, 204, "ACRO", "g"], [L, 240, "AIRON", "cy"],
+    [L, 276, "-----", "dim"],
+    [L, 312, "LQ100", "cy"], [L, 348, "-62dB", "mut"], [L, 384, "F1000", "cy"],
+    [L, 420, "-----", "dim"],
+    [L, 456, "R8", "cy"], [L, 492, "200mW", "mut"],
+    [L, 612, "-----", "dim"], [L, 648, "HDZ", "g"], [L, 684, "4:3", "g"],
+    [R, 76, "3.92V", "g"], [R, 112, "78%", "g"], [R, 148, "4.1A", "g"], [R, 184, "212mh", "mut"],
+    [R, 220, "-----", "dim"],
+    [R, 292, "41°C", "mut"], [R, 328, "2.1G", "g"], [R, 364, "R28K", "cy"],
+    [R, 400, "-----", "dim"], [R, 436, "#027", "g"],
+  ];
+  const osd = $("osd");
+  for (const [x, y, text, cls, extra] of STATIC) {
+    const d = document.createElement("div"); d.className = "cell " + cls + (extra ? " " + extra : "");
+    d.style.left = x + "px"; d.style.top = y + "px"; d.textContent = text;
+    if (extra === "plate") { d.style.color = "#fff"; d.style.padding = "0 10px"; }
+    osd.appendChild(d);
+  }
+  // blinking cursor after the name
+  const cur = document.createElement("div"); cur.className = "cell yl blink"; cur.style.left = (L + 96) + "px"; cur.style.top = "44px"; cur.textContent = "_"; osd.appendChild(cur);
+  // timer + event feed (dynamic)
+  const timer = document.createElement("div"); timer.className = "cell yl"; timer.style.left = R + "px"; timer.style.top = "8px"; osd.appendChild(timer);
+  const feed = document.createElement("div"); feed.className = "cell"; feed.style.left = L + "px"; feed.style.top = "92px"; osd.appendChild(feed);
+
+  // --- the frog sprite (same pixel rows the firmware plays) ---
+  const ROWS = {
+    sit:   ["...........",".EE.....EE.","KKKKKKKKKKK","KLLKKKKKLLK","EEEEEEEEEEE","EMEEEEEEEME",".EMMMMMMME.","..EBBBBBE..","FFE.....EFF"],
+    leap:  [".EE.....EE.","KKKKKKKKKKK","KLLKKKKKLLK","EEEEEEEEEEE",".EMMMMMMME.","..EBBBBBE..",".E.......E.","E.........E","F.........F"],
+    ribbit:["...........",".EE.....EE.","KKKKKKKKKKK","KLLKKKKKLLK","EEEEEEEEEEE","EMEEEEEEEME",".EMMMMMMME.",".BBBBBBBBB.","FFBBBBBBBFF"],
+    glint: ["...........",".EE.....EE.","KKKKKKKKKKK","KWLKKKKKWLK","EEEEEEEEEEE","EMEEEEEEEME",".EMMMMMMME.","..EBBBBBE..","FFE.....EFF"],
+    ko:    ["...........",".EE.....EE.","KKKKKKKKKKK","KWKKKKKKWKK","EEEEEEEEEEE","EEEEEEEEEEE",".EEMMMMMEE.","..EBBBBBE..","FFE.....EFF"],
+  };
+  const PAL = { E:"#55ff55", K:"#0000aa", L:"#55ffff", M:"#00aa00", B:"#aaffaa", F:"#55ff55", W:"#ffffff" };
+  const PERCH = [12, 40, 68, 96, 117].map((x) => ({ x: x, y: 17 }));
+  const EVT = { FLIP:"FLIP!", ROLL:"ROLL!", SPIN:"SPIN!", CRASH:"ABORT" };
+  const SEQ = ["FLIP", "ROLL", "SPIN", "CRASH"];
+  function sprite(pose) {
+    const rows = ROWS[pose], s = [];
+    for (let y = 0; y < rows.length; y++) for (let x = 0; x < rows[y].length; x++) { const c = PAL[rows[y][x]]; if (c) s.push(((x + 1) * 3) + "px " + (y * 3) + "px 0 0 " + c); }
+    return s.join(",");
+  }
+  const frog = $("frog"), fin = $("fin"), spr = $("sprite");
+  const st = { pi: 0, pose: "sit", hop: "", ev: null, chain: 0, k: 0 };
+  function place() { const p = PERCH[st.pi]; frog.style.left = p.x + "px"; frog.style.top = p.y + "px"; spr.style.boxShadow = sprite(st.pose); fin.className = "fin " + (st.ev ? "ev-" + st.ev.toLowerCase() : st.hop); }
+  let T;
+  function next(ms) { clearTimeout(T); T = setTimeout(step, ms); }
+  function step() {
+    if (st.ev) return;
+    let n = st.pi; while (n === st.pi) n = (Math.random() * PERCH.length) | 0;
+    st.pi = n; st.pose = "leap"; st.hop = st.hop === "hopA" ? "hopB" : "hopA"; place();
+    setTimeout(() => {
+      if (st.ev) return;
+      st.pose = "sit"; place(); st.chain++;
+      if (st.chain < 3 && Math.random() < 0.55) { next(110 + Math.random() * 180); return; }
+      st.chain = 0;
+      const r = Math.random(), idle = r < 0.3 ? "ribbit" : (r < 0.5 ? "glint" : null), stay = 500 + Math.random() * 1300;
+      if (idle) setTimeout(() => { if (st.ev) return; st.pose = idle; place(); setTimeout(() => { if (st.ev) return; st.pose = "sit"; place(); next(250 + Math.random() * 450); }, 650); }, stay * 0.5);
+      else next(stay);
+    }, 380);
+  }
+  function event() {
+    clearTimeout(T);
+    const e = SEQ[st.k++ % 4], dur = e === "CRASH" ? 2700 : 1500;
+    st.ev = e; st.pose = e === "CRASH" ? "ko" : "sit"; place();
+    feed.innerHTML = '<span class="ev ' + (e === "CRASH" ? "crash shake" : "trick pop") + '">' + EVT[e] + "</span>";
+    setTimeout(() => { st.ev = null; st.pose = "sit"; st.hop = "hopA"; st.chain = 0; feed.innerHTML = ""; place(); next(500); }, dur);
+    setTimeout(event, dur + 6000 + Math.random() * 3000);
+  }
+  // clock
+  let sec = 83;
+  setInterval(() => { sec++; const m = (sec / 60) | 0, s = sec % 60; timer.textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s; }, 1000);
+  timer.textContent = "01:23";
+  place(); next(900); setTimeout(event, 6500);
+
+  // scale the fixed 1280x720 stage to the box width
+  const box = $("box"), stage = $("stage");
+  const fit = () => { stage.style.transform = "scale(" + (box.clientWidth / 1280) + ")"; };
+  new ResizeObserver(fit).observe(box); fit();
+})();
+</script>
+</body>
+</html>
