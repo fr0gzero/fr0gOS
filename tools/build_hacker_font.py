@@ -29,10 +29,18 @@ import frog_glyphs  # noqa: E402
 
 TRANS = (127, 127, 127)
 BLACK = (0, 0, 0)
-GREEN = (64, 214, 104)      # calm phosphor
-DKGREEN = (30, 128, 62)     # scramble noise
-AMBER = (255, 168, 0)
-RED = (255, 44, 44)
+# palette: FROG_PALETTE=dos (default, phosphor green) or mega (16-bit: white text, gold, red)
+_PAL = os.environ.get("FROG_PALETTE", "dos").lower()
+if _PAL == "mega":
+    GREEN = (255, 255, 255)     # 16-bit primary: clean white text with a black outline
+    DKGREEN = (96, 104, 168)    # scramble noise: dim blue-grey
+    AMBER = (255, 212, 0)       # warning: Mega Drive gold (#ffd400)
+    RED = (255, 59, 59)         # critical (#ff3b3b)
+else:
+    GREEN = (64, 214, 104)      # calm phosphor
+    DKGREEN = (30, 128, 62)     # scramble noise
+    AMBER = (255, 168, 0)
+    RED = (255, 44, 44)
 EYE = (236, 255, 236)
 
 COLOUR_SET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-!%:"
