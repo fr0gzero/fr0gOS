@@ -1,127 +1,120 @@
 <title>LCARS Side Columns</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: 16:9 goggle. 5:4 cam pillarboxes into black side bars; each side splits into TWO LCARS columns
-   so the full 5-1 element set fits. A thin bottom line carries the stick-control glyphs. Red alert is a
-   quiet palette shift triggered only by critical battery, not a per-event flash. DS9 Ops, single dark world. */
+/* Layout: 16:9 goggle, 5:4 cam pillarboxed into two black side bars. ONE clean LCARS column per side:
+   one reading per row, single line (label block + right-aligned value). A thick live stick gimbal sits in
+   each column. Red alert is a quiet palette shift on critical battery only. DS9 Ops, single dark world. */
 :root{
-  --bg:#050406; --ink:#f0ead8; --dim:#8c8398; --line:#241d2a;
-  --amber:#ffb24a; --lav:#bea2e8; --tan:#e8b96a; --rust:#c98a52; --grn:#7bd88f; --red:#e0533c; --sky:#8fb4ff;
+  --bg:#050406; --ink:#f3eedd; --dim:#857c92; --line:#231c29;
+  --amber:#ffb24a; --lav:#bea2e8; --tan:#e8b96a; --rust:#c27b4a; --grn:#7bd88f; --red:#e24a34; --sky:#8fb4ff;
   --ui:'Oswald',system-ui,sans-serif; --lcars:'Antonio','Oswald',sans-serif;
   color-scheme:dark;
 }
 *{box-sizing:border-box}
 body{background:
-  radial-gradient(1200px 500px at 15% -5%, #140d16 0%, transparent 60%),
-  radial-gradient(900px 600px at 100% 110%, #10121c 0%, transparent 55%), var(--bg);
+  radial-gradient(1200px 500px at 15% -5%, #130d15 0%, transparent 60%),
+  radial-gradient(900px 600px at 100% 110%, #0f111b 0%, transparent 55%), var(--bg);
   color:var(--ink);font-family:var(--ui);
-  padding-left:max(16px,env(safe-area-inset-left,0px));
-  padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:0}
 .wrap{max-width:1000px;margin:0 auto}
 header{padding-block:clamp(22px,5vw,46px) 6px}
-.kick{font-family:var(--lcars);font-weight:700;letter-spacing:.4em;text-transform:uppercase;
-  color:var(--amber);font-size:clamp(11px,2.5vw,14px)}
-h1{font-family:var(--lcars);font-weight:700;text-transform:uppercase;letter-spacing:.015em;
-  line-height:.9;margin:.16em 0 .28em;font-size:clamp(32px,8.4vw,70px);text-wrap:balance}
+.kick{font-family:var(--lcars);font-weight:700;letter-spacing:.4em;text-transform:uppercase;color:var(--amber);font-size:clamp(11px,2.5vw,14px)}
+h1{font-family:var(--lcars);font-weight:700;text-transform:uppercase;letter-spacing:.015em;line-height:.9;
+  margin:.16em 0 .28em;font-size:clamp(32px,8.4vw,70px);text-wrap:balance}
 h1 em{font-style:normal;color:var(--amber)}
 .lede{color:var(--dim);max-width:64ch;line-height:1.5;font-size:clamp(13.5px,2.3vw,15.5px)}
 .lede b{color:var(--ink);font-weight:500}
-
 .ctrl{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;flex-wrap:wrap;gap:8px;
   padding-block:14px;margin-top:10px;background:linear-gradient(var(--bg) 70%,transparent)}
-button{font-family:var(--lcars);font-weight:700;text-transform:uppercase;letter-spacing:.12em;
-  font-size:14px;color:#1a1208;background:var(--amber);border:0;border-radius:999px 8px 8px 999px;
-  padding:9px 18px 8px;cursor:pointer;transition:filter .15s,transform .05s}
+button{font-family:var(--lcars);font-weight:700;text-transform:uppercase;letter-spacing:.12em;font-size:14px;
+  color:#1a1208;background:var(--amber);border:0;border-radius:999px 7px 7px 999px;padding:9px 18px 8px;cursor:pointer;transition:filter .15s,transform .05s}
 button:hover{filter:brightness(1.1)}button:active{transform:translateY(1px)}
-button.alt{background:var(--lav);border-radius:8px 999px 999px 8px}
+button.alt{background:var(--lav);border-radius:7px 999px 999px 7px}
 button.red{background:var(--red);color:#1a0a06}
 button.ghost{background:transparent;color:var(--dim);border:1px solid var(--line);border-radius:999px}
 button:focus-visible{outline:2px solid var(--sky);outline-offset:2px}
-
 .stack{display:flex;flex-direction:column;gap:clamp(22px,4vw,36px);padding-block:14px clamp(26px,5vw,48px)}
 figure{margin:0;display:flex;flex-direction:column;gap:12px}
 
 /* ===== OSD ===== */
 .osd{position:relative;aspect-ratio:16/9;width:100%;background:#000;border-radius:5px;overflow:hidden;
-  container-type:size;font-family:var(--lcars);--a:var(--amber);--l:var(--lav);--t:var(--tan);--r:var(--rust)}
-/* video window: between the side bars (20cqw each), above the stick line (9cqw) */
-.video{position:absolute;left:20cqw;right:20cqw;top:0;bottom:9cqw;
-  background:linear-gradient(#070a12 0%,#0b1020 46%,#141008 46%,#0a0706 100%)}
+  container-type:size;font-family:var(--lcars);--a:var(--amber)}
+.video{position:absolute;left:15.5cqw;right:15.5cqw;top:0;bottom:0;
+  background:linear-gradient(#060911 0%,#0a0f1e 46%,#130f08 46%,#090605 100%)}
 .video::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;
   background:repeating-linear-gradient(0deg,#fff0 0 3px,#0000000d 3px 4px)}
 
-/* side regions: each is two columns */
-.side{position:absolute;top:0;bottom:9cqw;width:20cqw;background:#000;z-index:2;display:flex;gap:0.7cqw;
-  padding:0.9cqw 0.7cqw}
-.side.L{left:0;border-right:0.3cqw solid #16120b}
-.side.R{right:0;border-left:0.3cqw solid #16120b}
-.colm{flex:1;min-width:0;display:flex;flex-direction:column;gap:0.6cqw}
+.side{position:absolute;top:0;bottom:0;width:15.5cqw;background:#000;z-index:2;
+  display:flex;flex-direction:column;gap:0.55cqw;padding:0.8cqw 0.7cqw}
+.side.L{left:0;border-right:0.25cqw solid #14110a}
+.side.R{right:0;border-left:0.25cqw solid #14110a}
 
-.cap{flex:0 0 2.4cqw;background:var(--a);border-radius:1.2cqw}
-.cell{flex:1 1 auto;display:flex;gap:0.6cqw;min-height:0;transform-origin:left}
-.cell .tab{flex:0 0 1.1cqw;border-radius:0.6cqw;background:var(--a)}
-.cell.l .tab{background:var(--l)}.cell.t .tab{background:var(--t)}
-.cell.r .tab{background:var(--r)}.cell.g .tab{background:var(--grn)}
-.cell .cc{display:flex;flex-direction:column;justify-content:center;min-width:0;line-height:1}
-.cell .k{font-family:var(--ui);font-weight:600;letter-spacing:.08em;text-transform:uppercase;
-  font-size:1.5cqw;color:var(--dim)}
-.cell .v{font-weight:700;font-size:2.7cqw;color:var(--a);white-space:nowrap;font-variant-numeric:tabular-nums}
-.cell.ev .v{color:var(--l)}
+/* LCARS end caps */
+.cap{flex:0 0 2cqw;background:var(--a)}
+.capL.top{border-top-left-radius:3cqw;border-top-right-radius:0.6cqw}
+.capL.bot{border-bottom-left-radius:3cqw;border-bottom-right-radius:0.6cqw;background:var(--rust)}
+.capR.top{border-top-right-radius:3cqw;border-top-left-radius:0.6cqw}
+.capR.bot{border-bottom-right-radius:3cqw;border-bottom-left-radius:0.6cqw;background:var(--rust)}
+
+/* one reading per row, single line: colour label block + right-aligned value */
+.row{flex:0 0 3.9cqw;display:flex;gap:0.4cqw;transform-origin:left}
+
+.row .lab{flex:0 0 5cqw;background:var(--a);color:#0b0804;border-radius:0.5cqw;display:flex;align-items:center;
+  padding:0 0.55cqw;font-weight:700;font-size:1.6cqw;letter-spacing:.02em;text-transform:uppercase;overflow:hidden;white-space:nowrap}
+.row.l .lab{background:var(--lav)}.row.t .lab{background:var(--tan)}.row.r .lab{background:var(--rust)}.row.g .lab{background:var(--grn)}
+.row .val{flex:1;min-width:0;display:flex;align-items:center;justify-content:flex-end;padding-right:0.4cqw;
+  color:var(--a);font-weight:700;font-size:2.6cqw;white-space:nowrap;font-variant-numeric:tabular-nums}
+.row .val i{font-style:normal;font-size:1.65cqw;color:var(--ink);opacity:.72;margin-left:.25cqw}
 
 /* mascot badge */
-.badge{flex:0 0 9cqw;background:#0b0b10;border:0.5cqw solid var(--a);border-radius:1.2cqw;
+.badge{flex:0 0 7.6cqw;background:#09090e;border:0.35cqw solid var(--a);border-radius:0.8cqw;
   display:grid;place-items:center;overflow:hidden}
-.mascot{width:94%;height:94%;object-fit:contain;display:block}
+.mascot{width:96%;height:96%;object-fit:contain;display:block}
 
-/* red-alert status chip, top-right. hidden until critical. */
-.alertchip{position:absolute;top:0.9cqw;right:0.8cqw;z-index:4;background:#1a0d0b;
-  border:0.4cqw solid var(--red);border-radius:1.2cqw;padding:0.7cqw 1.3cqw;
-  display:flex;align-items:center;gap:0.8cqw;visibility:hidden}
-.alertchip .big{color:var(--red);font-weight:700;font-size:2.5cqw;letter-spacing:.08em;line-height:1}
+/* combo row: label + inline meter + count, still one line */
+.combo{flex:0 0 3.9cqw;display:flex;gap:0.4cqw}
+
+.combo .lab{flex:0 0 5cqw;background:var(--lav);color:#0b0804;border-radius:0.5cqw;display:flex;align-items:center;
+  padding:0 0.55cqw;font-weight:700;font-size:1.6cqw;letter-spacing:.02em;text-transform:uppercase}
+.combo .m{flex:1;min-width:0;display:flex;align-items:center;gap:0.5cqw;padding-right:0.3cqw}
+.combo .track{flex:1;height:1.7cqw;background:#140f1c;border-radius:0.5cqw;overflow:hidden}
+.combo .fill{height:100%;width:62%;background:var(--lav);transition:width .5s cubic-bezier(.3,.9,.3,1)}
+.combo .n{color:var(--lav);font-weight:700;font-size:2.6cqw;font-variant-numeric:tabular-nums}
+
+/* ===== thick live stick gimbal, one per column ===== */
+.stick{flex:0 0 11cqw;display:flex;align-items:center;justify-content:center;position:relative;margin-top:auto}
+.gim{position:relative;height:9.6cqw;aspect-ratio:1;background:#06060b;border:0.5cqw solid var(--a);border-radius:0.7cqw;
+  box-shadow:inset 0 0 1.6cqw rgba(0,0,0,.7)}
+.gim .cx,.gim .cy{position:absolute;background:#2b2638}
+.gim .cx{left:8%;right:8%;top:50%;height:0.28cqw;transform:translateY(-50%)}
+.gim .cy{top:8%;bottom:8%;left:50%;width:0.28cqw;transform:translateX(-50%)}
+.gim .ring{position:absolute;inset:26%;border:0.22cqw solid #2b2638;border-radius:50%}
+.gim .dot{position:absolute;left:50%;top:50%;width:2.1cqw;height:2.1cqw;border-radius:50%;
+  background:var(--a);box-shadow:0 0 1.8cqw rgba(255,178,74,.7),0 0 0.4cqw #fff6;will-change:transform}
+.gim .trail{position:absolute;left:50%;top:50%;width:1cqw;height:1cqw;border-radius:50%;background:var(--a);opacity:.28;will-change:transform}
+.stick .sl{position:absolute;top:0.4cqw;left:0.7cqw;font-family:var(--ui);font-weight:700;font-size:1.5cqw;
+  letter-spacing:.14em;color:var(--dim)}
+
+/* red-alert chip (overlay top-right, hidden until critical) */
+.alertchip{position:absolute;top:0.9cqw;right:0.8cqw;z-index:4;background:#1a0d0b;border:0.4cqw solid var(--red);
+  border-radius:0.8cqw;padding:0.6cqw 1.2cqw;display:flex;align-items:center;visibility:hidden}
+.alertchip .big{color:var(--red);font-weight:700;font-size:2.4cqw;letter-spacing:.09em;line-height:1}
 .osd.crit .alertchip{visibility:visible}
-
-/* combo climb */
-.climb{flex:0 0 9cqw;display:flex;gap:0.6cqw}
-.climb .tab{flex:0 0 1.1cqw;border-radius:0.6cqw;background:var(--l)}
-.climb .b{flex:1;display:flex;flex-direction:column;min-width:0}
-.climb .k{font-family:var(--ui);font-weight:600;letter-spacing:.06em;font-size:1.4cqw;color:var(--dim);text-transform:uppercase}
-.climb .track{flex:1;margin-top:0.4cqw;background:#140f1c;border-radius:0.6cqw;display:flex;align-items:flex-end;overflow:hidden}
-.climb .fill{width:100%;height:62%;background:linear-gradient(0deg,var(--lav),#d9c8f6);border-radius:0.6cqw;transition:height .5s cubic-bezier(.3,.9,.3,1)}
-
-/* ===== bottom stick line ===== */
-.sticks{position:absolute;left:0;right:0;bottom:0;height:9cqw;background:#000;border-top:0.3cqw solid #16120b;
-  z-index:3;display:flex;align-items:center;justify-content:center;gap:4cqw;padding:0 20cqw}
-.gimbal{position:relative;height:6.6cqw;aspect-ratio:1;background:#0a0a10;border:0.35cqw solid var(--a);
-  border-radius:1cqw}
-.gimbal::before,.gimbal::after{content:"";position:absolute;background:#2a2636}
-.gimbal::before{left:12%;right:12%;top:50%;height:0.3cqw;transform:translateY(-50%)}
-.gimbal::after{top:12%;bottom:12%;left:50%;width:0.3cqw;transform:translateX(-50%)}
-.gimbal .dot{position:absolute;width:1.5cqw;height:1.5cqw;border-radius:50%;background:var(--a);
-  left:50%;top:50%;transform:translate(-50%,-50%);box-shadow:0 0 1.4cqw rgba(255,178,74,.5)}
-.gimbal .gl{position:absolute;bottom:-3cqw;left:0;right:0;text-align:center;font-family:var(--ui);
-  font-weight:600;font-size:1.5cqw;letter-spacing:.12em;color:var(--dim)}
-.stk-mid{font-family:var(--lcars);font-weight:700;color:var(--dim);font-size:2cqw;letter-spacing:.2em;align-self:center}
-
-/* ===== red-alert palette shift (quiet, no flashing) ===== */
-.osd.crit{--a:var(--red);--l:#ff8a78;--t:#e0674c;--r:#c0402e;--grn:#e0674c}
+.osd.crit{--a:var(--red);--lav:#ff8a78;--tan:#e0674c;--rust:#c0402e;--grn:#e0674c}
 .osd.crit .video{filter:saturate(.85) brightness(.9)}
 
-/* ===== animation (power-on draw, shimmer, combo). No alert flashing. ===== */
-@keyframes sweepV{0%{transform:translateY(-120%)}60%{transform:translateY(760%)}100%{transform:translateY(760%)}}
-@keyframes driftL{0%,100%{transform:translate(-50%,-40%)}50%{transform:translate(-62%,-55%)}}
-@keyframes driftR{0%,100%{transform:translate(-40%,-55%)}50%{transform:translate(-58%,-42%)}}
-@media (prefers-reduced-motion:no-preference){
-  .shim{animation:sweepV 5.4s ease-in-out .4s infinite}.side.R .shim{animation-delay:2.7s}
-  .gimbal.gl-L .dot{animation:driftL 3.4s ease-in-out infinite}
-  .gimbal.gl-R .dot{animation:driftR 2.9s ease-in-out infinite}
-}
-.shim{position:absolute;left:0;right:0;height:14%;pointer-events:none;z-index:3;
-  background:linear-gradient(#fff0,#fff6 48%,#fff7 52%,#fff0);mix-blend-mode:screen}
-.osd.boot .colm,.osd.boot .sticks{animation:gy .5s both}
-.osd.boot .cell,.osd.boot .badge,.osd.boot .cap,.osd.boot .climb{animation:sx .34s both}
-.osd.boot .colm>*:nth-child(1){animation-delay:.08s}.osd.boot .colm>*:nth-child(2){animation-delay:.14s}
-.osd.boot .colm>*:nth-child(3){animation-delay:.2s}.osd.boot .colm>*:nth-child(4){animation-delay:.26s}
-.osd.boot .colm>*:nth-child(5){animation-delay:.32s}.osd.boot .colm>*:nth-child(6){animation-delay:.38s}
+/* ambient shimmer + power-on draw (no alert flashing) */
+.shim{position:absolute;left:0;right:0;height:13%;pointer-events:none;z-index:3;
+  background:linear-gradient(#fff0,#fff5 48%,#fff6 52%,#fff0);mix-blend-mode:screen}
+@keyframes sweepV{0%{transform:translateY(-120%)}60%{transform:translateY(780%)}100%{transform:translateY(780%)}}
+@media (prefers-reduced-motion:no-preference){.shim{animation:sweepV 5.6s ease-in-out .4s infinite}.side.R .shim{animation-delay:2.8s}}
+.osd.boot .side{animation:gy .5s both}
+.osd.boot .row,.osd.boot .badge,.osd.boot .cap,.osd.boot .combo,.osd.boot .stick{animation:sx .3s both}
+.osd.boot .side>*:nth-child(2){animation-delay:.08s}.osd.boot .side>*:nth-child(3){animation-delay:.13s}
+.osd.boot .side>*:nth-child(4){animation-delay:.18s}.osd.boot .side>*:nth-child(5){animation-delay:.23s}
+.osd.boot .side>*:nth-child(6){animation-delay:.28s}.osd.boot .side>*:nth-child(7){animation-delay:.33s}
+.osd.boot .side>*:nth-child(8){animation-delay:.38s}.osd.boot .side>*:nth-child(9){animation-delay:.43s}
+.osd.boot .side>*:nth-child(10){animation-delay:.48s}
 @keyframes gy{from{transform:scaleY(0);transform-origin:top}to{transform:scaleY(1)}}
 @keyframes sx{from{transform:scaleX(0);opacity:0}to{transform:scaleX(1);opacity:1}}
 
@@ -130,33 +123,29 @@ figcaption{display:flex;flex-direction:column;gap:6px}
 .cap-h .n{font-family:var(--lcars);font-weight:700;text-transform:uppercase;letter-spacing:.07em;font-size:20px}
 .cap-h .t{color:var(--dim);font-size:13px}
 .cap-b{color:var(--dim);font-size:13.5px;line-height:1.5;max-width:64ch}.cap-b b{color:var(--ink);font-weight:500}
-footer{border-top:1px solid var(--line);margin-top:6px;padding-block:22px 42px;color:var(--dim);
-  font-size:13px;line-height:1.6;max-width:72ch}footer b{color:var(--ink);font-weight:500}
+footer{border-top:1px solid var(--line);margin-top:6px;padding-block:22px 42px;color:var(--dim);font-size:13px;line-height:1.6;max-width:72ch}
+footer b{color:var(--ink);font-weight:500}
 .anim-list{display:flex;flex-wrap:wrap;gap:7px;margin:4px 0 2px}
-.anim-list span{font-family:var(--ui);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;
-  color:var(--amber);border:1px solid #3a2c1a;border-radius:999px;padding:3px 10px}
+.anim-list span{font-family:var(--ui);font-size:11.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--amber);border:1px solid #3a2c1a;border-radius:999px;padding:3px 10px}
 </style>
 
 <div class="wrap">
   <header>
     <div class="kick">fr0gOS · DS9 OPS · stage 2</div>
     <h1>LCARS <em>Side Columns</em></h1>
-    <p class="lede">Two LCARS columns per side now, so the whole <b>Five Dash One</b> set fits — craft, timer, mode, air mode, pack, link, VTX, throttle, RPM, G and more — with the stick-control glyphs on a thin bottom line. Red alert is quiet: it only trips on a critical pack, shifting the board to a red scheme with a <b>RED ALERT</b> flag top-right, no strobing. Drive it below.</p>
+    <p class="lede">One clean column a side — a single line per reading, label block and value, nothing stacked. The full <b>Five Dash One</b> set, a thick live stick gimbal in each column, and a quiet red alert that only trips on a critical pack. Sharp and functional. Drive it below.</p>
   </header>
-
   <div class="ctrl" role="group" aria-label="demo controls">
     <button id="power">◖ Power-on</button>
     <button class="alt" id="combo">Combo +</button>
     <button class="red" id="crit">Critical batt</button>
     <button class="ghost" id="reset">Reset</button>
   </div>
-
   <div class="stack" id="stack"></div>
-
   <footer>
-    <b>This maps onto the goggle.</b> The cam pillarboxes 5:4 into the black side bars; fr0gOS packs the OSD there as two columns a side, every cell block glyphs plus text. The stick line is the existing stick-code glyphs on the bottom row. Power-on is cells printing top-down; the shimmer is one brighter block sliding down a column; the combo bar is blocks climbing. Red alert is a colour-map swap to the red glyph copies plus the RED ALERT label — it only fires when VBAT hits the critical threshold, and it holds steady rather than flashing. Elements: craft, timer, mode, AIR, VBAT, cell, mAh, current, rate, LQ, VTX ch/pwr, throttle, RPM, G, sats, event, combo, sticks.
-    <div class="anim-list"><span>power-on draw</span><span>column shimmer</span><span>combo climb</span><span>live sticks</span><span>quiet red alert</span></div>
-    Tweak away — cell order, which readings sit left vs right, colours — then I'll build the block-glyph columns + state machine onto 4-2.
+    <b>This maps onto the goggle.</b> The cam pillarboxes 5:4 into the black side bars; fr0gOS draws one column a side, one reading per row. On the goggle the live sticks are the stick-code glyphs updated every OSD frame — the smooth gimbal here is the target fidelity; if the glyph grid can't keep up we fall back to the code glyphs. Power-on prints the rows top-down, the shimmer slides down a column, the combo meter fills, and red alert is a colour-map swap to the red glyphs plus the RED ALERT flag — critical pack only, held steady. Elements: craft, timer, mode, AIR, VBAT, mAh, current, rate, LQ, VTX ch/pwr, throttle, RPM, G, combo, sticks.
+    <div class="anim-list"><span>live sticks</span><span>power-on draw</span><span>column shimmer</span><span>combo fill</span><span>quiet red alert</span></div>
+    Tweak anything — row order, which side a reading sits on, colours.
   </footer>
 </div>
 
@@ -172,74 +161,79 @@ function runMascot(img){ img.src=MF.idle; if(RM) return; let i=0;
 function react(n,ms){ document.querySelectorAll('.mascot').forEach(m=>m._react={name:n,until:performance.now()+ms}); }
 function clearReact(){ document.querySelectorAll('.mascot').forEach(m=>m._react=null); }
 
-const cell=(cls,k,v)=>`<div class="cell ${cls}"><span class="tab"></span><div class="cc"><span class="k">${k}</span><span class="v">${v}</span></div></div>`;
+const row=(c,l,v,u)=>`<div class="row ${c}"><span class="lab">${l}</span><span class="val">${v}${u?`<i>${u}</i>`:''}</span></div>`;
 function frame(){
   return `<div class="osd">
     <div class="video"></div>
     <div class="alertchip"><span class="big">● RED ALERT</span></div>
 
     <div class="side L">
-      <div class="colm">
-        <div class="cap"></div>
-        <div class="badge"><img class="mascot" alt="fr0gOS mascot"></div>
-        ${cell('l ev','Craft','MK4-2')}
-        ${cell('','Mode','ACRO')}
-        ${cell('t','Air','ON')}
-        ${cell('r','Arm','04:12')}
-      </div>
-      <div class="colm">
-        <div class="cap"></div>
-        ${cell('','Vbat','16.4')}
-        ${cell('t','Cell','78%')}
-        ${cell('l','Used','1250')}
-        ${cell('r','Curr','24.3')}
-        ${cell('g','Temp','41°')}
-      </div>
+      <div class="cap capL top"></div>
+      <div class="badge"><img class="mascot" alt="fr0gOS mascot"></div>
+      ${row('l','Name','MK4-2')}
+      ${row('','Time','04:12')}
+      ${row('t','Mode','ACRO')}
+      ${row('t','Air','ON')}
+      ${row('','Vbat','16.4','V')}
+      ${row('r','mAh','1250')}
+      ${row('r','Amp','24.3')}
+      <div class="stick"><span class="sl">L</span><div class="gim"><span class="cx"></span><span class="cy"></span><span class="ring"></span><span class="trail"></span><span class="dot"></span></div></div>
+      <div class="cap capL bot"></div>
     </div>
 
     <div class="side R">
-      <div class="colm">
-        <div class="cap"></div>
-        ${cell('','Rate','F1000')}
-        ${cell('g','Link','98')}
-        ${cell('t','Vtx','R2')}
-        ${cell('l','Pwr','200')}
-      </div>
-      <div class="colm">
-        <div class="cap"></div>
-        ${cell('','Thr','68%')}
-        ${cell('l','Rpm','22.4')}
-        ${cell('r','G','3.4')}
-        ${cell('g','Sats','12')}
-        <div class="climb"><span class="tab"></span><div class="b"><span class="k">Combo X7</span>
-          <div class="track"><div class="fill"></div></div></div></div>
-      </div>
-    </div>
-
-    <div class="sticks">
-      <span class="stk-mid">STK</span>
-      <div class="gimbal gl-L"><div class="dot"></div></div>
-      <div class="gimbal gl-R"><div class="dot"></div></div>
+      <div class="cap capR top"></div>
+      ${row('','Rate','F1000')}
+      ${row('g','Link','98','lq')}
+      ${row('l','Vtx','R2')}
+      ${row('l','Pwr','200','mW')}
+      ${row('','Thr','68','%')}
+      ${row('t','Rpm','22.4','k')}
+      ${row('r','G','3.4')}
+      <div class="combo"><span class="lab">Combo</span><div class="m"><div class="track"><div class="fill"></div></div><span class="n">X7</span></div></div>
+      <div class="stick"><span class="sl">R</span><div class="gim"><span class="cx"></span><span class="cy"></span><span class="ring"></span><span class="trail"></span><span class="dot"></span></div></div>
+      <div class="cap capR bot"></div>
     </div>
   </div>`;
 }
 
 const stack=document.getElementById('stack');
-const f=document.createElement('figure');
-f.innerHTML=frame()+`<figcaption>
-  <div class="cap-h"><span class="n">Tab Cells</span><span class="t">Antonio · four columns + stick line</span></div>
-  <div class="cap-b">Two LCARS columns each side, the mascot in its badge, a quiet red-alert chip top-right, and the stick gimbals on the bottom line. Everything 5-1 shows, nothing on the video.</div></figcaption>`;
-stack.appendChild(f);
-// shimmer overlays into each side
+const fig=document.createElement('figure');
+fig.innerHTML=frame()+`<figcaption>
+  <div class="cap-h"><span class="n">Side Columns</span><span class="t">Antonio · one line per row · live sticks</span></div>
+  <div class="cap-b">One reading per row, a thick live stick in each column, the mascot up top. Every 5-1 element, nothing on the video.</div></figcaption>`;
+stack.appendChild(fig);
 document.querySelectorAll('.side').forEach(s=>{const sh=document.createElement('div');sh.className='shim';s.appendChild(sh);});
+
+/* high-fidelity live sticks: smooth per-frame motion (layered sines + a little noise), rendered every frame */
+const gims=[...document.querySelectorAll('.gim')];
+let flick=0;
+function stickLoop(ts){
+  const t=ts/1000;
+  gims.forEach((g,i)=>{
+    const left=(i%2===0), p=i*1.9;
+    let x,y;
+    if(left){ x=.5*Math.sin(t*0.9+p)+.28*Math.sin(t*2.3+p); y=.46*Math.sin(t*0.55+p)+.22*Math.sin(t*1.9+p); }
+    else    { x=.56*Math.sin(t*1.15+p)+.32*Math.sin(t*2.7+p); y=.56*Math.sin(t*0.95+p)+.3*Math.sin(t*2.4+p); }
+    if(flick>0){ const k=flick/1; x+=(left?0:1)*0.4*Math.sin(t*22); y+=0.5*Math.cos(t*20); }
+    x=Math.max(-1,Math.min(1,x)); y=Math.max(-1,Math.min(1,y));
+    const px=x*40, py=-y*40;
+    g.querySelector('.dot').style.transform=`translate(calc(-50% + ${px}%), calc(-50% + ${py}%))`;
+    g.querySelector('.trail').style.transform=`translate(calc(-50% + ${px*0.78}%), calc(-50% + ${py*0.78}%))`;
+  });
+  if(flick>0) flick-=1/60;
+  rafId=requestAnimationFrame(stickLoop);
+}
+let rafId; if(!RM) rafId=requestAnimationFrame(stickLoop);
+else gims.forEach(g=>g.querySelector('.dot').style.transform='translate(-50%,-50%)');
 
 const osd=document.querySelector('.osd'), fills=[...document.querySelectorAll('.fill')];
 let combo=62;
 function boot(){ osd.classList.remove('boot'); void osd.offsetWidth; osd.classList.add('boot'); }
 document.getElementById('power').onclick=boot;
-document.getElementById('combo').onclick=()=>{combo=combo>=100?30:combo+14;fills.forEach(x=>x.style.height=combo+'%');react('pumped',950);};
+document.getElementById('combo').onclick=()=>{combo=combo>=100?30:combo+14;fills.forEach(x=>x.style.width=combo+'%');react('pumped',950);flick=0.6;};
 document.getElementById('crit').onclick=()=>{ const on=osd.classList.toggle('crit'); if(on) react('hurt',999999); else clearReact(); };
-document.getElementById('reset').onclick=()=>{ osd.classList.remove('crit','boot'); combo=62; fills.forEach(x=>x.style.height='62%'); clearReact(); };
+document.getElementById('reset').onclick=()=>{ osd.classList.remove('crit','boot'); combo=62; fills.forEach(x=>x.style.width='62%'); clearReact(); };
 document.querySelectorAll('.mascot').forEach(runMascot);
 addEventListener('load',()=>setTimeout(boot,250));
 </script>
