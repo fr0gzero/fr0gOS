@@ -23,6 +23,11 @@ The **goggle-frog mascot** (r31, Four Dash Two): a smiling HDZERO-goggled frog t
 
 **LCARS / DS9 Ops font** (Four Dash Two, `fonts/hdzero-ds9`): the Star Trek DS9 phase, stage 1 — a condensed Starfleet-style alphabet (`build_hacker_font.py` gained a `FROG_FONT=<ttf>` + `FROG_SQUEEZE` path that renders the alphabet from a TrueType face instead of the VGA bitmap) in the LCARS "Ops" palette: amber readouts (#ffb24a), lavender accents/nameplate (#bea2e8), red critical (#e0533c). Slots/charmap identical to the other fonts, so **it runs on the current r32 hex — pure font swap, no reflash of firmware.** Mascot unchanged. Stage 2 (the LCARS elbow/rail frame drawn with block glyphs) is the next firmware step.
 
+## v1.3 r33 - 2026-11-10 (MK4-2, MK5-1) - core-temp out of the warnings line, static colour readout
+- Core temperature no longer flashes "HOTxx" in the shared warnings line (it was crowding out every other warning). Clear it from the warn bitmask: `set osd_warn_bitmask = 794495` (drops bit 7, the core-temp warning).
+- The **core-temp element is now a static colour readout**: green under 75°, orange 75-90°, red over 90° — via the severity colour map, no blinking. Show it with `set osd_core_temp_pos = 2432` (left column under the pack group; drag it in the Configurator OSD tab to taste). On the DS9 font the "orange" band renders as the DS9 lavender accent, red stays red.
+- Firmware only (new hex for both quads); the colour comes from the existing glyph colour map, no font change.
+
 ## v1.3 r32 - 2026-11-10 (MK4-2) - boot-frog bleed fix (firmware only, no font change)
 - The boot frog hops across the header as before, then **exits** instead of sitting and playing its idle / blink / celebrate poses. Those pose glyphs live in slots the goggle mascot now overwrites, so the old end-animation was drawing mascot fragments ("bleeding out"). CRT power-on and the hop are untouched.
 - Same hdzero-mega goggle font as r31 — just reflash the hex.

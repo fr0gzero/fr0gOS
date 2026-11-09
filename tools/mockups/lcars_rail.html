@@ -67,9 +67,9 @@ figure{margin:0;display:flex;flex-direction:column;gap:12px}
 .row .val i{font-style:normal;font-size:1.65cqw;color:var(--ink);opacity:.72;margin-left:.25cqw}
 
 /* mascot badge */
-.badge{flex:0 0 7.6cqw;background:#09090e;border:0.35cqw solid var(--a);border-radius:0.8cqw;
-  display:grid;place-items:center;overflow:hidden}
-.mascot{width:96%;height:96%;object-fit:contain;display:block}
+.badge{flex:0 0 9.6cqw;background:#09090e;border:0.35cqw solid var(--a);border-radius:0.8cqw;
+  display:grid;place-items:center;overflow:hidden;padding:0.6cqw}
+.mascot{width:100%;height:100%;object-fit:contain;display:block}
 
 /* combo row: label + inline meter + count, still one line */
 .combo{flex:0 0 3.9cqw;display:flex;gap:0.4cqw}
@@ -203,7 +203,6 @@ fig.innerHTML=frame()+`<figcaption>
   <div class="cap-h"><span class="n">Side Columns</span><span class="t">Antonio · one line per row · live sticks</span></div>
   <div class="cap-b">One reading per row, a thick live stick in each column, the mascot up top. Every 5-1 element, nothing on the video.</div></figcaption>`;
 stack.appendChild(fig);
-document.querySelectorAll('.side').forEach(s=>{const sh=document.createElement('div');sh.className='shim';s.appendChild(sh);});
 
 /* high-fidelity live sticks: smooth per-frame motion (layered sines + a little noise), rendered every frame */
 const gims=[...document.querySelectorAll('.gim')];
