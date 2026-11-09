@@ -6,7 +6,7 @@ Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth to
 
 ## v1.3 — summary
 
-Fleet on **r30**. Goggles need the **r27+** font. Quads: Four Dash Two (Mobula 6 HDZero, CRAZYBEEF4SX1280), Five Dash One (Mobula 8 HDZero, CRAZYBEE473), Four Dash One (Air65 analog, BETAFPVG473_V2).
+Fleet on **r30**; Four Dash Two is on **r31** (goggle-frog mascot). Four Dash Two's goggles need the **r31 mascot font** (`fonts/hdzero-mega`); the rest need the **r27+** font. Quads: Four Dash Two (Mobula 6 HDZero, CRAZYBEEF4SX1280), Five Dash One (Mobula 8 HDZero, CRAZYBEE473), Four Dash One (Air65 analog, BETAFPVG473_V2).
 
 What v1.3 is, across all the point releases:
 - **DOS / hacker HDZero OSD** — craft name, black-bar telemetry, phosphor-green/amber/red colour map.
@@ -17,7 +17,15 @@ What v1.3 is, across all the point releases:
 - **Stick code** — the four stick positions written into the bottom OSD bars as dim glyphs, read back off the DVR by `tools/stickcode_decode.py` for a later stick overlay.
 - **Analog (Four Dash One)** — the log, combo, tricks, crash, song cues and high-score, minus the frog, colour and stick code (NTSC 30×13).
 
-In progress (designed + font baked, **not yet flashed**): the **Mega Drive 16-bit skin** for Four Dash Two — the HDZERO-goggle frog mascot (17 animation frames) is baked into the goggle font (`fonts/hdzero-mega/`, 68 glyphs, verified). Remaining: the firmware mascot-player, 16-bit palette + filled nameplate, and the Four Dash Two hex.
+The **goggle-frog mascot** (r31, Four Dash Two): a smiling HDZERO-goggled frog that lives as a fixed 2×2 block top-left and animates in place — idle blinks/glances/breathing, and reactions to what you fly (FLIP→pumped, ROLL→whoa, SPIN→dizzy, PUNCH/ZOOM→excited, PERCH→grin, CRASH→KO then seeing stars, turtle→upside-down). 17 frames baked into the goggle font (`fonts/hdzero-mega/`, 68 glyphs, round-trip verified); it replaces the old hopping frog. Needs the `fonts/hdzero-mega` font on the goggle SD card.
+
+Still to come for Four Dash Two: the 16-bit Mega Drive palette + filled blue nameplate (the mascot currently rides on the DOS colour map).
+
+## v1.3 r31 - 2026-11-10 (MK4-2) - goggle-frog mascot; needs the hdzero-mega goggle font
+- **Goggle-frog mascot** replaces the hopping frog: a fixed 2×2 block top-left (HD only) that animates in place. Idle plays blinks, left/right/up/down glances and breathing on a ~6 s loop (slower, happier on the bench while disarmed). Events drive reactions for ~1.4 s: ROLL→whoa, FLIP→pumped, SPIN→dizzy, LOOP/ZOOM→pumped, PUNCH→excited grin, PERCH→grin, CLIP / big-G→hurt. CRASH plays KO then "seeing stars" (~2.2 s). Turtle mode (crash-flip active) shows the upside-down frame for as long as it's active.
+- 17 frames are baked into the goggle font as 68 unique glyphs (identical cells, like the goggles, share a glyph); `src/main/osd/frog_mascot.h` maps each frame to its 4 cell glyphs. Round-trip verified against the baked font.
+- The event log shifts down one row to sit under the mascot; combo, stick code and song cues follow. The old `frogTick` hopping code is retired (kept in-tree, unbuilt) — no bar-hopping, low-batt drop or ledge wandering while the mascot is up.
+- **Flash the `fonts/hdzero-mega` font to the goggle SD card** — the mascot glyphs live in the frog slot pool, so the old r27+ font will show garbage in the top-left block.
 
 ## v1.3 r30 - 2026-11-08 (MK4-1, MK4-2, MK5-1) - same goggle font, MK4-1 CLI adds debug_mode FROG
 - **CRASH only when it actually stops flying** (r29 went off mid-flight on MK4-2). After a hit it's a CRASH only if it comes to rest upside down / on its side, comes to rest at all after a tumble, or you disarm / turtle while it isn't upright. Tumbles you fly out of, hard hits and "still pressing on something" no longer count; a hit you fly away from is a CLIP.
