@@ -21,6 +21,8 @@ The **goggle-frog mascot** (r31, Four Dash Two): a smiling HDZERO-goggled frog t
 
 **16-bit Mega Drive palette** (r31, Four Dash Two): the DOS phosphor-green swapped for clean white text with black outlines, warnings in Mega Drive gold (#ffd400), critical in red; the craft name renders in gold as the nameplate. Baked into `fonts/hdzero-mega`. (A solid blue fill behind the nameplate would need its own 41-glyph set, which won't fit alongside the mascot in the single 256-glyph bank — gold-on-black is the nameplate for now.)
 
+**LCARS / DS9 Ops font** (Four Dash Two, `fonts/hdzero-ds9`): the Star Trek DS9 phase, stage 1 — a condensed Starfleet-style alphabet (`build_hacker_font.py` gained a `FROG_FONT=<ttf>` + `FROG_SQUEEZE` path that renders the alphabet from a TrueType face instead of the VGA bitmap) in the LCARS "Ops" palette: amber readouts (#ffb24a), lavender accents/nameplate (#bea2e8), red critical (#e0533c). Slots/charmap identical to the other fonts, so **it runs on the current r32 hex — pure font swap, no reflash of firmware.** Mascot unchanged. Stage 2 (the LCARS elbow/rail frame drawn with block glyphs) is the next firmware step.
+
 ## v1.3 r32 - 2026-11-10 (MK4-2) - boot-frog bleed fix (firmware only, no font change)
 - The boot frog hops across the header as before, then **exits** instead of sitting and playing its idle / blink / celebrate poses. Those pose glyphs live in slots the goggle mascot now overwrites, so the old end-animation was drawing mascot fragments ("bleeding out"). CRT power-on and the hop are untouched.
 - Same hdzero-mega goggle font as r31 — just reflash the hex.

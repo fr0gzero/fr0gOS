@@ -21,7 +21,7 @@ usage: build_hacker_font.py <pcface fontmap.js> <stock BTFL_000.bmp> <stock BTFL
 import os
 import re
 import sys
-from PIL import Image, ImageDraw
+from PIL import Image, ImageDraw, ImageFont
 
 FONTMAP, STOCK_HD, STOCK_FHD, OUT_DIR, HEADER, ANIM_HEADER = sys.argv[1:7]
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
@@ -29,19 +29,28 @@ import frog_glyphs  # noqa: E402
 
 TRANS = (127, 127, 127)
 BLACK = (0, 0, 0)
-# palette: FROG_PALETTE=dos (default, phosphor green) or mega (16-bit: white text, gold, red)
+# palette: FROG_PALETTE=dos (phosphor green) | mega (16-bit white/gold/red) | ds9 (LCARS amber/lavender/red)
+# optional FROG_FONT=<ttf path> renders the alphabet from a TrueType face (squashed by FROG_SQUEEZE) instead
+# of the VGA bitmap - used for the condensed LCARS look. Slots/charmap stay identical across palettes.
 _PAL = os.environ.get("FROG_PALETTE", "dos").lower()
 if _PAL == "mega":
     GREEN = (255, 255, 255)     # 16-bit primary: clean white text with a black outline
     DKGREEN = (96, 104, 168)    # scramble noise: dim blue-grey
     AMBER = (255, 212, 0)       # warning: Mega Drive gold (#ffd400)
     RED = (255, 59, 59)         # critical (#ff3b3b)
+elif _PAL == "ds9":
+    GREEN = (255, 178, 74)      # LCARS base readouts: warm amber (#ffb24a)
+    DKGREEN = (120, 96, 150)    # scramble noise: dim lilac
+    AMBER = (190, 162, 232)     # "warning" slot -> LCARS lavender accent (#bea2e8)
+    RED = (224, 83, 60)         # critical: LCARS red (#e0533c)
 else:
     GREEN = (64, 214, 104)      # calm phosphor
     DKGREEN = (30, 128, 62)     # scramble noise
     AMBER = (255, 168, 0)
     RED = (255, 44, 44)
 EYE = (236, 255, 236)
+FROG_FONT = os.environ.get("FROG_FONT")             # if set, alphabet comes from this TTF (condensed LCARS)
+FROG_SQUEEZE = float(os.environ.get("FROG_SQUEEZE", "0.60"))
 
 COLOUR_SET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-!%:"
 AMBER_BASE = 0xD0
@@ -128,6 +137,47 @@ def batt_art(level):
     return grid
 
 
+_ttf = {}
+def _face(gh):
+    if gh not in _ttf:
+        f = ImageFont.truetype(FROG_FONT, gh * 3)
+        asc, desc = f.getmetrics()
+        _ttf[gh] = (f, asc + desc)
+    return _ttf[gh]
+
+def ttf_cell(ch, colour, gw, gh):
+    """render one character from FROG_FONT, squashed by FROG_SQUEEZE, as a crisp 1-bit colour glyph with a
+    1px black outline on the transparency key - the condensed LCARS alphabet. Every glyph is drawn into the
+    SAME ascent+descent frame and scaled by the same factor, so a '.' stays a dot and 'M' fills the cell
+    (never per-glyph bbox-to-cell, which turns punctuation into blocks). No anti-alias: the goggle keys on TRANS."""
+    if ch == ' ':
+        return Image.new("RGB", (gw, gh), TRANS)
+    f, H = _face(gh)
+    bb = f.getbbox(ch)
+    w = max(1, bb[2] - bb[0])
+    canvas = Image.new("L", (w, H), 0)
+    ImageDraw.Draw(canvas).text((-bb[0], 0), ch, font=f, fill=255)   # left ink at x=0, shared baseline frame
+    scale = (gh - 2) / H
+    cw, chh = max(1, round(w * scale * FROG_SQUEEZE)), max(1, round(H * scale))
+    canvas = canvas.resize((cw, chh), Image.LANCZOS)
+    if cw > gw - 2:                                                  # too wide after squeeze -> fit width
+        canvas = canvas.resize((gw - 2, chh), Image.LANCZOS)
+        cw = gw - 2
+    on = [[canvas.getpixel((x, y)) >= 112 for x in range(cw)] for y in range(chh)]
+    cell = Image.new("RGB", (gw, gh), TRANS)
+    cp = cell.load()
+    ox, oy = (gw - cw) // 2, (gh - chh) // 2
+    for y in range(gh):
+        for x in range(gw):
+            gx, gy = x - ox, y - oy
+            if 0 <= gx < cw and 0 <= gy < chh and on[gy][gx]:
+                cp[x, y] = colour
+            elif any(0 <= gx + dx < cw and 0 <= gy + dy < chh and on[gy + dy][gx + dx]
+                     for dy in (-1, 0, 1) for dx in (-1, 0, 1)):
+                cp[x, y] = BLACK
+    return cell
+
+
 CURSOR = [[GREEN if y in (13, 14) else None for _ in range(8)] for y in range(16)]
 
 
@@ -182,13 +232,13 @@ def build(stock_path, k, out_path):
     # 1. everything from stock, recoloured green (symbols fr0gOS still uses)
     for code in range(256):
         put(code, recolour_green(get(code)))
-    # 2. ASCII 0x20-0x5F in VGA green
+    # 2. ASCII 0x20-0x5F in the base colour (VGA bitmap, or a condensed TTF when FROG_FONT is set)
     for code in range(0x20, 0x60):
-        put(code, render_cell(vga_art(code, GREEN), k, gw, gh))
+        put(code, ttf_cell(chr(code), GREEN, gw, gh) if FROG_FONT else render_cell(vga_art(code, GREEN), k, gw, gh))
     # 3. amber + red alphabets
     for i, ch in enumerate(COLOUR_SET):
-        put(AMBER_BASE + i, render_cell(vga_art(ord(ch), AMBER), k, gw, gh))
-        put(RED_SLOTS[i], render_cell(vga_art(ord(ch), RED), k, gw, gh))
+        put(AMBER_BASE + i, ttf_cell(ch, AMBER, gw, gh) if FROG_FONT else render_cell(vga_art(ord(ch), AMBER), k, gw, gh))
+        put(RED_SLOTS[i], ttf_cell(ch, RED, gw, gh) if FROG_FONT else render_cell(vga_art(ord(ch), RED), k, gw, gh))
     # 4. customs
     put(G_CURSOR, render_cell(CURSOR, k, gw, gh))
     for g, cp in ((G_RSCR1, 176), (G_RSCR2, 177), (G_RSCR3, 178)):
