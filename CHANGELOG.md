@@ -21,6 +21,10 @@ The **goggle-frog mascot** (r31, Four Dash Two): a smiling HDZERO-goggled frog t
 
 **16-bit Mega Drive palette** (r31, Four Dash Two): the DOS phosphor-green swapped for clean white text with black outlines, warnings in Mega Drive gold (#ffd400), critical in red; the craft name renders in gold as the nameplate. Baked into `fonts/hdzero-mega`. (A solid blue fill behind the nameplate would need its own 41-glyph set, which won't fit alongside the mascot in the single 256-glyph bank — gold-on-black is the nameplate for now.)
 
+## v1.3 r32 - 2026-11-10 (MK4-2) - boot-frog bleed fix (firmware only, no font change)
+- The boot frog hops across the header as before, then **exits** instead of sitting and playing its idle / blink / celebrate poses. Those pose glyphs live in slots the goggle mascot now overwrites, so the old end-animation was drawing mascot fragments ("bleeding out"). CRT power-on and the hop are untouched.
+- Same hdzero-mega goggle font as r31 — just reflash the hex.
+
 ## v1.3 r31 - 2026-11-10 (MK4-2) - goggle-frog mascot; needs the hdzero-mega goggle font
 - **Goggle-frog mascot** replaces the hopping frog: a fixed 2×2 block top-left (HD only) that animates in place. Idle plays blinks, left/right/up/down glances and breathing on a ~6 s loop (slower, happier on the bench while disarmed). Events drive reactions for ~1.4 s: ROLL→whoa, FLIP→pumped, SPIN→dizzy, LOOP/ZOOM→pumped, PUNCH→excited grin, PERCH→grin, CLIP / big-G→hurt. CRASH plays KO then "seeing stars" (~2.2 s). Turtle mode (crash-flip active) shows the upside-down frame for as long as it's active.
 - 17 frames are baked into the goggle font as 68 unique glyphs (identical cells, like the goggles, share a glyph); `src/main/osd/frog_mascot.h` maps each frame to its 4 cell glyphs. Round-trip verified against the baked font.
