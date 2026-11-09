@@ -133,7 +133,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     <section class="panel" aria-labelledby="h-prev">
       <h2 id="h-prev">Goggle preview</h2>
       <div class="goggle"><div class="osd" id="osd"></div></div>
-      <p class="note">What fr0gOS will put on the HDZero screen at the playhead: the count-in, the cue, the decode in and out. Drops count in 3 ticks early.</p>
+      <p class="note">What fr0gOS will put on the HDZero screen at the playhead: the count-in, the cue, the decode in and out. Drops count in 3 ticks early. Cues that overlap in time each take their own line, so they never stomp on each other; the song title and artist come in up top with a spinning record.</p>
     </section>
     <section class="panel" aria-labelledby="h-list">
       <div class="row" style="justify-content: space-between"><h2 id="h-list">Cues</h2><span class="label" id="cueCount"></span></div>
@@ -206,8 +206,8 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   // ---------- example so the page is never empty ----------
   function loadExample() {
     state.duration = 62; state.bpm = 174; state.offset = 0; state.hasAudio = false; resetView();
-    state.cues = [ { t: 8, kind: "BUILD", label: "BUILD" }, { t: 12, kind: "DROP", label: "DROP" }, { t: 24, kind: "CHORUS", label: "CHORUS" },
-                   { t: 34, kind: "TEXT", label: "SEND IT" }, { t: 45, kind: "BIGDROP", label: "BIGDROP" }, { t: 60, kind: "END", label: "OUTRO" } ];
+    state.cues = [ { t: 8, kind: "BUILD", label: "BUILD" }, { t: 12, kind: "DROP", label: "DROP" }, { t: 12.2, kind: "TEXT", label: "LETS GO" }, { t: 24, kind: "CHORUS", label: "CHORUS" },
+                   { t: 34, kind: "TEXT", label: "SEND IT\nFROG ON" }, { t: 45, kind: "BIGDROP", label: "BIGDROP" }, { t: 60, kind: "END", label: "OUTRO" } ];
     // a fake envelope that looks like a track: intro, build, drop...
     const n = Math.round(state.duration / state.hop); state.env = new Float32Array(n); state.bass = new Float32Array(n);
     for (let i = 0; i < n; i++) {
@@ -356,59 +356,65 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       return ct < s.outStart ? gIn(l, local, "c-g") : gOut(l, ct - s.outStart, "c-g");
     });
   }
-  // the song's own intro: ~1 s in, the title glyphs in; after it holds, the artist glyphs in below; then both go
-  function introRows(t) {
-    const title = ($("title").value || "").toUpperCase().replace(BAD, "").slice(0, 30);
-    const artist = ($("artist") ? $("artist").value || "" : "").toUpperCase().replace(BAD, "").slice(0, 30);
+  // the song's own intro, set apart from the cues: a spinning record, then TITLE, then the artist on the line below
+  const REC = ["|", "/", "-", "\\"];
+  function introBlock(t) {
+    const title = ($("title").value || "").toUpperCase().replace(BAD, "").slice(0, 26);
+    const artist = ($("artist") ? $("artist").value || "" : "").toUpperCase().replace(BAD, "").slice(0, 26);
     const start = 1.0; if (t < start || !title) return null;
     const ct = t - start;
     const inT = 0.25 + 0.045 * title.length, artStart = inT + 1.5, inA = 0.25 + 0.045 * artist.length;
     const outStart = (artist ? artStart + inA : inT) + 1.8, outDur = 0.045 * Math.max(title.length, artist.length) + 0.4;
     if (ct >= outStart + outDur) return null;
-    const rows = [];
+    const rec = [REC[Math.floor(t * 6) % 4], "c-a"], pad = [" ", "c-g"], rows = [];
     if (ct < outStart) {
-      rows.push(gIn(title, ct, "c-g"));
-      if (artist) rows.push(ct >= artStart ? gIn(artist, ct - artStart, "c-a") : null);
+      rows.push([rec, pad, ...gIn(title, ct, "c-g")]);
+      if (artist) rows.push(ct >= artStart ? [pad, pad, ...gIn(artist, ct - artStart, "c-a")] : null);
     } else {
-      rows.push(gOut(title, ct - outStart, "c-g"));
-      if (artist) rows.push(gOut(artist, ct - outStart, "c-a"));
+      const o = ct - outStart;
+      rows.push([rec, pad, ...gOut(title, o, "c-g")]);
+      if (artist) rows.push([pad, pad, ...gOut(artist, o, "c-a")]);
     }
-    return { rows };
+    return { pri: -2, rows };
   }
-  const one = (line) => ({ rows: [line] });
-  function cueAt(t) {
+  // every cue active at t becomes its own block of rows; blocks stack on separate lines so they never collide
+  function activeBlocks(t) {
+    const out = [], tick = tickSec();
     for (const c of state.cues) {
       const h = c.kind === "TEXT" ? textSched(c).total : holdOf(c.kind);
-      if (t < c.t || t >= c.t + h) continue;
-      const ct = t - c.t;
-      if (c.kind === "DROP") return one(decode("DROP", ct, h, "c-r"));
-      if (c.kind === "BIGDROP") return one(decode(">>>DROP<<<", ct, h, Math.floor(ct / 0.25) % 2 ? "c-a" : "c-r"));
-      if (c.kind === "CHORUS") return one(decode(c.label.split("\n")[0], ct, h, "c-a"));
-      if (c.kind === "BUILD") return one(decode(c.label.split("\n")[0] + "...".slice(3 - Math.min(3, Math.floor(ct / 0.4))), ct, h, "c-g"));
-      if (c.kind === "TEXT") return { rows: textRows(c, ct) };
-      return one(decode(c.label.split("\n")[0], ct, h, "c-g"));
+      if (t >= c.t && t < c.t + h) {
+        const ct = t - c.t;
+        if (c.kind === "DROP") out.push({ pri: 1, rows: [decode("DROP", ct, h, "c-r")] });
+        else if (c.kind === "BIGDROP") out.push({ pri: 1, rows: [decode(">>>DROP<<<", ct, h, Math.floor(ct / 0.25) % 2 ? "c-a" : "c-r")] });
+        else if (c.kind === "CHORUS") out.push({ pri: 2, rows: [decode(c.label.split("\n")[0], ct, h, "c-a")] });
+        else if (c.kind === "BUILD") out.push({ pri: 2, rows: [decode(c.label.split("\n")[0] + "...".slice(3 - Math.min(3, Math.floor(ct / 0.4))), ct, h, "c-g")] });
+        else if (c.kind === "TEXT") out.push({ pri: 3, rows: textRows(c, ct) });
+        else out.push({ pri: 2, rows: [decode(c.label.split("\n")[0], ct, h, "c-g")] });
+      } else if ((c.kind === "DROP" || c.kind === "BIGDROP") && t < c.t && c.t - t <= 3 * tick) {
+        const left = c.t - t, nn = Math.ceil(left / tick - 1e-6), tickT = tick - (left - (nn - 1) * tick), since = 3 * tick - left;
+        const big = c.kind === "BIGDROP", s = (big ? "BIG DROP IN " : "DROP IN ") + nn, cls = big ? "c-r" : "c-a";
+        out.push({ pri: 0, rows: [[...s].map((ch, i) => [ch === " " ? " " : (i === s.length - 1 ? tickT < 0.18 : since < 0.25 + 0.045 * i) ? noise() : ch, cls])] });
+      }
     }
-    const tick = tickSec();
-    for (const c of state.cues) {
-      if ((c.kind !== "DROP" && c.kind !== "BIGDROP") || t >= c.t || c.t - t > 3 * tick) continue;
-      const left = c.t - t, nn = Math.ceil(left / tick - 1e-6), tickT = tick - (left - (nn - 1) * tick), since = 3 * tick - left;
-      const big = c.kind === "BIGDROP", s = (big ? "BIG DROP IN " : "DROP IN ") + nn, cls = big ? "c-r" : "c-a";
-      return one([...s].map((ch, i) => [ch === " " ? " " : (i === s.length - 1 ? tickT < 0.18 : since < 0.25 + 0.045 * i) ? noise() : ch, cls]));
-    }
-    return introRows(t);
+    return out.sort((a, b) => a.pri - b.pri);
   }
   const osd = $("osd"); const cells = [];
   for (let i = 0; i < 50 * 18; i++) { const s = document.createElement("span"); osd.appendChild(s); cells.push(s); }
-  const put = (x, y, text, cls) => { for (let i = 0; i < text.length && x + i < 50; i++) { const c = cells[y * 50 + x + i]; c.textContent = text[i]; c.className = cls || "c-g"; } };
+  const put = (x, y, text, cls) => { if (y < 0 || y >= 18) return; for (let i = 0; i < text.length && x + i < 50; i++) { const c = cells[y * 50 + x + i]; c.textContent = text[i]; c.className = cls || "c-g"; } };
+  const putCell = (x, y, ch, cls) => { if (y < 0 || y >= 18 || x < 0 || x >= 50) return; const c = cells[y * 50 + x]; c.textContent = ch; c.className = cls || "c-g"; };
   function drawOsd(t) {
     for (const c of cells) { c.textContent = ""; c.className = ""; }
     // a sketch of the fr0gOS bars for context
     put(0, 1, "ARMED"); put(0, 9, "3.81V"); put(0, 10, "212mAh"); put(0, 13, "LQ100"); put(0, 15, "R8"); put(0, 16, "200MW");
     put(45, 0, "MK4-2"); put(45, 1, fmt(t).padStart(5, " ").slice(-5)); put(46, 4, "ACRO"); put(47, 5, "AIR"); put(47, 12, "THR"); put(45, 13, "62.4%");
-    const res = cueAt(t);
-    if (res) {
-      const rows = res.rows, n = rows.length, y0 = Math.max(1, 4 - Math.floor((n - 1) / 2));
-      rows.forEach((line, r) => { if (!line) return; const x = Math.max(8, 25 - Math.floor(line.length / 2)); line.forEach(([ch, cls], i) => put(x + i, y0 + r, ch, cls)); });
+    const blocks = []; const intro = introBlock(t); if (intro) blocks.push(intro); blocks.push(...activeBlocks(t));
+    if (!blocks.length) return;
+    const totalH = blocks.reduce((s, b) => s + b.rows.length, 0) + (blocks.length - 1);
+    let y = Math.min(3, Math.max(2, Math.round((18 - totalH) / 2)));
+    for (const b of blocks) {
+      const w = b.rows.reduce((m, r) => Math.max(m, r ? r.length : 0), 0), x0 = Math.max(8, 25 - Math.floor(w / 2));
+      b.rows.forEach((line, r) => { if (line) line.forEach(([ch, cls], i) => putCell(x0 + i, y + r, ch, cls)); });
+      y += b.rows.length + 1;
     }
   }
 
