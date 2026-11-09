@@ -1,0 +1,237 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>fr0gOS — Mark 4-2 themes</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=VT323&family=Press+Start+2P&family=Silkscreen:wght@400;700&family=Pixelify+Sans:wght@400;600;700&family=Orbitron:wght@500;700;900&family=IBM+Plex+Mono:wght@400;600&display=swap">
+<style>
+  :root { color-scheme: dark; --mono: "IBM Plex Mono", ui-monospace, Menlo, monospace; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #07090a; color: #c9d8d2; font-family: var(--mono); }
+  .wrap { max-width: 1320px; margin: 0 auto; padding: 20px max(16px, env(safe-area-inset-left)) 48px; }
+  h1 { font-family: "VT323", monospace; font-weight: 400; font-size: 40px; line-height: 1; margin: 0 0 2px; color: #4ff07e; letter-spacing: 1px; }
+  .sub { color: #6f837c; margin: 0 0 14px; font-size: 14px; max-width: 72ch; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 8px; margin: 0 0 14px; }
+  .tabs button { font: inherit; font-size: 13px; color: #c9d8d2; background: #141b19; border: 1px solid #1f2b28; border-radius: 4px; padding: 7px 12px; cursor: pointer; }
+  .tabs button[aria-pressed=true] { background: #4ff07e; color: #031208; border-color: #4ff07e; font-weight: 600; }
+  .themeName { font-family: "VT323", monospace; font-size: 26px; color: #c9d8d2; margin: 0 0 8px; }
+  .stageBox { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border: 1px solid #1f2b28; border-radius: 8px; overflow: hidden; }
+  .stage { position: absolute; left: 0; top: 0; width: 1280px; height: 720px; transform-origin: top left; }
+  .feed { position: absolute; left: 172px; top: 0; width: 936px; height: 720px; overflow: hidden; background: #5f646a; }
+  .feed > .scene { position: absolute; left: -60px; top: -45px; width: 1080px; height: 810px; transform: rotate(-3deg); }
+  .feed i { position: absolute; left: 0; top: 0; width: 100%; height: 100%; display: block; }
+  .shade { position: absolute; inset: 0; background: rgba(0,0,0,.18); }
+  .tint { position: absolute; inset: 0; z-index: 2; pointer-events: none; mix-blend-mode: multiply; display: none; }
+  .scan { position: absolute; inset: 0; z-index: 5; pointer-events: none; display: none; background: repeating-linear-gradient(0deg, rgba(0,0,0,.28) 0, rgba(0,0,0,.28) 1px, transparent 1px, transparent 4px); }
+  .osd { position: absolute; inset: 0; z-index: 3; }
+  .cell { position: absolute; white-space: nowrap; line-height: 1; }
+  .plateCell { padding: 0 10px; }
+  .blink { animation: cblink 1s steps(1) infinite; }
+  @keyframes cblink { 50% { opacity: 0; } }
+  .ev { display: inline-block; padding: 0 6px; }
+  .pop { animation: pop .5s ease-out; } @keyframes pop { 0% { transform: scale(.4); opacity: 0; } 60% { transform: scale(1.15); opacity: 1; } 100% { transform: scale(1); } }
+  .shake { animation: shake .4s linear 2; } @keyframes shake { 0%,100% { transform: translateX(0); } 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
+  .frog { position: absolute; z-index: 4; transition: left .38s cubic-bezier(.3,.6,.4,1), top .38s cubic-bezier(.3,.6,.4,1); }
+  .fin { position: relative; width: 33px; height: 27px; transform-origin: 50% 60%; }
+  .hopA, .hopB { animation: hop .38s ease-out; }
+  @keyframes hop { 0% { transform: translateY(0); } 45% { transform: translateY(-24px); } 100% { transform: translateY(0); } }
+  .ev-flip { animation: evflip 1.3s ease-in-out; } @keyframes evflip { 0% { transform: translateY(0) perspective(160px) rotateX(0); } 22% { transform: translateY(-30px) perspective(160px) rotateX(0); } 72% { transform: translateY(-30px) perspective(160px) rotateX(-360deg); } 100% { transform: translateY(0) perspective(160px) rotateX(-360deg); } }
+  .ev-roll { animation: evroll 1.3s ease-in-out; } @keyframes evroll { 0% { transform: translateY(0) rotate(0); } 22% { transform: translateY(-30px) rotate(0); } 72% { transform: translateY(-30px) rotate(360deg); } 100% { transform: translateY(0) rotate(360deg); } }
+  .ev-spin { animation: evspin 1.3s ease-in-out; } @keyframes evspin { 0% { transform: translateY(0) perspective(160px) rotateY(0); } 22% { transform: translateY(-30px) perspective(160px) rotateY(0); } 72% { transform: translateY(-30px) perspective(160px) rotateY(720deg); } 100% { transform: translateY(0) perspective(160px) rotateY(720deg); } }
+  .ev-crash { animation: evcrash 2.4s ease-out forwards; } @keyframes evcrash { 0% { transform: none; } 12% { transform: translate(8px,-16px) rotate(50deg); } 38% { transform: translate(16px,46px) rotate(180deg); } 54%,100% { transform: translate(16px,46px) rotate(180deg); } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>fr0gOS &middot; MARK 4-2 &middot; THEMES</h1>
+  <p class="sub">Same layout and frog as the DOS build &mdash; craft name top-left with Frog Zero on it, timer top-right, trick feed below the name &mdash; dressed in wildly different skins. Pick one and I'll make it the real v1.2 look.</p>
+  <div class="tabs" id="tabs"></div>
+  <div class="themeName" id="themeName"></div>
+  <div class="stageBox" id="box">
+    <div class="stage" id="stage">
+      <div class="feed" aria-hidden="true">
+        <div class="scene">
+          <i style="background:#6c7177;clip-path:polygon(0 0,100% 0,66% 30%,34% 30%)"></i>
+          <i style="background:#3a3f45;clip-path:polygon(0 0,34% 30%,34% 64%,0 100%)"></i>
+          <i style="background:#42474d;clip-path:polygon(100% 0,66% 30%,66% 64%,100% 100%)"></i>
+          <i style="background:#4a3f36;clip-path:polygon(0 100%,100% 100%,66% 64%,34% 64%)"></i>
+          <i style="background:#8f9aa3;clip-path:polygon(8% 22%,22% 33%,22% 50%,8% 57%)"></i>
+          <i style="left:53%;top:38%;width:8%;height:26%;background:#26282b"></i>
+          <i style="left:39%;top:41%;width:18%;height:30%;border:12px solid #d9692a;border-bottom:none;border-radius:50% 50% 0 0/40% 40% 0 0"></i>
+        </div>
+        <div class="shade"></div>
+      </div>
+      <div class="tint" id="tint"></div>
+      <div class="osd" id="osd"></div>
+      <div class="scan" id="scan"></div>
+      <div class="frog" id="frog" aria-hidden="true"><div class="fin" id="fin"><div id="sprite" style="position:absolute;left:-3px;top:0;width:3px;height:3px"></div></div></div>
+    </div>
+  </div>
+</div>
+<script>
+(() => {
+  "use strict";
+  const $ = (id) => document.getElementById(id);
+  const P = new URLSearchParams(location.search);
+
+  // each static label: x, y, text, token
+  const L = 8, R = 1128;
+  const STATIC = [
+    [L, 44, "MK42", "plate"],
+    [L, 168, "ARM", "ok"], [L, 204, "ACRO", "pri"], [L, 240, "AIRON", "acc"],
+    [L, 276, "-----", "dim"],
+    [L, 312, "LQ100", "acc"], [L, 348, "-62dB", "dim"], [L, 384, "F1000", "acc"],
+    [L, 420, "-----", "dim"],
+    [L, 456, "R8", "acc"], [L, 492, "200mW", "dim"],
+    [L, 612, "-----", "dim"], [L, 648, "HDZ", "pri"], [L, 684, "4:3", "pri"],
+    [R, 76, "3.92V", "pri"], [R, 112, "78%", "pri"], [R, 148, "4.1A", "pri"], [R, 184, "212mh", "dim"],
+    [R, 220, "-----", "dim"],
+    [R, 292, "41C", "dim"], [R, 328, "2.1G", "pri"], [R, 364, "R28K", "acc"],
+    [R, 400, "-----", "dim"], [R, 436, "#027", "pri"],
+  ];
+
+  const THEMES = {
+    megadrive: { label: "Mega Drive (16-bit)", font: "'Press Start 2P', monospace", size: 18, line: 26, bg: "#000000",
+      pri: "#ffffff", acc: "#5ee7ff", ok: "#3dff6b", warn: "#ffd400", bad: "#ff3b3b", dim: "#8a8ac8", timer: "#ffffff",
+      plateBg: "#1636c9", plateText: "#ffd400", plateBorder: "4px solid #fff", plateRadius: "8px", shadow: "3px 3px 0 #0b1f8f",
+      frog: { E: "#3dd65a", K: "#1636c9", L: "#ffd400", M: "#0b5a1f", B: "#f6f0a0", F: "#3dd65a", W: "#ffffff" } },
+    gameboy: { label: "Game Boy (DMG)", font: "'Pixelify Sans', monospace", size: 30, line: 32, bg: "#0b1a08",
+      pri: "#9bbc0f", acc: "#8bac0f", ok: "#9bbc0f", warn: "#8bac0f", bad: "#306230", dim: "#4f6a16", timer: "#9bbc0f",
+      plateBg: "#0f380f", plateText: "#9bbc0f", plateRadius: "4px", tint: "rgba(130,170,30,.55)",
+      frog: { E: "#9bbc0f", K: "#0f380f", L: "#8bac0f", M: "#306230", B: "#d2e68a", F: "#9bbc0f", W: "#e8f0c0" } },
+    neon: { label: "Neon (synthwave)", font: "'Orbitron', 'VT323', monospace", size: 30, line: 36, bg: "#0a0412",
+      pri: "#00e5ff", acc: "#ff2bd6", ok: "#39ff14", warn: "#ffe24a", bad: "#ff2b5e", dim: "#7a5aa6", timer: "#ff2bd6",
+      plateBg: "transparent", plateText: "#00e5ff", plateBorder: "2px solid #ff2bd6", plateRadius: "4px", glow: true,
+      frog: { E: "#39ff14", K: "#ff2bd6", L: "#00e5ff", M: "#1f8f3a", B: "#d6fff0", F: "#39ff14", W: "#ffffff" } },
+    teletext: { label: "Teletext (Ceefax)", font: "'Silkscreen', monospace", size: 22, line: 28, bg: "#000000", blocks: true,
+      pri: "#ffffff", acc: "#00ffff", ok: "#00ff00", warn: "#ffff00", bad: "#ff0000", dim: "#5a5a5a", timer: "#ffff00",
+      plateBg: "#0000ff", plateText: "#ffff00", plateRadius: "0",
+      frog: { E: "#00ff00", K: "#0000ff", L: "#00ffff", M: "#008000", B: "#ffff00", F: "#00ff00", W: "#ffffff" } },
+    amber: { label: "Amber CRT", font: "'VT323', monospace", size: 38, line: 40, bg: "#0a0600",
+      pri: "#ffb000", acc: "#ffd36b", ok: "#ffb000", warn: "#ffd36b", bad: "#ff6a00", dim: "#7a5200", timer: "#ffd36b",
+      plateBg: "#3a2600", plateText: "#ffd36b", plateRadius: "2px", scan: true,
+      frog: { E: "#ffb000", K: "#3a2600", L: "#ffd36b", M: "#8a5e00", B: "#ffe3a0", F: "#ffb000", W: "#fff2cc" } },
+    dos: { label: "DOS 6.2 (current)", font: "'VT323', monospace", size: 38, line: 40, bg: "#000000",
+      pri: "#ffffff", acc: "#55ffff", ok: "#55ff55", warn: "#ffff55", bad: "#ff5555", dim: "#6a6f6f", timer: "#ffff55",
+      plateBg: "#0000aa", plateText: "#ffffff", plateRadius: "0",
+      frog: { E: "#55ff55", K: "#0000aa", L: "#55ffff", M: "#00aa00", B: "#aaffaa", F: "#55ff55", W: "#ffffff" } },
+  };
+  const ORDER = ["megadrive", "gameboy", "neon", "teletext", "amber", "dos"];
+
+  // build cells once
+  const osd = $("osd"), cellEls = [];
+  for (const [x, y, text, token] of STATIC) {
+    const d = document.createElement("div"); d.className = "cell" + (token === "plate" ? " plateCell" : "");
+    d.style.left = x + "px"; d.style.top = y + "px"; d.textContent = text; d.dataset.token = token;
+    osd.appendChild(d); cellEls.push(d);
+  }
+  const cur = document.createElement("div"); cur.className = "cell blink"; cur.dataset.token = "warn"; cur.textContent = "_"; osd.appendChild(cur);
+  const timer = document.createElement("div"); timer.className = "cell"; timer.style.left = R + "px"; timer.style.top = "8px"; timer.textContent = "01:23"; osd.appendChild(timer);
+  const feed = document.createElement("div"); feed.className = "cell"; feed.style.left = L + "px"; feed.style.top = "92px"; osd.appendChild(feed);
+
+  const ROWS = {
+    sit:   ["...........",".EE.....EE.","KKKKKKKKKKK","KLLKKKKKLLK","EEEEEEEEEEE","EMEEEEEEEME",".EMMMMMMME.","..EBBBBBE..","FFE.....EFF"],
+    leap:  [".EE.....EE.","KKKKKKKKKKK","KLLKKKKKLLK","EEEEEEEEEEE",".EMMMMMMME.","..EBBBBBE..",".E.......E.","E.........E","F.........F"],
+    ribbit:["...........",".EE.....EE.","KKKKKKKKKKK","KLLKKKKKLLK","EEEEEEEEEEE","EMEEEEEEEME",".EMMMMMMME.",".BBBBBBBBB.","FFBBBBBBBFF"],
+    glint: ["...........",".EE.....EE.","KKKKKKKKKKK","KWLKKKKKWLK","EEEEEEEEEEE","EMEEEEEEEME",".EMMMMMMME.","..EBBBBBE..","FFE.....EFF"],
+    ko:    ["...........",".EE.....EE.","KKKKKKKKKKK","KWKKKKKKWKK","EEEEEEEEEEE","EEEEEEEEEEE",".EEMMMMMEE.","..EBBBBBE..","FFE.....EFF"],
+  };
+  const PERCH = [12, 40, 68, 96, 117].map((x) => ({ x, y: 17 }));
+  const EVT = { FLIP: "FLIP!", ROLL: "ROLL!", SPIN: "SPIN!", CRASH: "ABORT" };
+  const SEQ = ["FLIP", "ROLL", "SPIN", "CRASH"];
+  const frog = $("frog"), fin = $("fin"), spr = $("sprite");
+  let THEME = THEMES.megadrive;
+  const st = { pi: 0, pose: "sit", hop: "", ev: null, chain: 0, k: 0 };
+
+  function sprite(pose) {
+    const rows = ROWS[pose], PAL = THEME.frog, s = [];
+    for (let y = 0; y < rows.length; y++) for (let x = 0; x < rows[y].length; x++) { const c = PAL[rows[y][x]]; if (c) s.push(((x + 1) * 3) + "px " + (y * 3) + "px 0 0 " + c); }
+    return s.join(",");
+  }
+  function place() { const p = PERCH[st.pi]; frog.style.left = p.x + "px"; frog.style.top = p.y + "px"; spr.style.boxShadow = sprite(st.pose); fin.className = "fin " + (st.ev ? "ev-" + st.ev.toLowerCase() : st.hop); }
+
+  function applyTheme(key) {
+    THEME = THEMES[key]; const T = THEME;
+    $("themeName").textContent = T.label;
+    $("box").style.background = T.bg;
+    const stage = $("stage"); stage.style.fontFamily = T.font;
+    for (const d of [...cellEls, cur, timer, feed]) { d.style.fontSize = T.size + "px"; d.style.lineHeight = T.line + "px"; }
+    const colorOf = (tok) => tok === "timer" ? T.timer : (T[tok] || T.pri);
+    for (const d of cellEls) {
+      const tok = d.dataset.token;
+      d.style.background = ""; d.style.color = ""; d.style.padding = tok === "plate" ? "2px 10px" : ""; d.style.border = ""; d.style.borderRadius = ""; d.style.boxShadow = ""; d.style.textShadow = "";
+      if (tok === "plate") {
+        d.style.background = T.plateBg; d.style.color = T.plateText; d.style.border = T.plateBorder || "none"; d.style.borderRadius = T.plateRadius || "0"; if (T.shadow) d.style.boxShadow = T.shadow;
+      } else if (T.blocks && d.textContent.indexOf("-") !== 0) {
+        d.style.background = colorOf(tok); d.style.color = "#000"; d.style.padding = "1px 6px";
+      } else {
+        d.style.color = colorOf(tok);
+      }
+      if (T.glow) d.style.textShadow = "0 0 6px currentColor";
+      if (T.shadow && tok !== "plate") d.style.textShadow = T.shadow;
+    }
+    cur.style.color = T.timer; timer.style.color = T.timer;
+    if (T.glow) { cur.style.textShadow = timer.style.textShadow = "0 0 6px currentColor"; } else if (T.shadow) { timer.style.textShadow = T.shadow; } else { cur.style.textShadow = timer.style.textShadow = ""; }
+    const tint = $("tint"); if (T.tint) { tint.style.display = "block"; tint.style.background = T.tint; } else tint.style.display = "none";
+    $("scan").style.display = T.scan ? "block" : "none";
+    renderFeed(); place();
+    for (const b of $("tabs").children) b.setAttribute("aria-pressed", b.dataset.k === key);
+  }
+
+  function renderFeed() {
+    if (!st.ev) { feed.innerHTML = ""; return; }
+    const crash = st.ev === "CRASH", T = THEME;
+    const bg = crash ? T.bad : T.warn, fg = (THEMES === null) ? "#000" : "#000";
+    feed.innerHTML = '<span class="ev ' + (crash ? "shake" : "pop") + '">' + EVT[st.ev] + "</span>";
+    const span = feed.firstChild; span.style.background = bg; span.style.color = "#000";
+    if (T.glow) span.style.boxShadow = "0 0 10px " + bg;
+  }
+
+  // tabs
+  for (const k of ORDER) { const b = document.createElement("button"); b.textContent = THEMES[k].label; b.dataset.k = k; b.addEventListener("click", () => applyTheme(k)); $("tabs").appendChild(b); }
+
+  // static shot mode for rendering: freeze on a FLIP
+  const shot = P.get("shot");
+  if (shot) {
+    applyTheme(P.get("theme") || "megadrive");
+    st.ev = "FLIP"; st.pose = "sit"; place(); renderFeed();
+    // hold the flip mid-rotation for a crisp still
+    fin.style.animation = "none"; fin.style.transform = "translateY(-30px) perspective(160px) rotateX(-150deg)";
+  } else {
+    let T2;
+    function next(ms) { clearTimeout(T2); T2 = setTimeout(step, ms); }
+    function step() {
+      if (st.ev) return;
+      let n = st.pi; while (n === st.pi) n = (Math.random() * PERCH.length) | 0;
+      st.pi = n; st.pose = "leap"; st.hop = st.hop === "hopA" ? "hopB" : "hopA"; place();
+      setTimeout(() => {
+        if (st.ev) return;
+        st.pose = "sit"; place(); st.chain++;
+        if (st.chain < 3 && Math.random() < 0.55) { next(110 + Math.random() * 180); return; }
+        st.chain = 0;
+        const r = Math.random(), idle = r < 0.3 ? "ribbit" : (r < 0.5 ? "glint" : null), stay = 500 + Math.random() * 1300;
+        if (idle) setTimeout(() => { if (st.ev) return; st.pose = idle; place(); setTimeout(() => { if (st.ev) return; st.pose = "sit"; place(); next(250 + Math.random() * 450); }, 650); }, stay * 0.5);
+        else next(stay);
+      }, 380);
+    }
+    function event() {
+      clearTimeout(T2);
+      const e = SEQ[st.k++ % 4], dur = e === "CRASH" ? 2700 : 1500;
+      st.ev = e; st.pose = e === "CRASH" ? "ko" : "sit"; place(); renderFeed();
+      setTimeout(() => { st.ev = null; st.pose = "sit"; st.hop = "hopA"; st.chain = 0; renderFeed(); place(); next(500); }, dur);
+      setTimeout(event, dur + 6000 + Math.random() * 3000);
+    }
+    let sec = 83; setInterval(() => { sec++; const m = (sec / 60) | 0, s = sec % 60; timer.textContent = (m < 10 ? "0" : "") + m + ":" + (s < 10 ? "0" : "") + s; }, 1000);
+    applyTheme("megadrive"); next(900); setTimeout(event, 6500);
+  }
+
+  const box = $("box"), stage = $("stage");
+  const fit = () => { stage.style.transform = "scale(" + (box.clientWidth / 1280) + ")"; };
+  new ResizeObserver(fit).observe(box); fit();
+})();
+</script>
+</body>
+</html>
