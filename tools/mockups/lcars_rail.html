@@ -1,13 +1,13 @@
-<title>LCARS Rail Frame</title>
+<title>LCARS Side Columns</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <style>
-/* Layout: 16:9 goggle view. LCARS lives in VERTICAL rails down the LEFT and RIGHT edges; the black
-   letterbox bars top and bottom carry the telemetry. Center stays clear video. DS9 Ops palette, animated.
-   Single dark world on purpose — LCARS is black-ground. */
+/* Layout: 16:9 goggle. The camera is 5:4, so it pillarboxes with black bars on the LEFT and RIGHT.
+   ALL graphics live in those two side columns: LCARS-styled telemetry cells, same data 5-1 pushes live.
+   Center video stays clean. DS9 Ops palette, animated. Single dark world — LCARS is black-ground. */
 :root{
   --bg:#050406; --ink:#f0ead8; --dim:#8c8398; --line:#241d2a;
   --amber:#ffb24a; --amber2:#ff9a2e; --lav:#bea2e8; --lav2:#9f86d9;
-  --tan:#e8b96a; --rust:#c98a52; --red:#e0533c; --sky:#8fb4ff;
+  --tan:#e8b96a; --rust:#c98a52; --red:#e0533c; --sky:#8fb4ff; --grn:#7bd88f;
   --ui:'Oswald',system-ui,sans-serif; --lcars:'Antonio','Oswald',sans-serif;
   color-scheme:dark;
 }
@@ -23,9 +23,9 @@ header{padding-block:clamp(22px,5vw,46px) 6px}
 .kick{font-family:var(--lcars);font-weight:700;letter-spacing:.4em;text-transform:uppercase;
   color:var(--amber);font-size:clamp(11px,2.5vw,14px)}
 h1{font-family:var(--lcars);font-weight:700;text-transform:uppercase;letter-spacing:.015em;
-  line-height:.9;margin:.16em 0 .28em;font-size:clamp(34px,9vw,74px);text-wrap:balance}
+  line-height:.9;margin:.16em 0 .28em;font-size:clamp(32px,8.4vw,70px);text-wrap:balance}
 h1 em{font-style:normal;color:var(--amber)}
-.lede{color:var(--dim);max-width:62ch;line-height:1.5;font-size:clamp(13.5px,2.3vw,15.5px)}
+.lede{color:var(--dim);max-width:64ch;line-height:1.5;font-size:clamp(13.5px,2.3vw,15.5px)}
 .lede b{color:var(--ink);font-weight:500}
 
 .ctrl{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;display:flex;flex-wrap:wrap;gap:8px;
@@ -45,96 +45,99 @@ figure{margin:0;display:flex;flex-direction:column;gap:12px}
 /* ===== OSD ===== */
 .osd{position:relative;aspect-ratio:16/9;width:100%;background:#000;border-radius:5px;overflow:hidden;
   container-type:size;font-family:var(--lcars)}
-.view{position:absolute;inset:0;background:linear-gradient(#070a12 0%,#0b1020 46%,#141008 46%,#0a0706 100%)}
-.view::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;
+/* 5:4 video pillarboxed: 70cqw wide, centred -> 15cqw black column each side */
+.video{position:absolute;left:15.5cqw;right:15.5cqw;top:0;bottom:0;
+  background:linear-gradient(#070a12 0%,#0b1020 46%,#141008 46%,#0a0706 100%)}
+.video::after{content:"";position:absolute;inset:0;opacity:.5;mix-blend-mode:overlay;
   background:repeating-linear-gradient(0deg,#fff0 0 3px,#0000000d 3px 4px)}
 
-/* --- black telemetry letterbox bars --- */
-.tbar{position:absolute;left:0;right:0;background:#000;display:flex;align-items:center;gap:1.8cqw;
-  padding:0 2.6cqw;z-index:3;font-variant-numeric:tabular-nums;white-space:nowrap;overflow:hidden}
-.tbar.top{top:0;height:11cqw;border-bottom:0.3cqw solid #16120b}
-.tbar.bot{bottom:0;height:12.5cqw;border-top:0.3cqw solid #16120b}
-.tbar .nm{color:var(--lav);font-weight:700;font-size:4.7cqw;letter-spacing:.02em}
-.tbar .d{color:var(--amber);font-weight:700;font-size:3.9cqw;letter-spacing:.02em}
-.tbar .d small,.tbar .u{font-size:2.1cqw;color:var(--ink);opacity:.8;font-weight:600;margin-left:.25cqw}
-.tbar .k{font-family:var(--ui);font-weight:600;letter-spacing:.14em;font-size:2.1cqw;color:var(--dim);
-  text-transform:uppercase;align-self:center}
-.tbar .ev{color:var(--lav);font-weight:700;font-size:3.9cqw}
-.tbar .sys{margin-left:auto;font-family:var(--ui);font-weight:600;font-size:2.2cqw;letter-spacing:.16em;color:var(--dim)}
-.tbar .live{margin-left:auto;background:var(--amber);color:#120c05;font-weight:700;font-size:2.4cqw;
-  letter-spacing:.12em;padding:.5cqw 1.5cqw;border-radius:3cqw}
+/* --- the two black side columns hold everything --- */
+.col{position:absolute;top:0;bottom:0;width:15.5cqw;background:#000;z-index:2;overflow:hidden;
+  display:flex;flex-direction:column;gap:0.7cqw;padding:0.9cqw 0.8cqw}
+.colL{left:0;border-right:0.3cqw solid #16120b}
+.colR{right:0;border-left:0.3cqw solid #16120b}
 
-/* --- vertical LCARS rails between the bars --- */
-.rail{position:absolute;top:11cqw;bottom:12.5cqw;width:7.4cqw;display:flex;flex-direction:column;
-  gap:0.9cqw;padding:1.1cqw 0;z-index:2}
-.railL{left:2cqw}.railR{right:2cqw}
-.rseg{background:var(--amber);border-radius:1.1cqw;position:relative;overflow:hidden;transform-origin:top;
-  display:flex;align-items:center;justify-content:center}
-.rseg.s1{background:var(--lav)}.rseg.s2{background:var(--tan)}.rseg.s3{background:var(--rust)}
-.rseg.s4{background:var(--amber2)}
-.rseg .vlbl{writing-mode:vertical-rl;transform:rotate(180deg);color:#120c05;font-weight:700;
-  letter-spacing:.14em;font-size:2.5cqw;text-transform:uppercase;opacity:.92}
-.cap-t{border-top-left-radius:5.5cqw;border-top-right-radius:5.5cqw}
-.cap-b{border-bottom-left-radius:5.5cqw;border-bottom-right-radius:5.5cqw}
-.num{color:#120c05;font-weight:700;font-size:3.2cqw}
+/* LCARS end caps top & bottom of each column */
+.cap{flex:0 0 3cqw;background:var(--amber)}
+.capL.top{border-top-left-radius:4cqw;border-top-right-radius:1cqw}
+.capL.bot{border-bottom-left-radius:4cqw;border-bottom-right-radius:1cqw;background:var(--rust)}
+.capR.top{border-top-right-radius:4cqw;border-top-left-radius:1cqw}
+.capR.bot{border-bottom-right-radius:4cqw;border-bottom-left-radius:1cqw;background:var(--rust)}
 
-/* mascot badge nested in the left rail */
-.badge{flex:0 0 7.4cqw;background:#0b0b10;border:0.7cqw solid var(--amber);border-radius:1.6cqw;
+/* a telemetry cell: colour tab + stacked label/value */
+.cell{flex:1 1 auto;display:flex;gap:0.8cqw;align-items:stretch;min-height:0;transform-origin:left}
+.cell .tab{flex:0 0 1.9cqw;border-radius:0.8cqw;background:var(--amber)}
+.cell.lav .tab{background:var(--lav)}.cell.tan .tab{background:var(--tan)}
+.cell.rust .tab{background:var(--rust)}.cell.grn .tab{background:var(--grn)}
+.cell .cc{display:flex;flex-direction:column;justify-content:center;min-width:0;line-height:1}
+.cell .l{font-family:var(--ui);font-weight:600;letter-spacing:.12em;text-transform:uppercase;
+  font-size:1.75cqw;color:var(--dim)}
+.cell .val{font-weight:700;font-size:3.3cqw;color:var(--amber);white-space:nowrap;font-variant-numeric:tabular-nums}
+.cell .val i{font-style:normal;font-size:1.7cqw;color:var(--ink);opacity:.8;margin-left:.3cqw}
+.cell.ev .val{color:var(--lav)}
+.cell.warn .val{color:var(--red)}
+
+/* mascot badge cell */
+.badge{flex:0 0 11cqw;background:#0b0b10;border:0.6cqw solid var(--amber);border-radius:1.4cqw;
   display:grid;place-items:center;overflow:hidden}
-.frog{width:74%;height:74%}
+.frog{width:78%;height:78%}
 .frog .g{fill:#2ad14f}.frog .o{fill:#11121a;stroke:var(--amber);stroke-width:5}
 .frog .e{fill:#eafff0}.frog .p{fill:#0a0a0a}
 
-/* right-rail vertical combo fill */
-.vcombo{flex:1;background:#140f1c;border-radius:1.1cqw;display:flex;align-items:flex-end;overflow:hidden}
-.vfill{width:100%;height:62%;background:linear-gradient(0deg,var(--lav2),var(--lav));border-radius:1.1cqw;
+/* combo climb cell (right column) */
+.climb{flex:0 0 11cqw;display:flex;gap:0.8cqw}
+.climb .tab{flex:0 0 1.9cqw;border-radius:0.8cqw;background:var(--lav)}
+.climb .body{flex:1;display:flex;flex-direction:column;min-width:0}
+.climb .l{font-family:var(--ui);font-weight:600;letter-spacing:.12em;font-size:1.8cqw;color:var(--dim);text-transform:uppercase}
+.climb .track{flex:1;margin-top:0.5cqw;background:#140f1c;border-radius:0.8cqw;display:flex;align-items:flex-end;overflow:hidden}
+.climb .fill{width:100%;height:62%;background:linear-gradient(0deg,var(--lav2),var(--lav));border-radius:0.8cqw;
   transition:height .5s cubic-bezier(.3,.9,.3,1)}
-/* status pips */
-.pip{flex:0 0 3.4cqw;border-radius:1cqw;background:#140f1c}
-.pip.on{background:var(--tan)}.pip.on.a{background:var(--lav)}
+.climb .n{position:absolute;color:#120c05;font-weight:700;font-size:2.4cqw}
 
-/* ambient shimmer: a bright block sliding down a rail */
-.shim{position:absolute;left:0;right:0;height:26%;pointer-events:none;z-index:2;
-  background:linear-gradient(#fff0,#fff8 48%,#fff9 52%,#fff0);mix-blend-mode:screen}
+/* ambient shimmer sliding down a column */
+.shim{position:absolute;left:0;right:0;height:16%;pointer-events:none;z-index:3;
+  background:linear-gradient(#fff0,#fff7 48%,#fff8 52%,#fff0);mix-blend-mode:screen}
 
-/* ===== variant 2: asymmetric (heavy left, slim right spine) ===== */
-.osd.asym .railR{width:3.2cqw;gap:0.7cqw}
-.osd.asym .railR .rseg,.osd.asym .railR .vcombo{border-radius:2cqw}
-.osd.asym .railL{width:9cqw}
+/* ===== variant 2: solid segments (value black-on-colour) ===== */
+.osd.solid .cell{gap:0}
+.osd.solid .cell .tab{display:none}
+.osd.solid .cell .cc{flex:1;background:var(--amber);border-radius:0.9cqw;padding:0 0.9cqw;justify-content:center}
+.osd.solid .cell.lav .cc{background:var(--lav)}.osd.solid .cell.tan .cc{background:var(--tan)}
+.osd.solid .cell.rust .cc{background:var(--rust)}.osd.solid .cell.grn .cc{background:var(--grn)}
+.osd.solid .cell .l{color:#120c05;opacity:.7}
+.osd.solid .cell .val{color:#120c05}.osd.solid .cell .val i{color:#120c05;opacity:.65}
+.osd.solid .cell.ev .val,.osd.solid .cell.warn .val{color:#120c05}
 
 /* ====== ANIMATION ====== */
-@keyframes sweepV{0%{transform:translateY(-120%)}60%{transform:translateY(520%)}100%{transform:translateY(520%)}}
+@keyframes sweepV{0%{transform:translateY(-120%)}60%{transform:translateY(680%)}100%{transform:translateY(680%)}}
 @keyframes lowtext{0%,100%{color:var(--amber)}50%{color:var(--red)}}
+@keyframes lowbg{0%,100%{background:var(--amber)}50%{background:var(--red)}}
 @keyframes blink{50%{opacity:.25}}
-@keyframes alarmA{0%,100%{background:var(--amber)}50%{background:var(--red)}}
-@keyframes alarmL{0%,100%{background:var(--lav)}50%{background:var(--red)}}
-@keyframes alarmT{0%,100%{background:var(--tan)}50%{background:var(--red)}}
-@keyframes alarmR{0%,100%{background:var(--rust)}50%{background:var(--red)}}
+@keyframes alarm{0%,100%{background:var(--amber)}50%{background:var(--red)}}
 @media (prefers-reduced-motion:no-preference){
-  .shim{animation:sweepV 4.8s ease-in-out .4s infinite}
-  .railR .shim{animation-delay:2.4s}
+  .shim{animation:sweepV 5s ease-in-out .4s infinite}
+  .colR .shim{animation-delay:2.5s}
   .osd.low .v-volt{animation:lowtext 1s steps(1,end) infinite}
-  .live{animation:blink 1.2s steps(1,end) infinite}
+  .osd.low.solid .v-volt{animation:none}
+  .osd.low.solid .cell-volt .cc{animation:lowbg 1s steps(1,end) infinite}
 }
-.osd.boot .rail{animation:growY .6s both}
-.osd.boot .tbar.top{animation:fade .5s .1s both}
-.osd.boot .tbar.bot{animation:fade .5s .24s both}
-.osd.boot .rseg,.osd.boot .badge,.osd.boot .pip,.osd.boot .vcombo{animation:segIn .4s both}
-.osd.boot .rail .rseg:nth-child(1){animation-delay:.14s}
-.osd.boot .rail>:nth-child(2){animation-delay:.22s}
-.osd.boot .rail>:nth-child(3){animation-delay:.3s}
-.osd.boot .rail>:nth-child(4){animation-delay:.38s}
-.osd.boot .rail>:nth-child(5){animation-delay:.46s}
+.osd.boot .col{animation:growY .55s both}
+.osd.boot .cell,.osd.boot .badge,.osd.boot .climb,.osd.boot .cap{animation:segIn .36s both}
+.osd.boot .col>*:nth-child(1){animation-delay:.10s}
+.osd.boot .col>*:nth-child(2){animation-delay:.16s}
+.osd.boot .col>*:nth-child(3){animation-delay:.22s}
+.osd.boot .col>*:nth-child(4){animation-delay:.28s}
+.osd.boot .col>*:nth-child(5){animation-delay:.34s}
+.osd.boot .col>*:nth-child(6){animation-delay:.40s}
+.osd.boot .col>*:nth-child(7){animation-delay:.46s}
+.osd.boot .col>*:nth-child(8){animation-delay:.52s}
+.osd.boot .col>*:nth-child(9){animation-delay:.58s}
 @keyframes growY{from{transform:scaleY(0);transform-origin:top}to{transform:scaleY(1)}}
 @keyframes segIn{from{transform:scaleX(0);opacity:0}to{transform:scaleX(1);opacity:1}}
-@keyframes fade{from{opacity:0}to{opacity:1}}
-.osd.alert-on .rseg,.osd.alert-on .cap-t,.osd.alert-on .cap-b{animation:alarmA .5s steps(1,end) infinite}
-.osd.alert-on .s1{animation:alarmL .5s steps(1,end) infinite}
-.osd.alert-on .s2{animation:alarmT .5s steps(1,end) infinite}
-.osd.alert-on .s3{animation:alarmR .5s steps(1,end) infinite}
-.osd.alert-on .pip.on{animation:alarmL .5s steps(1,end) infinite}
-.osd.alert-on .live{background:var(--red);color:#1a0a06}
-.osd.alert-on .v-ev{color:var(--red)}
+.osd.alert-on .tab,.osd.alert-on .cap{animation:alarm .5s steps(1,end) infinite}
+.osd.alert-on.solid .cc{animation:alarm .5s steps(1,end) infinite}
+.osd.alert-on .cell .val{color:var(--red)}
+.osd.alert-on.solid .cell .val{color:#1a0a06}
 
 figcaption{display:flex;flex-direction:column;gap:6px}
 .cap-h{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
@@ -153,8 +156,8 @@ footer b{color:var(--ink);font-weight:500}
 <div class="wrap">
   <header>
     <div class="kick">fr0gOS · DS9 OPS · stage 2</div>
-    <h1>LCARS <em>Side Rails</em></h1>
-    <p class="lede">LCARS down both edges, telemetry in the black letterbox bars top and bottom, video clean in the middle. Two takes for <b>Four Dash Two</b> — animated the way a real Okudagram moves: the rails power on, a light shimmers down them while live, a segment pulses when the pack sags, and both rails cascade to red on a crash. Use the controls to drive it.</p>
+    <h1>LCARS <em>Side Columns</em></h1>
+    <p class="lede">The camera's 5:4, so the goggle pillarboxes it — black bars left and right. Every graphic lives in those two columns: the exact telemetry <b>Five Dash One</b> pushes live, restacked as LCARS cells, video clean in the middle. Two styles for <b>Four Dash Two</b>, animated the way an Okudagram moves. Drive it with the controls.</p>
   </header>
 
   <div class="ctrl" role="group" aria-label="demo controls">
@@ -168,9 +171,9 @@ footer b{color:var(--ink);font-weight:500}
   <div class="stack" id="stack"></div>
 
   <footer>
-    <b>All of this works on the goggle.</b> The FC redraws the OSD every frame, so these are character-grid moves, not video effects: the side rails are columns of block glyphs, the telemetry is ordinary text in the black bars; the power-on is segments printing top-down, the shimmer is one brighter block sliding down a rail, the low-batt pulse and red alert are colour-map swaps (glyph → its red copy), the combo bar is a column of blocks growing by one. The rounded caps read as stepped blocks on the grid — the sweep is the feel, not the exact curve.
-    <div class="anim-list"><span>power-on draw</span><span>rail shimmer</span><span>low-batt pulse</span><span>combo climb</span><span>red-alert cascade</span></div>
-    Tell me which — <b>Twin Rails</b> or <b>Asymmetric</b> — and which animations to ship first, and I'll build the block-glyph rails + the state machine into the firmware.
+    <b>This maps straight onto the goggle.</b> The camera already pillarboxes 5:4 into those black side bars — fr0gOS just draws the OSD there. Every cell is block glyphs plus text on the grid: the power-on is cells printing top-down, the shimmer is one brighter block sliding down a column, the low-batt pulse and red alert are colour-map swaps (glyph → its red copy), the combo bar is blocks climbing. Rounded caps read as stepped blocks — the sweep is the feel, not the exact curve. Same elements as 5-1: craft, timer, mode, VBAT, mAh, current, LQ, ELRS rate, VTX, throttle, RPM, G, plus the frog feed and combo.
+    <div class="anim-list"><span>power-on draw</span><span>column shimmer</span><span>low-batt pulse</span><span>combo climb</span><span>red-alert cascade</span></div>
+    Tell me which style — <b>Tab Cells</b> or <b>Solid Blocks</b> — and I'll build the block-glyph columns + the state machine onto 4-2.
   </footer>
 </div>
 
@@ -182,53 +185,43 @@ const FROG = `<svg class="frog" viewBox="0 0 100 100" aria-hidden="true">
   <circle class="e" cx="34" cy="48" r="9"/><circle class="e" cx="66" cy="48" r="9"/>
   <circle class="p" cx="36" cy="50" r="4"/><circle class="p" cx="68" cy="50" r="4"/>
 </svg>`;
+const cell = (cls,l,v,u)=>`<div class="cell ${cls}"><span class="tab"></span>
+  <div class="cc"><span class="l">${l}</span><span class="val">${v}${u?`<i>${u}</i>`:''}</span></div></div>`;
 
-function frame(asym){
-  return `<div class="osd${asym?' asym':''}">
-    <div class="view"></div>
+function frame(solid){
+  return `<div class="osd${solid?' solid':''}">
+    <div class="video"></div>
 
-    <div class="tbar top">
-      <span class="nm">MK4-2</span>
-      <span class="d">ACRO</span>
-      <span class="d">F1000</span>
-      <span class="d">200<span class="u">MW</span></span>
-      <span class="sys">NCC-4·2 · 04:12</span>
-    </div>
-
-    <div class="rail railL">
-      <div class="rseg cap-t s1" style="flex:0 0 11cqw"><span class="vlbl">PWR</span></div>
+    <div class="col colL">
+      <div class="cap capL top"></div>
       <div class="badge">${FROG}</div>
-      <div class="rseg s2" style="flex:1"><span class="vlbl">Link</span></div>
-      <div class="rseg cap-b" style="flex:0 0 9cqw"><span class="num">47</span></div>
-      <div class="shim"></div>
+      ${cell('lav ev','Craft','MK4-2')}
+      ${cell('','Time','04:12')}
+      ${cell('tan','Mode','ACRO')}
+      ${cell('cell-volt','VBAT','<span class="v-volt">16.4</span>','V')}
+      ${cell('tan','Used','1250','MAH')}
+      ${cell('rust','Curr','24.3','A')}
+      <div class="cap capL bot"></div>
     </div>
 
-    <div class="rail railR">
-      <div class="rseg cap-t s3" style="flex:0 0 8cqw"></div>
-      ${asym
-        ? `<div class="pip on"></div><div class="pip on a"></div><div class="pip"></div><div class="pip on"></div>
-           <div class="vcombo"><div class="vfill"></div></div>`
-        : `<div class="rseg s4" style="flex:0 0 8cqw"><span class="vlbl">Rssi</span></div>
-           <div class="vcombo"><div class="vfill"></div></div>
-           <div class="rseg s1" style="flex:0 0 8cqw"><span class="vlbl">Gps</span></div>`}
-      <div class="rseg cap-b" style="flex:0 0 7cqw"></div>
-      <div class="shim"></div>
-    </div>
-
-    <div class="tbar bot">
-      <span class="d v-volt">16.4<span class="u">V</span></span>
-      <span class="d">78<span class="u">%</span></span>
-      <span class="d">1250<span class="u">MAH</span></span>
-      <span class="k">Ev</span><span class="ev v-ev">FLIP</span>
-      <span class="ev">X7</span>
-      <span class="live">● LIVE</span>
+    <div class="col colR">
+      <div class="cap capR top"></div>
+      ${cell('','Rate','F1000')}
+      ${cell('grn','Link','98','LQ')}
+      ${cell('tan','Vtx','200','MW')}
+      ${cell('','Thr','68','%')}
+      ${cell('lav','Rpm','22.4','K')}
+      ${cell('rust','G','3.4','G')}
+      <div class="climb"><span class="tab"></span><div class="body"><span class="l">Combo X7</span>
+        <div class="track"><div class="fill"></div></div></div></div>
+      <div class="cap capR bot"></div>
     </div>
   </div>`;
 }
 
 const stack = document.getElementById('stack');
-[['Twin Rails','Antonio · both edges segmented','Matched LCARS columns down both sides — left carries the frog badge and power/link segments, right carries RSSI, the vertical combo climb and GPS. Balanced and unmistakably Okudagram.'],
- ['Asymmetric','Antonio · heavy left / slim right','Classic LCARS asymmetry — a fatter left rail, a slim right spine of status pips plus the combo climb. Gives the video a touch more width while keeping both edges Starfleet.']]
+[['Tab Cells','Antonio · colour tab + value','Each reading is a stacked label/value with an LCARS colour tab down its left edge. Airy, easy to scan at a glance, lots of black so it sits light over video.'],
+ ['Solid Blocks','Antonio · value on colour','Every reading is a full LCARS segment, value in black on the colour. Denser, louder, maximum Okudagram — the segments read as a lit console down each edge.']]
 .forEach((d,i)=>{
   const f=document.createElement('figure');
   f.innerHTML = frame(i===1) + `<figcaption>
@@ -236,10 +229,12 @@ const stack = document.getElementById('stack');
     <div class="cap-b">${d[2]}</div></figcaption>`;
   stack.appendChild(f);
 });
+// shimmer overlays
+document.querySelectorAll('.col').forEach(c=>{const s=document.createElement('div');s.className='shim';c.appendChild(s);});
 
-const osds=[...document.querySelectorAll('.osd')], fills=[...document.querySelectorAll('.vfill')];
+const osds=[...document.querySelectorAll('.osd')], fills=[...document.querySelectorAll('.fill')];
 let combo=62;
-function boot(){ osds.forEach(o=>{o.classList.remove('boot');void o.offsetWidth;o.classList.add('boot');}); }
+function boot(){osds.forEach(o=>{o.classList.remove('boot');void o.offsetWidth;o.classList.add('boot');});}
 document.getElementById('power').onclick=boot;
 document.getElementById('combo').onclick=()=>{combo=combo>=100?30:combo+14;fills.forEach(f=>f.style.height=combo+'%');};
 document.getElementById('alert').onclick=()=>osds.forEach(o=>o.classList.toggle('alert-on'));
