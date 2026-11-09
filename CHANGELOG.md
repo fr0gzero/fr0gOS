@@ -4,6 +4,21 @@ All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
 
+## v1.3 — summary
+
+Fleet on **r30**. Goggles need the **r27+** font. Quads: Four Dash Two (Mobula 6 HDZero, CRAZYBEEF4SX1280), Five Dash One (Mobula 8 HDZero, CRAZYBEE473), Four Dash One (Air65 analog, BETAFPVG473_V2).
+
+What v1.3 is, across all the point releases:
+- **DOS / hacker HDZero OSD** — craft name, black-bar telemetry, phosphor-green/amber/red colour map.
+- **Event log + combo system** — rolling feed, combo meter kept to 5 cells (count line + a `=====`/`COMBO` time-left bar under it), crash breaker animation, BEST COMBO, high-score screen.
+- **Trick / crash engine** — FLIP, ROLL, SPIN, LOOP, ZOOM, PERCH, CLIP. Tricks must be *flown* (stick-confirmed). Crash and perch run on physics — contact force = accel − prop thrust (from RPM) — and **CRASH only fires when the quad actually stops flying**. ORBIT and TRIPY removed (need GPS). `debug_mode = FROG` logs it all to blackbox for tuning.
+- **The frog** — hops the side bars, drops to the low-battery spot at 3.44 V/cell, acts out events, ARMED-style transitions.
+- **Song mode** — cues on AUX5 (count-in, drops, choruses, text), plus the **Songbook** tool: zoomable timeline, type-anywhere notes, multi-line cues, title/artist intro, overlapping cues on their own lines, and an EdgeTX radio pack.
+- **Stick code** — the four stick positions written into the bottom OSD bars as dim glyphs, read back off the DVR by `tools/stickcode_decode.py` for a later stick overlay.
+- **Analog (Four Dash One)** — the log, combo, tricks, crash, song cues and high-score, minus the frog, colour and stick code (NTSC 30×13).
+
+In progress (designed + font baked, **not yet flashed**): the **Mega Drive 16-bit skin** for Four Dash Two — the HDZERO-goggle frog mascot (17 animation frames) is baked into the goggle font (`fonts/hdzero-mega/`, 68 glyphs, verified). Remaining: the firmware mascot-player, 16-bit palette + filled nameplate, and the Four Dash Two hex.
+
 ## v1.3 r30 - 2026-11-08 (MK4-1, MK4-2, MK5-1) - same goggle font, MK4-1 CLI adds debug_mode FROG
 - **CRASH only when it actually stops flying** (r29 went off mid-flight on MK4-2). After a hit it's a CRASH only if it comes to rest upside down / on its side, comes to rest at all after a tumble, or you disarm / turtle while it isn't upright. Tumbles you fly out of, hard hits and "still pressing on something" no longer count; a hit you fly away from is a CLIP.
 - The prop thrust estimate now goes through the same 25 Hz filter as the accel, so a punch or a throttle chop can't open a gap between them that looks like a hit.
