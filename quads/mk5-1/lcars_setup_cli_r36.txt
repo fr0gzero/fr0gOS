@@ -1,0 +1,29 @@
+# fr0gOS r36 - LCARS setup (5-1 or 4-2). Flash the r36 hex, paste this, 'save'.
+# r36 pulls the right column in from the goggle's cropped right edge and declutters the centre.
+set osd_frog_feed_pos = 2048
+# hide the elements the LCARS columns draw themselves
+set osd_vbat_pos = 0
+set osd_mah_drawn_pos = 0
+set osd_current_pos = 0
+set osd_core_temp_pos = 0
+set osd_flymode_pos = 0
+set osd_frog_air_pos = 0
+set osd_link_quality_pos = 0
+set osd_throttle_pos = 0
+set osd_esc_rpm_pos = 0
+set osd_g_force_pos = 0
+set osd_frog_craft_pos = 0
+set osd_tim_2_pos = 0
+# RATE / VTX / VTX-power: coming into the columns next build
+set osd_frog_rate_pos = 0
+set osd_vtx_channel_pos = 0
+set osd_frog_vtxpwr_pos = 0
+# declutter the centre: drop the crosshair/circle and the armed/disarmed text
+set osd_crosshairs_pos = 0
+set osd_disarmed_pos = 0
+# keep warnings but move them to top-centre, out of the columns
+set osd_warnings_pos = 2128
+# live stick boxes, bottom of each column
+set osd_stick_overlay_left_pos = 2496
+set osd_stick_overlay_right_pos = 3533
+save

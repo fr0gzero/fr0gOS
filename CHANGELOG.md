@@ -23,6 +23,8 @@ The **goggle-frog mascot** (r31, Four Dash Two): a smiling HDZERO-goggled frog t
 
 **LCARS / DS9 Ops font** (Four Dash Two, `fonts/hdzero-ds9`): the Star Trek DS9 phase, stage 1 — a condensed Starfleet-style alphabet (`build_hacker_font.py` gained a `FROG_FONT=<ttf>` + `FROG_SQUEEZE` path that renders the alphabet from a TrueType face instead of the VGA bitmap) in the LCARS "Ops" palette: amber readouts (#ffb24a), lavender accents/nameplate (#bea2e8), red critical (#e0533c). Slots/charmap identical to the other fonts, so **it runs on the current r32 hex — pure font swap, no reflash of firmware.** Mascot unchanged. Stage 2 (the LCARS elbow/rail frame drawn with block glyphs) is the next firmware step.
 
+## v1.3 r36 - 2026-11-10 (MK4-2, MK5-1) - LCARS: right column pulled in from the cropped goggle edge; centre decluttered (CLI hides crosshair/arming, moves warnings)
+
 ## v1.3 r35 - 2026-11-10 (MK4-2) - LCARS stage 2, first flyable build
 - The frog tag element is now the **LCARS driver**: two side columns, one reading per row (label + value), the right column mirrored (labels outer / values inner). Left = mascot + craft + power group (VBAT/CELL/mAh/AMP/TEMP) + combat log + combo. Right = flight (MODE/AIR/ARM) + link (LQ) + motion (THR/RPM/G). Temp coloured by the 75/90 thresholds; labels in the accent colour.
 - Live stick boxes are Betaflight's stick overlay, placed in the column bottoms via CLI (`lcars_setup_cli.txt`): hide the old separate elements so they don't double-draw, position the two overlays.
