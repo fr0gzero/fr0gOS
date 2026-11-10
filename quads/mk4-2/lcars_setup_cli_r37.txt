@@ -1,0 +1,33 @@
+# fr0gOS r37 - LCARS setup for 4-2 (MK4-2, CRAZYBEEF4SX1280). Flash the r37 hex, load the new font, paste this, 'save'.
+# r37: trimmed idle mascot, functional typed boot screen (no hopping frog, longer hold),
+#      and a CUSTOM high-res stick overlay (sub-cell dot + trace) replacing Betaflight's sprite.
+set osd_frog_feed_pos = 2048
+# hide the elements the LCARS columns draw themselves
+set osd_vbat_pos = 0
+set osd_mah_drawn_pos = 0
+set osd_current_pos = 0
+set osd_core_temp_pos = 0
+set osd_flymode_pos = 0
+set osd_frog_air_pos = 0
+set osd_link_quality_pos = 0
+set osd_throttle_pos = 0
+set osd_esc_rpm_pos = 0
+set osd_g_force_pos = 0
+set osd_frog_craft_pos = 0
+set osd_tim_2_pos = 0
+# RATE / VTX / VTX-power: coming into the columns next build
+set osd_frog_rate_pos = 0
+set osd_vtx_channel_pos = 0
+set osd_frog_vtxpwr_pos = 0
+# declutter the centre: drop the crosshair/circle and the armed/disarmed text
+set osd_crosshairs_pos = 0
+set osd_disarmed_pos = 0
+# keep warnings but move them to top-centre, out of the columns
+set osd_warnings_pos = 2128
+# turn OFF Betaflight's low-res sprite overlay - replaced by the custom boxes below
+set osd_stick_overlay_left_pos = 0
+set osd_stick_overlay_right_pos = 0
+# fr0gOS custom high-res stick boxes: 3x3 cells, sub-cell dot + dim trace. Bottom of each side bar.
+set osd_frog_stickl_pos = 2561
+set osd_frog_stickr_pos = 3601
+save
