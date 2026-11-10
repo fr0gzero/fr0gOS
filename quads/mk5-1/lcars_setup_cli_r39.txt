@@ -1,0 +1,40 @@
+# fr0gOS r39 - COMPLETE setup for Mark 5-1 (CRAZYBEE473).
+# 1) copy the new font BMPs to the goggle SD   2) flash fr0gOS_r39_5-1 hex   3) paste this, 'save'.
+# Clean no-outline FreeSans font, de-mirrored right column, nothing in the centre, arm at any angle.
+
+# --- LCARS element: the frog tag drives the whole sidebar layout, anchored top-left (0,0) ---
+set osd_frog_feed_pos = 2048
+
+# --- hide the stock elements the LCARS columns draw themselves ---
+set osd_vbat_pos = 0
+set osd_mah_drawn_pos = 0
+set osd_current_pos = 0
+set osd_core_temp_pos = 0
+set osd_flymode_pos = 0
+set osd_frog_air_pos = 0
+set osd_link_quality_pos = 0
+set osd_throttle_pos = 0
+set osd_esc_rpm_pos = 0
+set osd_g_force_pos = 0
+set osd_frog_craft_pos = 0
+set osd_craft_name_pos = 0
+set osd_tim_2_pos = 0
+set osd_frog_rate_pos = 0
+set osd_vtx_channel_pos = 0
+set osd_frog_vtxpwr_pos = 0
+
+# --- keep the CENTRE clear: no crosshair, no armed/disarmed text, no warnings in the middle ---
+set osd_crosshairs_pos = 0
+set osd_disarmed_pos = 0
+set osd_warnings_pos = 0
+set osd_rssi_pos = 0
+set osd_rssi_dbm_pos = 0
+
+# --- Betaflight sprite stick overlay off (stick data is the dim glyphs on the bottom row) ---
+set osd_stick_overlay_left_pos = 0
+set osd_stick_overlay_right_pos = 0
+
+# --- arm at ANY attitude: toss launches, mid-air re-arms, upside down ---
+set small_angle = 180
+
+save

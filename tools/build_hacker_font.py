@@ -52,6 +52,7 @@ EYE = (236, 255, 236)
 FROG_FONT = os.environ.get("FROG_FONT")             # if set, alphabet comes from this TTF (condensed LCARS)
 FROG_SQUEEZE = float(os.environ.get("FROG_SQUEEZE", "0.60"))
 FROG_AA = os.environ.get("FROG_AA", "0") == "1"     # anti-aliased smooth edges (high-res clean look)
+FROG_OUTLINE = os.environ.get("FROG_OUTLINE", "1") == "1"   # 1px black outline (off = clean, nothing around glyph)
 
 COLOUR_SET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-!%:"
 AMBER_BASE = 0xD0
@@ -173,13 +174,15 @@ def ttf_cell(ch, colour, gw, gh):
         for x in range(gw):
             gx, gy = x - ox, y - oy
             c = cov[gy][gx] if (0 <= gx < cw and 0 <= gy < chh) else 0
-            if FROG_AA and c >= 36:
-                # smooth: blend the ink colour toward black by coverage -> anti-aliased edge
-                px = (colour[0] * c // 255, colour[1] * c // 255, colour[2] * c // 255)
+            if c >= 100:
+                cp[x, y] = colour                      # solid ink
+            elif FROG_AA and c >= 40:
+                # soft edge in the SAME hue (never toward black) - clean on the dark side bars, no ring
+                px = (colour[0] * c // 255 + colour[0] * (255 - c) // 255 // 3,
+                      colour[1] * c // 255 + colour[1] * (255 - c) // 255 // 3,
+                      colour[2] * c // 255 + colour[2] * (255 - c) // 255 // 3)
                 cp[x, y] = px if px != TRANS else (126, 127, 127)
-            elif not FROG_AA and c >= 112:
-                cp[x, y] = colour
-            elif any(0 <= gx + dx < cw and 0 <= gy + dy < chh and on[gy + dy][gx + dx]
+            elif FROG_OUTLINE and any(0 <= gx + dx < cw and 0 <= gy + dy < chh and on[gy + dy][gx + dx]
                      for dy in (-1, 0, 1) for dx in (-1, 0, 1)):
                 cp[x, y] = BLACK
     return cell
