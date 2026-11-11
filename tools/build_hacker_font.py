@@ -53,6 +53,7 @@ FROG_FONT = os.environ.get("FROG_FONT")             # if set, alphabet comes fro
 FROG_SQUEEZE = float(os.environ.get("FROG_SQUEEZE", "0.60"))
 FROG_AA = os.environ.get("FROG_AA", "0") == "1"     # anti-aliased smooth edges (high-res clean look)
 FROG_OUTLINE = os.environ.get("FROG_OUTLINE", "1") == "1"   # 1px black outline (off = clean, nothing around glyph)
+FROG_CAPFRAME = os.environ.get("FROG_CAPFRAME", "0") == "1"  # frame glyphs on cap height (OSD is all caps) not ascent+descent
 
 COLOUR_SET = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789.-!%:"
 AMBER_BASE = 0xD0
@@ -144,7 +145,12 @@ def _face(gh):
     if gh not in _ttf:
         f = ImageFont.truetype(FROG_FONT, gh * 3)
         asc, desc = f.getmetrics()
-        _ttf[gh] = (f, asc + desc)
+        if FROG_CAPFRAME:
+            top = f.getbbox("HMWE")[1]
+            bot = max(f.getbbox(c)[3] for c in "QJ,;_")
+            _ttf[gh] = (f, bot - top, top)
+        else:
+            _ttf[gh] = (f, asc + desc, 0)
     return _ttf[gh]
 
 def ttf_cell(ch, colour, gw, gh):
@@ -154,11 +160,11 @@ def ttf_cell(ch, colour, gw, gh):
     (never per-glyph bbox-to-cell, which turns punctuation into blocks). No anti-alias: the goggle keys on TRANS."""
     if ch == ' ':
         return Image.new("RGB", (gw, gh), TRANS)
-    f, H = _face(gh)
+    f, H, top = _face(gh)
     bb = f.getbbox(ch)
     w = max(1, bb[2] - bb[0])
     canvas = Image.new("L", (w, H), 0)
-    ImageDraw.Draw(canvas).text((-bb[0], 0), ch, font=f, fill=255)   # left ink at x=0, shared baseline frame
+    ImageDraw.Draw(canvas).text((-bb[0], -top), ch, font=f, fill=255)   # left ink at x=0, shared baseline frame
     scale = (gh - 2) / H
     cw, chh = max(1, round(w * scale * FROG_SQUEEZE)), max(1, round(H * scale))
     canvas = canvas.resize((cw, chh), Image.LANCZOS)
