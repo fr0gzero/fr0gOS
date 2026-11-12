@@ -52,6 +52,8 @@ def _bevel(a, r):
     return a.point(lambda v: 255 if v > 132 else 0)
 
 
+ZERO = os.environ.get("GT_ZERO", "slash")       # how the zero differs from the O: slash | slit | dot | none
+ZT = float(os.environ.get("GT_ZT", "3.0"))          # slash / bar thickness (HD px)
 _mcache = {}
 
 
@@ -98,6 +100,19 @@ def _mask(ch, gw, gh):
     y0 = base_y - gbase
     final = Image.new("L", (W, H), 0)
     final.paste(ink, (x0, y0))
+    if ch == "0" and ZERO != "none":
+        zb = final.getbbox()
+        cx, cy = (zb[0] + zb[2]) / 2.0, (zb[1] + zb[3]) / 2.0
+        zw, zh = zb[2] - zb[0], zb[3] - zb[1]
+        d = ImageDraw.Draw(final)
+        t = int(ZT * k * ss)
+        if ZERO == "slash":      # diagonal through the counter, lean-matched, ends buried in the ring
+            d.line([(cx - zw * 0.20, cy + zh * 0.30), (cx + zw * 0.20, cy - zh * 0.30)], fill=255, width=t)
+        elif ZERO == "slit":     # upright bar in the counter
+            d.rectangle((cx - t // 2 + zw * 0.04, cy - zh * 0.24, cx + t // 2 + zw * 0.04, cy + zh * 0.24), fill=255)
+        elif ZERO == "dot":
+            r = t * 0.85
+            d.ellipse((cx - r + zw * 0.04, cy - r, cx + r + zw * 0.04, cy + r), fill=255)
     small = final.resize((gw, gh), Image.BOX)
     return small.point(lambda v: 255 if v > THRESH else 0)
 
