@@ -62,7 +62,9 @@ canvas#over { width: 100%; height: 34px; display: block; margin-top: 6px; backgr
 .goggle::before, .goggle::after { content: ""; position: absolute; top: 0; bottom: 0; width: 13.5%; background: #000; }
 .goggle::before { left: 0; } .goggle::after { right: 0; }
 .osd { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(50, 1fr); grid-template-rows: repeat(18, 1fr); font-family: var(--display); color: var(--green); z-index: 1; }
-.osd span { display: flex; align-items: center; justify-content: center; font-size: clamp(9px, 1.9vw, 20px); line-height: 1; text-shadow: 0 0 1px #000, 1px 1px 0 #000; }
+.osd span { display: flex; align-items: center; justify-content: center; font-size: clamp(9px, 1.9vw, 20px); line-height: 1; text-shadow: 0 0 1px #000, 1px 1px 0 #000; overflow: visible; }
+.goggle { container-type: inline-size; }
+@supports (font-size: 1cqw) { .osd span { font-size: 3.1cqw; } }
 .c-g { color: var(--green); } .c-a { color: var(--amber); } .c-r { color: var(--red); } .c-w { color: #f2f5f0; }
 .ph { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
 .ph .sm { font-size: 11px; color: var(--dim); }
@@ -129,14 +131,15 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     <div class="wave-box" id="waveBox"><canvas id="wave" tabindex="0" aria-label="Song timeline. Click to move the playhead, double-click to type a note there, drag a marker to move a cue, scroll to zoom."></canvas>
       <canvas id="over" aria-label="Whole song overview. Drag to scroll the timeline."></canvas></div>
     <div class="row" id="addRow"></div>
-    <p class="note"><b>Notes:</b> double-click (or long-press) anywhere on the timeline, type your text (<b>Shift+Enter</b> for another line), Enter: fr0gOS glyphs it on the goggles at that moment, one line after the next. Scroll or pinch to zoom, drag the strip underneath to move along the song. Click the waveform to jump there. Drag a marker to move it. Keys while playing: <code>D</code> drop, <code>B</code> big drop, <code>C</code> chorus, <code>U</code> build, <code>T</code> text, <code>E</code> outro, <code>P</code> phase, <code>N</code> note, <code>Space</code> play/pause, <code>Delete</code> removes the selected cue.</p>
+    <p class="note"><b>Notes:</b> double-click (or long-press) anywhere on the timeline, type your text (<b>Shift+Enter</b> for another line), Enter: fr0gOS glyphs it on the goggles at that moment, one line after the next. Scroll or pinch to zoom, drag the strip underneath to move along the song. Click the waveform to jump there. Drag a marker to move it. Keys while playing: <code>D</code> drop, <code>B</code> big drop, <code>C</code> chorus, <code>V</code> event, <code>T</code> text, <code>E</code> outro, <code>P</code> phase, <code>N</code> note, <code>Space</code> play/pause, <code>Delete</code> removes the selected cue.</p>
   </section>
 
   <div class="grid2">
     <section class="panel" aria-labelledby="h-prev">
       <h2 id="h-prev">Goggle preview</h2>
       <div class="goggle"><div class="osd" id="osd"></div></div>
-      <p class="note">What fr0gOS will put on the HDZero screen at the playhead: the count-in, the cue, the decode in and out. Drops count in 3 ticks early. Cues that overlap in time each take their own line, so they never stomp on each other; the song title and artist come in up top with a spinning record.</p>
+      <p class="note">What fr0gOS will put on the HDZero screen at the playhead, everything centred. <b>Row 1, the cue line:</b> your events and phases. <b>Under it:</b> your text notes. <b>Along the bottom, like a caption:</b> the music: the song title and artist as it starts, <code>DROP IN 3 2 1</code> and the drop, chorus, outro.</p>
+      <p class="note"><b>Events</b> (<code>V</code>): type your own word (up to 12 letters) and pick the count. <code>CLIMB</code> with 3 shows <code>CLIMB IN 3 2 1</code>, then <code>CLIMB</code> flashes and goes.</p>
       <p class="note"><b>Phases</b> (<code>P</code>) have their own fixed line, top centre, every time: the count-in (<code>EXIT TREE IN 5 4 3 2 1</code>) takes the line, then the new phase name flashes in and <b>stays up</b> until the next phase's count-in, the outro, or the switch going off. Each press of <code>P</code> adds the next phase in your plan (tree dance, orbits, climb, free fall, catch back to tree dance, then round again); change the name, the count-in words or the count right in the cue list. The count-in uses the <b>count-in tick</b> above: set it to <b>1 second</b> for a plain 5-4-3-2-1.</p>
     </section>
     <section class="panel" aria-labelledby="h-list">
@@ -183,7 +186,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     DROP:    { label: "DROP",    color: "#ff4a3d", key: "d", name: "Drop" },
     BIGDROP: { label: "BIGDROP", color: "#ff7a2f", key: "b", name: "Big drop" },
     CHORUS:  { label: "CHORUS",  color: "#ffb43a", key: "c", name: "Chorus" },
-    BUILD:   { label: "BUILD",   color: "#4ff07e", key: "u", name: "Build" },
+    EVENT:   { label: "CLIMB",   color: "#4ff07e", key: "v", name: "Event" },
     TEXT:    { label: "SEND IT", color: "#59d8e6", key: "t", name: "Text" },
     END:     { label: "OUTRO",   color: "#b98cff", key: "e", name: "Outro" },
     PHASE:   { label: "TREE DANCE", color: "#f2f5f0", key: "p", name: "Phase" },
@@ -226,7 +229,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   // ---------- example so the page is never empty ----------
   function loadExample() {
     state.duration = 62; state.bpm = 174; state.offset = 0; state.hasAudio = false; resetView();
-    state.cues = [ { t: 8, kind: "BUILD", label: "BUILD" }, { t: 12, kind: "DROP", label: "DROP" }, { t: 12.2, kind: "TEXT", label: "LETS GO" }, { t: 24, kind: "CHORUS", label: "CHORUS" },
+    state.cues = [ { t: 8, kind: "EVENT", label: "CLIMB", count: 3 }, { t: 12, kind: "DROP", label: "DROP" }, { t: 12.2, kind: "TEXT", label: "LETS GO" }, { t: 24, kind: "CHORUS", label: "CHORUS" },
                    { t: 34, kind: "TEXT", label: "SEND IT\nFROG ON" }, { t: 45, kind: "BIGDROP", label: "BIGDROP" }, { t: 60, kind: "END", label: "OUTRO" } ];
     // a fake envelope that looks like a track: intro, build, drop...
     const n = Math.round(state.duration / state.hop); state.env = new Float32Array(n); state.bass = new Float32Array(n);
@@ -258,7 +261,8 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       $("radioName").value = (base.replace(/ /g, "") || "SONG1").slice(0, 8);
       const saved = store.get("cues:" + file.name);
       if (saved && saved.cues && saved.cues.length) {
-        Object.assign(state, { cues: saved.cues, bpm: saved.bpm || state.bpm, offset: saved.offset || 0 });
+        const cues = saved.cues.map((c) => (c.kind === "BUILD" ? { ...c, kind: "EVENT", label: (c.label || "BUILD").slice(0, 12), count: 3 } : c)).filter((c) => KINDS[c.kind]);
+        Object.assign(state, { cues, bpm: saved.bpm || state.bpm, offset: saved.offset || 0 });
         $("bpm").value = state.bpm.toFixed(1);
         if (saved.title) $("title").value = saved.title;
         if (saved.artist) $("artist").value = saved.artist;
@@ -329,12 +333,6 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     // the biggest drop is the BIG one
     const drops = cues.filter((c) => c.kind === "DROP");
     if (drops.length > 1) { const big = drops.reduce((m, c) => (c.jump > m.jump ? c : m)); big.kind = "BIGDROP"; big.label = "BIGDROP"; }
-    // builds: where the quiet stretch before each drop starts (4-16 bars back)
-    for (const d of cues.filter((c) => c.kind === "DROP" || c.kind === "BIGDROP")) {
-      let k = Math.round(d.t / hop) - 1, start = d.t;
-      while (k > 0 && b[k] < 0.4 && d.t - k * hop < 16 * bar) { start = k * hop; k--; }
-      if (d.t - start >= 4 * bar - 0.01) cues.push({ t: toBar(start), kind: "BUILD", label: "BUILD", sug: true });
-    }
     // outro: the start of the final stretch under 30% level
     let k = n - 1; while (k > 0 && e[k] < 0.3) k--;
     if ((n - 1 - k) * hop > 2 * bar) cues.push({ t: toBar(k * hop), kind: "END", label: "OUTRO", sug: true });
@@ -397,18 +395,18 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     }
     return { pri: -2, rows };
   }
-  // every cue active at t becomes its own block of rows; blocks stack on separate lines so they never collide
-  function activeBlocks(t) {
+  // the music (drops, chorus, outro, their count-ins) and your notes (TEXT): each active cue is its own block of rows
+  function activeBlocks(t, which) {
     const out = [], tick = tickSec();
     for (const c of state.cues) {
-      if (c.kind === "PHASE") continue;            // phases live on their own line (phaseRow)
+      if (c.kind === "PHASE" || c.kind === "EVENT") continue;           // these live on the cue line (cueRow)
+      if ((which === "notes") !== (c.kind === "TEXT")) continue;
       const h = c.kind === "TEXT" ? textSched(c).total : holdOf(c.kind);
       if (t >= c.t && t < c.t + h) {
         const ct = t - c.t;
         if (c.kind === "DROP") out.push({ pri: 1, rows: [decode("DROP", ct, h, "c-r")] });
         else if (c.kind === "BIGDROP") out.push({ pri: 1, rows: [decode(">>>DROP<<<", ct, h, Math.floor(ct / 0.25) % 2 ? "c-a" : "c-r")] });
         else if (c.kind === "CHORUS") out.push({ pri: 2, rows: [decode(c.label.split("\n")[0], ct, h, "c-a")] });
-        else if (c.kind === "BUILD") out.push({ pri: 2, rows: [decode(c.label.split("\n")[0] + "...".slice(3 - Math.min(3, Math.floor(ct / 0.4))), ct, h, "c-g")] });
         else if (c.kind === "TEXT") out.push({ pri: 3, rows: textRows(c, ct) });
         else out.push({ pri: 2, rows: [decode(c.label.split("\n")[0], ct, h, "c-g")] });
       } else if ((c.kind === "DROP" || c.kind === "BIGDROP") && t < c.t && c.t - t <= 3 * tick) {
@@ -421,21 +419,31 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   }
   // the phase line: fixed, top centre (row 1). Count-in for the next phase replaces the current name; the new name
   // flashes in amber/normal for 1.5 s, then holds until the next count-in, an OUTRO, or the switch going off.
-  function phaseRow(t) {
-    const tick = tickSec(); let cur = null, next = null, endT = -1;
+  // the cue line (row 1, centred): count-ins for EVENTs and PHASEs (whichever lands first) own it; then an
+  // event's word flashes and goes, and otherwise the current phase name sits there - same rules as the firmware
+  const EVENT_HOLD = 2.5;
+  function cueRow(t) {
+    const tick = tickSec(); let cur = null, next = null, endT = -1, soon = null, hit = null;
     for (const c of state.cues) {
       if (c.kind === "PHASE") { if (c.t <= t) cur = c; else if (!next) next = c; }
       else if (c.kind === "END" && c.t <= t) endT = c.t;
+      else if (c.kind === "EVENT") {
+        if (t >= c.t && t < c.t + EVENT_HOLD) hit = c;
+        else if ((c.count | 0) > 0 && t < c.t && c.t - t <= c.count * tick && !soon) soon = c;
+      }
     }
     if (cur && endT >= cur.t) cur = null;
-    if (next && next.count > 0 && next.t - t <= next.count * tick) {
-      const lead = next.count * tick, left = next.t - t, nn = Math.ceil(left / tick - 1e-6), tickT = tick - (left - (nn - 1) * tick), since = lead - left;
-      const s = promptOf(next) + " " + nn;
+    if (next && next.count > 0 && next.t - t <= next.count * tick && (!soon || next.t < soon.t)) soon = next;
+    if (soon) {
+      const lead = soon.count * tick, left = soon.t - t, nn = Math.ceil(left / tick - 1e-6), tickT = tick - (left - (nn - 1) * tick), since = lead - left;
+      const s = (soon.kind === "EVENT" ? clean12(soon.label) + " IN" : promptOf(soon)) + " " + nn;
       return [...s].map((ch, i) => [ch === " " ? " " : (i === s.length - 1 ? tickT < 0.18 : since < 0.25 + 0.045 * i) ? noise() : ch, "c-a"]);
     }
+    const flash = (ct) => (ct < 1.5 && Math.floor(ct / 0.25) % 2 === 0 ? "c-a" : "c-w");
+    if (hit) { const ct = t - hit.t; return decode(clean12(hit.label), ct, EVENT_HOLD, flash(ct)); }
     if (!cur) return null;
-    const ct = t - cur.t, cls = ct < 1.5 ? (Math.floor(ct / 0.25) % 2 ? "c-w" : "c-a") : "c-w";
-    return gIn(cur.label, ct, cls);
+    const ct = t - cur.t;
+    return gIn(cur.label, ct, flash(ct));
   }
   const osd = $("osd"); const cells = [];
   for (let i = 0; i < 50 * 18; i++) { const s = document.createElement("span"); osd.appendChild(s); cells.push(s); }
@@ -446,17 +454,15 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     // a sketch of the fr0gOS bars for context
     put(0, 1, "ARMED"); put(0, 9, "3.81V"); put(0, 10, "212mAh"); put(0, 13, "LQ100"); put(0, 15, "R8"); put(0, 16, "200MW");
     put(45, 0, "MK4-2"); put(45, 1, fmt(t).padStart(5, " ").slice(-5)); put(46, 4, "ACRO"); put(47, 5, "AIR"); put(47, 12, "THR"); put(45, 13, "62.4%");
-    const ph = phaseRow(t);
-    if (ph) { const x0 = Math.max(8, 25 - Math.floor(ph.length / 2)); ph.forEach(([ch, cls], i) => putCell(x0 + i, 1, ch, cls)); }
-    const blocks = []; const intro = introBlock(t); if (intro) blocks.push(intro); blocks.push(...activeBlocks(t));
-    if (!blocks.length) return;
-    const totalH = blocks.reduce((s, b) => s + b.rows.length, 0) + (blocks.length - 1);
-    let y = 3;   // row 1 is the phase line; cue blocks start under it
-    for (const b of blocks) {
-      const w = b.rows.reduce((m, r) => Math.max(m, r ? r.length : 0), 0), x0 = Math.max(8, 25 - Math.floor(w / 2));
-      b.rows.forEach((line, r) => { if (line) line.forEach(([ch, cls], i) => putCell(x0 + i, y + r, ch, cls)); });
-      y += b.rows.length + 1;
-    }
+    // row 1: the cue line (events + phases)
+    const cr = cueRow(t);
+    if (cr) { const x0 = Math.max(8, 25 - Math.floor(cr.length / 2)); cr.forEach(([ch, cls], i) => putCell(x0 + i, 1, ch, cls)); }
+    const drawBlocks = (blocks, y) => { for (const b of blocks) { b.rows.forEach((line, r) => { if (line) { const x0 = Math.max(8, 25 - Math.floor(line.length / 2)); line.forEach(([ch, cls], i) => putCell(x0 + i, y + r, ch, cls)); } }); y += b.rows.length + 1; } };
+    // row 3 down: your notes
+    drawBlocks(activeBlocks(t, "notes"), 3);
+    // the bottom, like a caption: the music (title + artist as it starts, drops, chorus, outro), last line on row 16
+    const music = []; const intro = introBlock(t); if (intro) music.push(intro); music.push(...activeBlocks(t, "music"));
+    if (music.length) { const h = music.reduce((s, b) => s + b.rows.length, 0) + (music.length - 1); drawBlocks(music, Math.max(5, 17 - h)); }
   }
 
   // ---------- waveform ----------
@@ -488,7 +494,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     state.cues.forEach((c, i) => {
       const x = Math.round(xOf(c.t)) + 0.5, col = KINDS[c.kind].color;
       if (c.kind === "DROP" || c.kind === "BIGDROP") { g.fillStyle = col + "26"; const w0 = xOf(c.t - 3 * tickSec()); g.fillRect(w0, 0, x - w0, H); }
-      if (c.kind === "PHASE" && c.count > 0) { g.fillStyle = col + "1c"; const w0 = xOf(c.t - c.count * tickSec()); g.fillRect(w0, 0, x - w0, H); }
+      if ((c.kind === "PHASE" || c.kind === "EVENT") && c.count > 0) { g.fillStyle = col + "1c"; const w0 = xOf(c.t - c.count * tickSec()); g.fillRect(w0, 0, x - w0, H); }
       g.strokeStyle = col; g.lineWidth = (i === state.sel ? 3 : 1.5) * d; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
       if (x < -200 * d || x > W + 10) return;
       g.font = (11 * d) + "px IBM Plex Mono, monospace";
@@ -579,7 +585,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       td().appendChild(t);
       const s = document.createElement("select"); s.id = "cue-k-" + i; s.setAttribute("aria-label", "Cue");
       for (const k of Object.keys(KINDS)) { const o = document.createElement("option"); o.value = k; o.textContent = KINDS[k].name; if (k === c.kind) o.selected = true; s.appendChild(o); }
-      s.addEventListener("change", () => { const old = KINDS[c.kind].label; c.kind = s.value; if (c.label === old || !c.label) c.label = KINDS[c.kind].label; if (c.kind === "PHASE") { const p = planFor(c.t); c.label = p.label; c.prompt = p.prompt; c.count = p.count; } c.sug = false; changed(); });
+      s.addEventListener("change", () => { const old = KINDS[c.kind].label; c.kind = s.value; if (c.label === old || !c.label) c.label = KINDS[c.kind].label; if (c.kind === "PHASE") { const p = planFor(c.t); c.label = p.label; c.prompt = p.prompt; c.count = p.count; } if (c.kind === "EVENT") { c.label = clean12(c.label) || "CLIMB"; c.count = 3; } c.sug = false; changed(); });
       const cell = td(); const chip = document.createElement("span"); chip.className = "chip"; chip.style.background = KINDS[c.kind].color; cell.append(chip, s);
       if (c.sug) { const sg = document.createElement("span"); sg.className = "sug"; sg.textContent = "suggested"; cell.appendChild(sg); }
       let l;
@@ -595,6 +601,15 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
         const a = document.createElement("span"); a.className = "sm"; a.textContent = "count-in";
         const b = document.createElement("span"); b.className = "sm"; b.textContent = "from";
         l.append(nm, a, pr, b, n);
+      } else if (c.kind === "EVENT") {
+        l = document.createElement("span"); l.className = "ph";
+        const nm = document.createElement("input"); nm.className = "l"; nm.maxLength = 12; nm.value = c.label; nm.id = "cue-l-" + i; nm.setAttribute("aria-label", "Event word, e.g. CLIMB");
+        nm.addEventListener("input", () => { const v = nm.value.toUpperCase(); if (!FONT_OK.test(v)) { nm.value = c.label; return; } c.label = v; changedSoft(); });
+        const n = document.createElement("select"); n.className = "n"; n.setAttribute("aria-label", "Count-in length (ticks)");
+        for (let k = 0; k <= 9; k++) { const o = document.createElement("option"); o.value = k; o.textContent = k ? String(k) : "none"; if (k === (c.count | 0)) o.selected = true; n.appendChild(o); }
+        n.addEventListener("change", () => { c.count = +n.value; changed(); });
+        const a = document.createElement("span"); a.className = "sm"; a.textContent = "IN, count from";
+        l.append(nm, a, n);
       } else if (c.kind === "TEXT") {
         l = document.createElement("textarea"); l.className = "l"; l.value = c.label; l.id = "cue-l-" + i;
         l.rows = Math.min(8, Math.max(1, c.label.split("\n").length));
@@ -608,7 +623,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       }
       td().appendChild(l);
       const act = td(); const go = document.createElement("button"); go.textContent = "Play"; go.setAttribute("aria-label", "Play from just before the count-in");
-      go.addEventListener("click", () => { seek(Math.max(0, c.t - (c.kind === "PHASE" ? Math.max(1, c.count | 0) : 3) * tickSec() - 1)); state.sel = i; if (state.hasAudio) audio.play(); render(); });
+      go.addEventListener("click", () => { seek(Math.max(0, c.t - (c.kind === "PHASE" || c.kind === "EVENT" ? Math.max(1, c.count | 0) : 3) * tickSec() - 1)); state.sel = i; if (state.hasAudio) audio.play(); render(); });
       const del = document.createElement("button"); del.textContent = "Remove";
       del.addEventListener("click", () => { state.cues.splice(i, 1); state.sel = -1; changed(); });
       act.append(go, " ", del);
@@ -632,8 +647,9 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
         lines.push(fmt(c.t).padEnd(7) + "PHASE " + nm + (n ? " | " + promptOf(c) + " | " + n : " | | 0"));
         continue;
       }
+      if (c.kind === "EVENT") { lines.push(fmt(c.t).padEnd(7) + "EVENT " + (clean12(c.label) || "EVENT") + " | " + Math.max(0, Math.min(9, c.count | 0))); continue; }
       const lbl = c.label.replace(/\n/g, "|");
-      const k = c.kind === "TEXT" ? "TEXT " + lbl : c.kind === "CHORUS" && c.label !== "CHORUS" ? "TEXT " + lbl : c.kind === "BUILD" && c.label !== "BUILD" ? "TEXT " + lbl : c.kind;
+      const k = c.kind === "TEXT" ? "TEXT " + lbl : c.kind === "CHORUS" && c.label !== "CHORUS" ? "TEXT " + lbl : c.kind;
       lines.push(fmt(c.t).padEnd(7) + k);
     }
     return lines.join("\n") + "\n";
@@ -648,7 +664,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   }
   audio.addEventListener("play", () => { $("play").textContent = "PAUSE"; });
   audio.addEventListener("pause", () => { $("play").textContent = "PLAY"; });
-  function addCue(kind) { const t0 = snap(state.t); const cue = { t: t0, kind, label: KINDS[kind].label }; if (kind === "PHASE") Object.assign(cue, planFor(t0)); state.cues.push(cue); sortCues(); state.sel = state.cues.findIndex((c) => c.kind === kind && Math.abs(c.t - snap(state.t)) < 1e-6); changed(); }
+  function addCue(kind) { const t0 = snap(state.t); const cue = { t: t0, kind, label: KINDS[kind].label }; if (kind === "PHASE") Object.assign(cue, planFor(t0)); if (kind === "EVENT") cue.count = 3; state.cues.push(cue); sortCues(); state.sel = state.cues.findIndex((c) => c.kind === kind && Math.abs(c.t - snap(state.t)) < 1e-6); changed(); }
   const addRow = $("addRow");
   for (const [k, v] of Object.entries(KINDS)) { const b = document.createElement("button"); b.className = "cue-btn"; b.style.borderLeftColor = v.color; b.innerHTML = "+ " + v.name + '<span class="k">' + v.key.toUpperCase() + "</span>"; b.addEventListener("click", () => addCue(k)); addRow.appendChild(b); }
 
@@ -710,7 +726,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     const id = fileTitle();
     try {
       await db.doc("songs/" + id).set({ title: $("title").value.toUpperCase(), artist: ($("artist").value || "").toUpperCase(), sheet: sheet(), bpm: state.bpm, tickMode: $("tickMode").value,
-        file: state.fileName || "", radioName: $("radioName").value.toUpperCase(), cues: state.cues.map(({ t, kind, label, prompt, count }) => ({ t: Math.round(t * 100) / 100, kind, label, ...(kind === "PHASE" ? { prompt: prompt || "", count: count | 0 } : {}) })), savedAt: new Date().toISOString() });
+        file: state.fileName || "", radioName: $("radioName").value.toUpperCase(), cues: state.cues.map(({ t, kind, label, prompt, count }) => ({ t: Math.round(t * 100) / 100, kind, label, ...(kind === "PHASE" ? { prompt: prompt || "", count: count | 0 } : kind === "EVENT" ? { count: count | 0 } : {}) })), savedAt: new Date().toISOString() });
       $("sendStatus").textContent = "Sent as \"" + id + "\". Tell Dax to build it.";
     } catch (e) { $("sendStatus").textContent = "Couldn't send (" + ((e && e.code) || "error") + "). Copy the cue sheet instead."; }
   });

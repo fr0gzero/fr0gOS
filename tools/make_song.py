@@ -10,7 +10,7 @@ Cue sheet:
     0:58.0 DROP               # "DROP IN 3 2 1", then DROP
     1:30   CHORUS
     2:10.5 BIGDROP            # "BIG DROP IN 3 2 1", then a bigger DROP
-    2:40   BUILD
+    2:40   EVENT CLIMB | 3        # your own word, up to 12 characters: "CLIMB IN 3 2 1", then CLIMB (count 0-9, default 3)
     1:00   TEXT SEND IT       # your own words, up to 9 characters
     3:05   END                # OUTRO
     0:00   PHASE TREE DANCE                    # a flight phase: shown top centre and kept up
@@ -26,8 +26,10 @@ usage: make_song.py <cue sheet> <frog_song.h>
 import re
 import sys
 
-TYPES = {"DROP": "DROP", "BIGDROP": "BIGDROP", "CHORUS": "CHORUS", "BUILD": "BUILD", "END": "END", "OUTRO": "END",
-         "BREAK": "TEXT", "TEXT": "TEXT", "PHASE": "PHASE"}
+TYPES = {"DROP": "DROP", "BIGDROP": "BIGDROP", "CHORUS": "CHORUS", "END": "END", "OUTRO": "END",
+         "BREAK": "TEXT", "TEXT": "TEXT", "PHASE": "PHASE", "EVENT": "EVENT"}
+# On screen (all centred): row 1 = EVENT / PHASE count-ins and names, row 3 = TEXT notes,
+# bottom = the music (title, DROP IN 3 2 1 / DROP, BIG DROP, CHORUS, OUTRO).
 CHARSET = set(" !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_")
 
 
@@ -72,8 +74,20 @@ def parse(path):
             kind = kind.upper()
             if kind == "BREAK" and not label:
                 label = "BREAK"
+            if kind == "BUILD":
+                raise SystemExit(f"line {no}: BUILD is gone - use EVENT <WORD> | <count>, e.g. EVENT CLIMB | 3")
             if kind not in TYPES:
-                raise SystemExit(f"line {no}: unknown cue {kind!r} (DROP BIGDROP CHORUS BUILD END TEXT PHASE)")
+                raise SystemExit(f"line {no}: unknown cue {kind!r} (DROP BIGDROP CHORUS END TEXT PHASE EVENT)")
+            if TYPES[kind] == "EVENT":
+                parts = [p.strip() for p in label.split("|")]
+                name = clean(parts[0], 12)
+                if not name:
+                    raise SystemExit(f"line {no}: an EVENT needs a word, e.g. EVENT CLIMB | 3")
+                count = int(parts[1]) if len(parts) > 1 and parts[1] else 3
+                if not 0 <= count <= 9:
+                    raise SystemExit(f"line {no}: the count-in has to be 0-9 ticks")
+                cues.append((secs(word), "EVENT", name, "", count))
+                continue
             if TYPES[kind] == "PHASE":
                 parts = [p.strip() for p in label.split("|")]
                 name = clean(parts[0], 12)
@@ -117,5 +131,6 @@ if __name__ == "__main__":
     title, tick, cues = parse(sys.argv[1])
     open(sys.argv[2], "w").write(header(title, tick, cues, sys.argv[1].split("/")[-1]))
     for t, k, lab, pr, n in cues:
-        print("%5d:%04.1f  %-8s %s" % (t // 60, t % 60, k, lab) + ("   (count-in: %s %d..1)" % (pr, n) if k == "PHASE" and n else ""))
+        words = pr if k == "PHASE" else lab + " IN"
+        print("%5d:%04.1f  %-8s %s" % (t // 60, t % 60, k, lab) + ("   (count-in: %s %d..1)" % (words, n) if k in ("PHASE", "EVENT") and n else ""))
     print(f"{title}: {len(cues)} cues, countdown tick {tick:.2f} s")

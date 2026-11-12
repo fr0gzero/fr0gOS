@@ -1,7 +1,7 @@
 # fr0gOS song cue sheet: a test song (no music needed). Flip the SONG switch and watch.
 title  TEST SONG
 tick   1.0
-0:08   BUILD
+0:08   EVENT CLIMB | 3
 0:12   DROP
 0:24   CHORUS
 0:34   TEXT SEND IT

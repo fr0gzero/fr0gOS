@@ -1,9 +1,15 @@
-# fr0gOS song cue sheet: flight-phase test (no music needed). Flip the SONG switch and watch the top centre.
+# fr0gOS song cue sheet: layout test (no music needed). Flip the SONG switch and watch.
+# Row 1: events and phases. Row 3: notes. Bottom centre: the music.
 title  PHASE TEST
 tick   1.0
 0:00   PHASE TREE DANCE
+0:08   EVENT CLIMB | 3
 0:15   PHASE ORBITS | EXIT TREE IN | 5
+0:20   TEXT SEND IT
+0:24   DROP
 0:30   PHASE CLIMB | CLIMB IN | 4
+0:38   CHORUS
 0:45   PHASE FREE FALL | FREE FALL IN | 4
+0:52   EVENT PUNCH | 3
 1:00   PHASE TREE DANCE | CATCH IN | 5
 1:20   END
