@@ -107,6 +107,16 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       <input type="file" id="file" accept="audio/*">
       <span class="note">It stays on this device: the analysis and the radio WAV are made here in the browser.</span>
     </label>
+    <div class="row">
+      <span class="label">Cue sheet</span>
+      <label class="btn" for="sheetFile">Load cue sheet (.txt)</label><input type="file" id="sheetFile" accept=".txt,text/plain" hidden>
+      <button id="pasteToggle">Paste a cue sheet</button>
+      <span class="note">Load the track first, then the sheet: its cues replace the ones on the timeline.</span>
+    </div>
+    <div class="row" id="pasteBox" hidden style="align-items: stretch">
+      <textarea id="pasteSheet" spellcheck="false" rows="8" style="flex: 1 1 360px; min-width: 0; color: var(--green)" aria-label="Paste a cue sheet here"></textarea>
+      <button class="primary" id="pasteApply">Use this sheet</button>
+    </div>
     <div class="status" id="status" role="status"></div>
   </section>
 
@@ -159,6 +169,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       <span class="label">Song title</span><input id="title" maxlength="30" value="TEST SONG" style="text-transform: uppercase; width: 150px">
       <span class="label">Artist</span><input id="artist" maxlength="30" value="" placeholder="(optional)" style="text-transform: uppercase; width: 150px">
       <span class="label">Radio file name</span><input id="radioName" maxlength="8" value="SONG1" style="text-transform: uppercase; width: 100px">
+      <label class="row" style="gap:6px"><input type="checkbox" id="startBoot"><span class="label">run from power-on (no SONG switch)</span></label>
     </div>
     <textarea id="sheet" spellcheck="false" aria-label="Cue sheet" readonly></textarea>
     <div class="row">
@@ -269,6 +280,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
         $("bpm").value = state.bpm.toFixed(1);
         if (saved.title) $("title").value = saved.title;
         if (saved.artist) $("artist").value = saved.artist;
+        $("startBoot").checked = !!saved.startBoot;
         setStatus("Loaded " + file.name + ". Your saved cues for this track are back.", true);
       } else {
         suggest();
@@ -643,6 +655,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     const mode = $("tickMode").value;
     const lines = ["# fr0gOS song cue sheet" + (state.fileName ? " for " + state.fileName : ""), "title  " + title];
     if (artist) lines.push("artist " + artist);
+    if ($("startBoot").checked) lines.push("start  boot");
     lines.push(mode === "bar" ? "bpm    " + state.bpm.toFixed(1) : "tick   " + tickSec().toFixed(3));
     for (const c of state.cues) {
       if (c.kind === "PHASE") {
@@ -714,7 +727,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
 
   function changedSoft() { $("sheet").value = sheet(); persist(); }
   function changed() { renderList(); changedSoft(); }
-  function persist() { if (state.fileName) store.set("cues:" + state.fileName, { cues: state.cues, bpm: state.bpm, offset: state.offset, title: $("title").value, artist: $("artist").value }); }
+  function persist() { if (state.fileName) store.set("cues:" + state.fileName, { cues: state.cues, bpm: state.bpm, offset: state.offset, title: $("title").value, artist: $("artist").value, startBoot: $("startBoot").checked }); }
   function render() { renderList(); $("sheet").value = sheet(); }
 
   // ---------- inputs ----------
@@ -743,6 +756,46 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     for (const [kind, v] of Object.entries(KINDS)) if (v.key === k) { e.preventDefault(); addCue(kind); return; }
   });
   window.addEventListener("resize", sizeCanvas);
+
+  // ---------- import a cue sheet (the same text the Songbook writes / Dax builds from) ----------
+  function loadSheet(text) {
+    const cues = []; let bpm = null, tick = null, title = null, artist = "", boot = false, bad = 0;
+    for (const raw of String(text).split(/\r?\n/)) {
+      const line = raw.split("#")[0].trim(); if (!line) continue;
+      const sp = line.search(/\s/), word = sp < 0 ? line : line.slice(0, sp), rest = sp < 0 ? "" : line.slice(sp).trim(), w = word.toLowerCase();
+      if (w === "title") { title = rest; continue; }
+      if (w === "artist") { artist = rest; continue; }
+      if (w === "bpm") { bpm = +rest; continue; }
+      if (w === "tick") { tick = +rest; continue; }
+      if (w === "start") { boot = rest.toLowerCase() === "boot"; continue; }
+      const t = parseT(word); if (isNaN(t)) { bad++; continue; }
+      const ks = rest.search(/\s/), kind = (ks < 0 ? rest : rest.slice(0, ks)).toUpperCase(), arg = ks < 0 ? "" : rest.slice(ks).trim();
+      const parts = arg.split("|").map((x) => x.trim());
+      if (kind === "DROP" || kind === "BIGDROP") cues.push({ t, kind, label: kind });
+      else if (kind === "CHORUS") cues.push({ t, kind, label: (arg || "CHORUS").toUpperCase().slice(0, 9) });
+      else if (kind === "END" || kind === "OUTRO") cues.push({ t, kind: "END", label: (arg || "OUTRO").toUpperCase().slice(0, 9) });
+      else if (kind === "TEXT" || kind === "BREAK") cues.push({ t, kind: "TEXT", label: cleanLines(parts.join("\n") || "BREAK") });
+      else if (kind === "PHASE") cues.push({ t, kind, label: clean12(parts[0]) || "PHASE", prompt: clean12(parts[1] || ""), count: parts[2] !== undefined && parts[2] !== "" ? Math.max(0, Math.min(9, +parts[2] | 0)) : (t < 0.05 ? 0 : 5) });
+      else if (kind === "EVENT") cues.push({ t, kind, label: clean12(parts[0]) || "EVENT", count: parts[1] !== undefined && parts[1] !== "" ? Math.max(0, Math.min(9, +parts[1] | 0)) : 3 });
+      else if (kind === "BUILD") cues.push({ t, kind: "EVENT", label: "CLIMB", count: 3 });
+      else bad++;
+    }
+    if (!cues.length) { setStatus("No cues found in that sheet."); return; }
+    state.cues = cues.sort((a, b) => a.t - b.t); state.sel = -1;
+    if (bpm && bpm >= 60 && bpm <= 220) { state.bpm = bpm; $("bpm").value = bpm.toFixed(1); $("tickMode").value = "bar"; }
+    else if (tick) { if (Math.abs(tick - 1) < 1e-3) $("tickMode").value = "sec"; else { state.bpm = Math.round(4 * 60 / tick * 10) / 10; $("bpm").value = state.bpm.toFixed(1); $("tickMode").value = "bar"; } }
+    if (title) $("title").value = title.toUpperCase().slice(0, 30);
+    $("artist").value = artist.toUpperCase().slice(0, 30);
+    $("startBoot").checked = boot;
+    if (!state.hasAudio) { state.duration = Math.max(state.duration, cues[cues.length - 1].t + 8); resetView(); }
+    changed();
+    setStatus("Loaded " + cues.length + " cues from the sheet" + (bad ? " (" + bad + " line" + (bad > 1 ? "s" : "") + " skipped)" : "") + (state.hasAudio ? "." : ". Load the track too, to hear it."), true);
+  }
+  $("sheetFile").addEventListener("change", async (e) => { const f = e.target.files[0]; if (!f) return; loadSheet(await f.text()); e.target.value = ""; });
+  $("pasteToggle").addEventListener("click", () => { const b = $("pasteBox"); b.hidden = !b.hidden; if (!b.hidden) $("pasteSheet").focus(); });
+  $("pasteApply").addEventListener("click", () => { loadSheet($("pasteSheet").value); $("pasteBox").hidden = true; });
+  $("pasteSheet").addEventListener("keydown", (e) => e.stopPropagation());
+  $("startBoot").addEventListener("change", changedSoft);
 
   // ---------- export ----------
   $("copy").addEventListener("click", () => {
