@@ -49,7 +49,7 @@ else:
     AMBER = (255, 168, 0)
     RED = (255, 44, 44)
 EYE = (236, 255, 236)
-FROG_FONT = os.environ.get("FROG_FONT")             # if set, alphabet comes from this TTF (condensed LCARS)
+FROG_FONT = os.environ.get("FROG_FONT") or os.environ.get("FROG_RENDERER")             # if set, alphabet comes from this TTF (condensed LCARS)
 FROG_SQUEEZE = float(os.environ.get("FROG_SQUEEZE", "0.60"))
 FROG_AA = os.environ.get("FROG_AA", "0") == "1"     # anti-aliased smooth edges (high-res clean look)
 FROG_OUTLINE = os.environ.get("FROG_OUTLINE", "1") == "1"   # 1px black outline (off = clean, nothing around glyph)
@@ -153,7 +153,19 @@ def _face(gh):
             _ttf[gh] = (f, asc + desc, 0)
     return _ttf[gh]
 
+FROG_RENDERER = os.environ.get("FROG_RENDERER")   # path to a glyph renderer module (render(ch, colour, gw, gh, trans))
+_renderer = None
+
+
 def ttf_cell(ch, colour, gw, gh):
+    global _renderer
+    if FROG_RENDERER:
+        if _renderer is None:
+            import importlib.util
+            spec = importlib.util.spec_from_file_location("frog_renderer", FROG_RENDERER)
+            _renderer = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(_renderer)
+        return _renderer.render(ch, colour, gw, gh, TRANS)
     """render one character from FROG_FONT, squashed by FROG_SQUEEZE, as a crisp 1-bit colour glyph with a
     1px black outline on the transparency key - the condensed LCARS alphabet. Every glyph is drawn into the
     SAME ascent+descent frame and scaled by the same factor, so a '.' stays a dot and 'M' fills the cell
