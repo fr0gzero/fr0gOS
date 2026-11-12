@@ -112,8 +112,11 @@ def parse(path):
                                      f"e.g. PHASE {name} | NEXT IN | {count}")
                 cues.append((secs(word), "PHASE", name, prompt, count))
                 continue
-            label = label.split("|")[0].strip()
-            label = clean(label or {"END": "OUTRO"}.get(TYPES[kind], kind), 30 if TYPES[kind] == "TEXT" else 9)
+            if TYPES[kind] == "TEXT":
+                lines = [clean(x.strip(), 30) for x in label.split("|") if x.strip()][:2] or ["BREAK"]
+                label = "|".join(lines)                  # up to two lines of 30
+            else:
+                label = clean(label.split("|")[0].strip() or {"END": "OUTRO"}.get(TYPES[kind], kind), 9)
             cues.append((secs(word), TYPES[kind], label, "", 0))
     cues.sort()
     if not 0.1 <= tick <= 5.0:
