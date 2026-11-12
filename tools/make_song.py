@@ -13,7 +13,13 @@ Cue sheet:
     2:40   BUILD
     1:00   TEXT SEND IT       # your own words, up to 9 characters
     3:05   END                # OUTRO
-Times are m:ss(.s) or plain seconds. # starts a comment.
+    0:00   PHASE TREE DANCE                    # a flight phase: shown top centre and kept up
+    0:30   PHASE ORBITS | EXIT TREE IN | 5     # "EXIT TREE IN 5 4 3 2 1", then ORBITS stays up
+    0:50   PHASE CLIMB | CLIMB IN | 4          # name | count-in words | count (ticks, 0-9; 0 = no count-in)
+Phase names and count-in words: up to 12 characters each. Leave the words out and they default to "<NAME> IN";
+leave the count out and it's 5. The phase holds until the next phase's count-in, an END, or the switch going off.
+    artist SOMEONE            # accepted (the Songbook writes it); the firmware shows the title
+Times are m:ss(.s) or plain seconds. # starts a comment. A TEXT with | (several lines) keeps its first line.
 
 usage: make_song.py <cue sheet> <frog_song.h>
 """
@@ -21,7 +27,7 @@ import re
 import sys
 
 TYPES = {"DROP": "DROP", "BIGDROP": "BIGDROP", "CHORUS": "CHORUS", "BUILD": "BUILD", "END": "END", "OUTRO": "END",
-         "BREAK": "TEXT", "TEXT": "TEXT"}
+         "BREAK": "TEXT", "TEXT": "TEXT", "PHASE": "PHASE"}
 CHARSET = set(" !#$%&'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[]^_")
 
 
@@ -52,6 +58,8 @@ def parse(path):
         rest = rest.strip()
         if word.lower() == "title":
             title = clean(rest, 12)
+        elif word.lower() == "artist":
+            pass                                     # the Songbook writes it; the firmware shows the title only
         elif word.lower() == "tick":
             tick = float(rest)
         elif word.lower() == "bpm":
@@ -65,9 +73,29 @@ def parse(path):
             if kind == "BREAK" and not label:
                 label = "BREAK"
             if kind not in TYPES:
-                raise SystemExit(f"line {no}: unknown cue {kind!r} (DROP BIGDROP CHORUS BUILD END TEXT)")
-            label = clean(label.strip() or {"END": "OUTRO"}.get(TYPES[kind], kind), 9)
-            cues.append((secs(word), TYPES[kind], label))
+                raise SystemExit(f"line {no}: unknown cue {kind!r} (DROP BIGDROP CHORUS BUILD END TEXT PHASE)")
+            if TYPES[kind] == "PHASE":
+                parts = [p.strip() for p in label.split("|")]
+                name = clean(parts[0], 12)
+                if not name:
+                    raise SystemExit(f"line {no}: a PHASE needs a name")
+                count = int(parts[2]) if len(parts) > 2 and parts[2] else 5
+                if not 0 <= count <= 9:
+                    raise SystemExit(f"line {no}: the count-in has to be 0-9 ticks")
+                if secs(word) == 0:
+                    count = 0                        # the opening phase: nothing to count in to
+                if len(parts) > 1 and parts[1]:
+                    prompt = clean(parts[1], 12)
+                elif count == 0 or len(name) <= 9:
+                    prompt = name + " IN" if len(name) <= 9 else ""
+                else:
+                    raise SystemExit(f"line {no}: '{name} IN' won't fit in 12 characters: give the count-in words, "
+                                     f"e.g. PHASE {name} | NEXT IN | {count}")
+                cues.append((secs(word), "PHASE", name, prompt, count))
+                continue
+            label = label.split("|")[0].strip()
+            label = clean(label or {"END": "OUTRO"}.get(TYPES[kind], kind), 9)
+            cues.append((secs(word), TYPES[kind], label, "", 0))
     cues.sort()
     if not 0.1 <= tick <= 5.0:
         raise SystemExit("tick must be between 0.1 and 5 seconds")
@@ -79,7 +107,8 @@ def header(title, tick, cues, src):
            "// fr0gOS song cues (see the cue sheet for the times).", "#pragma once", "",
            '#define FROG_SONG_TITLE "%s"' % title, "#define FROG_SONG_TICK_MS %d" % round(tick * 1000),
            "#define FROG_SONG_CUES %d" % len(cues), "", "#ifdef FROG_SONG_TABLES"]
-    body = ",\n".join('    { %d, FROG_CUE_%s, "%s" }' % (round(t * 1000), k, lab) for t, k, lab in cues) or '    { 0, FROG_CUE_NONE, "" }'
+    body = ",\n".join('    { %d, FROG_CUE_%s, "%s", "%s", %d }' % (round(t * 1000), k, lab, pr, n) for t, k, lab, pr, n in cues) \
+        or '    { 0, FROG_CUE_NONE, "", "", 0 }'
     out += ["static const frogCue_t frogSongCues[] = {", body, "};", "#endif", ""]
     return "\n".join(out)
 
@@ -87,6 +116,6 @@ def header(title, tick, cues, src):
 if __name__ == "__main__":
     title, tick, cues = parse(sys.argv[1])
     open(sys.argv[2], "w").write(header(title, tick, cues, sys.argv[1].split("/")[-1]))
-    for t, k, lab in cues:
-        print("%5d:%04.1f  %-8s %s" % (t // 60, t % 60, k, lab))
+    for t, k, lab, pr, n in cues:
+        print("%5d:%04.1f  %-8s %s" % (t // 60, t % 60, k, lab) + ("   (count-in: %s %d..1)" % (pr, n) if k == "PHASE" and n else ""))
     print(f"{title}: {len(cues)} cues, countdown tick {tick:.2f} s")

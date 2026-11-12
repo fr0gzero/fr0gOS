@@ -63,7 +63,10 @@ canvas#over { width: 100%; height: 34px; display: block; margin-top: 6px; backgr
 .goggle::before { left: 0; } .goggle::after { right: 0; }
 .osd { position: absolute; inset: 0; display: grid; grid-template-columns: repeat(50, 1fr); grid-template-rows: repeat(18, 1fr); font-family: var(--display); color: var(--green); z-index: 1; }
 .osd span { display: flex; align-items: center; justify-content: center; font-size: clamp(9px, 1.9vw, 20px); line-height: 1; text-shadow: 0 0 1px #000, 1px 1px 0 #000; }
-.c-g { color: var(--green); } .c-a { color: var(--amber); } .c-r { color: var(--red); }
+.c-g { color: var(--green); } .c-a { color: var(--amber); } .c-r { color: var(--red); } .c-w { color: #f2f5f0; }
+.ph { display: inline-flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; }
+.ph .sm { font-size: 11px; color: var(--dim); }
+.cues input.p { width: 120px; text-transform: uppercase; } .cues select.n { width: 52px; }
 .cues { width: 100%; border-collapse: collapse; font-size: 13px; }
 .cues th { text-align: left; font-weight: 500; color: var(--dim); font-size: 11px; letter-spacing: .1em; text-transform: uppercase; padding: 4px 6px; border-bottom: 1px solid var(--line); }
 .cues td { padding: 4px 6px; border-bottom: 1px solid #141c1a; vertical-align: middle; }
@@ -126,7 +129,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     <div class="wave-box" id="waveBox"><canvas id="wave" tabindex="0" aria-label="Song timeline. Click to move the playhead, double-click to type a note there, drag a marker to move a cue, scroll to zoom."></canvas>
       <canvas id="over" aria-label="Whole song overview. Drag to scroll the timeline."></canvas></div>
     <div class="row" id="addRow"></div>
-    <p class="note"><b>Notes:</b> double-click (or long-press) anywhere on the timeline, type your text (<b>Shift+Enter</b> for another line), Enter: fr0gOS glyphs it on the goggles at that moment, one line after the next. Scroll or pinch to zoom, drag the strip underneath to move along the song. Click the waveform to jump there. Drag a marker to move it. Keys while playing: <code>D</code> drop, <code>B</code> big drop, <code>C</code> chorus, <code>U</code> build, <code>T</code> text, <code>E</code> outro, <code>N</code> note, <code>Space</code> play/pause, <code>Delete</code> removes the selected cue.</p>
+    <p class="note"><b>Notes:</b> double-click (or long-press) anywhere on the timeline, type your text (<b>Shift+Enter</b> for another line), Enter: fr0gOS glyphs it on the goggles at that moment, one line after the next. Scroll or pinch to zoom, drag the strip underneath to move along the song. Click the waveform to jump there. Drag a marker to move it. Keys while playing: <code>D</code> drop, <code>B</code> big drop, <code>C</code> chorus, <code>U</code> build, <code>T</code> text, <code>E</code> outro, <code>P</code> phase, <code>N</code> note, <code>Space</code> play/pause, <code>Delete</code> removes the selected cue.</p>
   </section>
 
   <div class="grid2">
@@ -134,6 +137,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       <h2 id="h-prev">Goggle preview</h2>
       <div class="goggle"><div class="osd" id="osd"></div></div>
       <p class="note">What fr0gOS will put on the HDZero screen at the playhead: the count-in, the cue, the decode in and out. Drops count in 3 ticks early. Cues that overlap in time each take their own line, so they never stomp on each other; the song title and artist come in up top with a spinning record.</p>
+      <p class="note"><b>Phases</b> (<code>P</code>) have their own fixed line, top centre, every time: the count-in (<code>EXIT TREE IN 5 4 3 2 1</code>) takes the line, then the new phase name flashes in and <b>stays up</b> until the next phase's count-in, the outro, or the switch going off. Each press of <code>P</code> adds the next phase in your plan (tree dance, orbits, climb, free fall, catch back to tree dance, then round again); change the name, the count-in words or the count right in the cue list. The count-in uses the <b>count-in tick</b> above: set it to <b>1 second</b> for a plain 5-4-3-2-1.</p>
     </section>
     <section class="panel" aria-labelledby="h-list">
       <div class="row" style="justify-content: space-between"><h2 id="h-list">Cues</h2><span class="label" id="cueCount"></span></div>
@@ -182,7 +186,23 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     BUILD:   { label: "BUILD",   color: "#4ff07e", key: "u", name: "Build" },
     TEXT:    { label: "SEND IT", color: "#59d8e6", key: "t", name: "Text" },
     END:     { label: "OUTRO",   color: "#b98cff", key: "e", name: "Outro" },
+    PHASE:   { label: "TREE DANCE", color: "#f2f5f0", key: "p", name: "Phase" },
   };
+  // flight phases: each press of P adds the next one in this plan (edit any of them in the cue list afterwards)
+  const PHASE_PLAN = [
+    { label: "TREE DANCE", prompt: "",             count: 0 },
+    { label: "ORBITS",     prompt: "EXIT TREE IN", count: 5 },
+    { label: "CLIMB",      prompt: "CLIMB IN",     count: 4 },
+    { label: "FREE FALL",  prompt: "FREE FALL IN", count: 4 },
+    { label: "TREE DANCE", prompt: "CATCH IN",     count: 5 },
+  ];
+  function planFor(t) {
+    const before = state.cues.filter((c) => c.kind === "PHASE" && c.t < t - 1e-6).length;
+    const p = before < PHASE_PLAN.length ? PHASE_PLAN[before] : PHASE_PLAN[1 + ((before - 1) % (PHASE_PLAN.length - 1))];
+    return { label: p.label, prompt: p.prompt, count: before === 0 ? 0 : p.count };
+  }
+  const promptOf = (c) => clean12(c.prompt) || (clean12(c.label).length <= 9 ? clean12(c.label) + " IN" : "NEXT IN");
+  const clean12 = (v) => String(v || "").toUpperCase().replace(BAD, "").slice(0, 12);
   const FONT_OK = /^[ !#$%&'()*+,\-./0-9:;<=>?@A-Z\[\]^_]*$/;
   const BAD = /[^ !#$%&'()*+,\-./0-9:;<=>?@A-Z\[\]^_]/g;
   // a multi-line text cue: up to 8 lines, each up to 30 chars, only glyphs the OSD font has
@@ -381,6 +401,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   function activeBlocks(t) {
     const out = [], tick = tickSec();
     for (const c of state.cues) {
+      if (c.kind === "PHASE") continue;            // phases live on their own line (phaseRow)
       const h = c.kind === "TEXT" ? textSched(c).total : holdOf(c.kind);
       if (t >= c.t && t < c.t + h) {
         const ct = t - c.t;
@@ -398,6 +419,24 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     }
     return out.sort((a, b) => a.pri - b.pri);
   }
+  // the phase line: fixed, top centre (row 1). Count-in for the next phase replaces the current name; the new name
+  // flashes in amber/normal for 1.5 s, then holds until the next count-in, an OUTRO, or the switch going off.
+  function phaseRow(t) {
+    const tick = tickSec(); let cur = null, next = null, endT = -1;
+    for (const c of state.cues) {
+      if (c.kind === "PHASE") { if (c.t <= t) cur = c; else if (!next) next = c; }
+      else if (c.kind === "END" && c.t <= t) endT = c.t;
+    }
+    if (cur && endT >= cur.t) cur = null;
+    if (next && next.count > 0 && next.t - t <= next.count * tick) {
+      const lead = next.count * tick, left = next.t - t, nn = Math.ceil(left / tick - 1e-6), tickT = tick - (left - (nn - 1) * tick), since = lead - left;
+      const s = promptOf(next) + " " + nn;
+      return [...s].map((ch, i) => [ch === " " ? " " : (i === s.length - 1 ? tickT < 0.18 : since < 0.25 + 0.045 * i) ? noise() : ch, "c-a"]);
+    }
+    if (!cur) return null;
+    const ct = t - cur.t, cls = ct < 1.5 ? (Math.floor(ct / 0.25) % 2 ? "c-w" : "c-a") : "c-w";
+    return gIn(cur.label, ct, cls);
+  }
   const osd = $("osd"); const cells = [];
   for (let i = 0; i < 50 * 18; i++) { const s = document.createElement("span"); osd.appendChild(s); cells.push(s); }
   const put = (x, y, text, cls) => { if (y < 0 || y >= 18) return; for (let i = 0; i < text.length && x + i < 50; i++) { const c = cells[y * 50 + x + i]; c.textContent = text[i]; c.className = cls || "c-g"; } };
@@ -407,10 +446,12 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     // a sketch of the fr0gOS bars for context
     put(0, 1, "ARMED"); put(0, 9, "3.81V"); put(0, 10, "212mAh"); put(0, 13, "LQ100"); put(0, 15, "R8"); put(0, 16, "200MW");
     put(45, 0, "MK4-2"); put(45, 1, fmt(t).padStart(5, " ").slice(-5)); put(46, 4, "ACRO"); put(47, 5, "AIR"); put(47, 12, "THR"); put(45, 13, "62.4%");
+    const ph = phaseRow(t);
+    if (ph) { const x0 = Math.max(8, 25 - Math.floor(ph.length / 2)); ph.forEach(([ch, cls], i) => putCell(x0 + i, 1, ch, cls)); }
     const blocks = []; const intro = introBlock(t); if (intro) blocks.push(intro); blocks.push(...activeBlocks(t));
     if (!blocks.length) return;
     const totalH = blocks.reduce((s, b) => s + b.rows.length, 0) + (blocks.length - 1);
-    let y = Math.min(3, Math.max(2, Math.round((18 - totalH) / 2)));
+    let y = 3;   // row 1 is the phase line; cue blocks start under it
     for (const b of blocks) {
       const w = b.rows.reduce((m, r) => Math.max(m, r ? r.length : 0), 0), x0 = Math.max(8, 25 - Math.floor(w / 2));
       b.rows.forEach((line, r) => { if (line) line.forEach(([ch, cls], i) => putCell(x0 + i, y + r, ch, cls)); });
@@ -447,6 +488,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     state.cues.forEach((c, i) => {
       const x = Math.round(xOf(c.t)) + 0.5, col = KINDS[c.kind].color;
       if (c.kind === "DROP" || c.kind === "BIGDROP") { g.fillStyle = col + "26"; const w0 = xOf(c.t - 3 * tickSec()); g.fillRect(w0, 0, x - w0, H); }
+      if (c.kind === "PHASE" && c.count > 0) { g.fillStyle = col + "1c"; const w0 = xOf(c.t - c.count * tickSec()); g.fillRect(w0, 0, x - w0, H); }
       g.strokeStyle = col; g.lineWidth = (i === state.sel ? 3 : 1.5) * d; g.beginPath(); g.moveTo(x, 0); g.lineTo(x, H); g.stroke();
       if (x < -200 * d || x > W + 10) return;
       g.font = (11 * d) + "px IBM Plex Mono, monospace";
@@ -537,11 +579,23 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
       td().appendChild(t);
       const s = document.createElement("select"); s.id = "cue-k-" + i; s.setAttribute("aria-label", "Cue");
       for (const k of Object.keys(KINDS)) { const o = document.createElement("option"); o.value = k; o.textContent = KINDS[k].name; if (k === c.kind) o.selected = true; s.appendChild(o); }
-      s.addEventListener("change", () => { const old = KINDS[c.kind].label; c.kind = s.value; if (c.label === old || !c.label) c.label = KINDS[c.kind].label; c.sug = false; changed(); });
+      s.addEventListener("change", () => { const old = KINDS[c.kind].label; c.kind = s.value; if (c.label === old || !c.label) c.label = KINDS[c.kind].label; if (c.kind === "PHASE") { const p = planFor(c.t); c.label = p.label; c.prompt = p.prompt; c.count = p.count; } c.sug = false; changed(); });
       const cell = td(); const chip = document.createElement("span"); chip.className = "chip"; chip.style.background = KINDS[c.kind].color; cell.append(chip, s);
       if (c.sug) { const sg = document.createElement("span"); sg.className = "sug"; sg.textContent = "suggested"; cell.appendChild(sg); }
       let l;
-      if (c.kind === "TEXT") {
+      if (c.kind === "PHASE") {
+        l = document.createElement("span"); l.className = "ph";
+        const nm = document.createElement("input"); nm.className = "l"; nm.maxLength = 12; nm.value = c.label; nm.id = "cue-l-" + i; nm.setAttribute("aria-label", "Phase name (stays on screen)");
+        nm.addEventListener("input", () => { const v = nm.value.toUpperCase(); if (!FONT_OK.test(v)) { nm.value = c.label; return; } c.label = v; changedSoft(); });
+        const pr = document.createElement("input"); pr.className = "p"; pr.maxLength = 12; pr.value = c.prompt || ""; pr.placeholder = "COUNT-IN WORDS"; pr.setAttribute("aria-label", "Count-in words, e.g. EXIT TREE IN");
+        pr.addEventListener("input", () => { const v = pr.value.toUpperCase(); if (!FONT_OK.test(v)) { pr.value = c.prompt || ""; return; } c.prompt = v; changedSoft(); });
+        const n = document.createElement("select"); n.className = "n"; n.setAttribute("aria-label", "Count-in length (ticks)");
+        for (let k = 0; k <= 9; k++) { const o = document.createElement("option"); o.value = k; o.textContent = k ? String(k) : "none"; if (k === (c.count | 0)) o.selected = true; n.appendChild(o); }
+        n.addEventListener("change", () => { c.count = +n.value; changed(); });
+        const a = document.createElement("span"); a.className = "sm"; a.textContent = "count-in";
+        const b = document.createElement("span"); b.className = "sm"; b.textContent = "from";
+        l.append(nm, a, pr, b, n);
+      } else if (c.kind === "TEXT") {
         l = document.createElement("textarea"); l.className = "l"; l.value = c.label; l.id = "cue-l-" + i;
         l.rows = Math.min(8, Math.max(1, c.label.split("\n").length));
         l.setAttribute("aria-label", "Text on screen; each line glyphs in after the one above. Shift+Enter for a new line");
@@ -553,8 +607,8 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
         l.addEventListener("input", () => { const v = l.value.toUpperCase(); if (!FONT_OK.test(v)) { l.value = c.label; return; } c.label = v; c.sug = false; changedSoft(); });
       }
       td().appendChild(l);
-      const act = td(); const go = document.createElement("button"); go.textContent = "Play"; go.setAttribute("aria-label", "Play from 3 ticks before");
-      go.addEventListener("click", () => { seek(Math.max(0, c.t - 3 * tickSec() - 1)); state.sel = i; if (state.hasAudio) audio.play(); render(); });
+      const act = td(); const go = document.createElement("button"); go.textContent = "Play"; go.setAttribute("aria-label", "Play from just before the count-in");
+      go.addEventListener("click", () => { seek(Math.max(0, c.t - (c.kind === "PHASE" ? Math.max(1, c.count | 0) : 3) * tickSec() - 1)); state.sel = i; if (state.hasAudio) audio.play(); render(); });
       const del = document.createElement("button"); del.textContent = "Remove";
       del.addEventListener("click", () => { state.cues.splice(i, 1); state.sel = -1; changed(); });
       act.append(go, " ", del);
@@ -573,6 +627,11 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     if (artist) lines.push("artist " + artist);
     lines.push(mode === "bar" ? "bpm    " + state.bpm.toFixed(1) : "tick   " + tickSec().toFixed(3));
     for (const c of state.cues) {
+      if (c.kind === "PHASE") {
+        const nm = clean12(c.label) || "PHASE", pr = clean12(c.prompt), n = Math.max(0, Math.min(9, c.count | 0));
+        lines.push(fmt(c.t).padEnd(7) + "PHASE " + nm + (n ? " | " + promptOf(c) + " | " + n : " | | 0"));
+        continue;
+      }
       const lbl = c.label.replace(/\n/g, "|");
       const k = c.kind === "TEXT" ? "TEXT " + lbl : c.kind === "CHORUS" && c.label !== "CHORUS" ? "TEXT " + lbl : c.kind === "BUILD" && c.label !== "BUILD" ? "TEXT " + lbl : c.kind;
       lines.push(fmt(c.t).padEnd(7) + k);
@@ -589,7 +648,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
   }
   audio.addEventListener("play", () => { $("play").textContent = "PAUSE"; });
   audio.addEventListener("pause", () => { $("play").textContent = "PLAY"; });
-  function addCue(kind) { state.cues.push({ t: snap(state.t), kind, label: KINDS[kind].label }); sortCues(); state.sel = state.cues.findIndex((c) => c.kind === kind && Math.abs(c.t - snap(state.t)) < 1e-6); changed(); }
+  function addCue(kind) { const t0 = snap(state.t); const cue = { t: t0, kind, label: KINDS[kind].label }; if (kind === "PHASE") Object.assign(cue, planFor(t0)); state.cues.push(cue); sortCues(); state.sel = state.cues.findIndex((c) => c.kind === kind && Math.abs(c.t - snap(state.t)) < 1e-6); changed(); }
   const addRow = $("addRow");
   for (const [k, v] of Object.entries(KINDS)) { const b = document.createElement("button"); b.className = "cue-btn"; b.style.borderLeftColor = v.color; b.innerHTML = "+ " + v.name + '<span class="k">' + v.key.toUpperCase() + "</span>"; b.addEventListener("click", () => addCue(k)); addRow.appendChild(b); }
 
@@ -651,7 +710,7 @@ textarea#sheet { width: 100%; min-height: 190px; resize: vertical; font-size: 13
     const id = fileTitle();
     try {
       await db.doc("songs/" + id).set({ title: $("title").value.toUpperCase(), artist: ($("artist").value || "").toUpperCase(), sheet: sheet(), bpm: state.bpm, tickMode: $("tickMode").value,
-        file: state.fileName || "", radioName: $("radioName").value.toUpperCase(), cues: state.cues.map(({ t, kind, label }) => ({ t: Math.round(t * 100) / 100, kind, label })), savedAt: new Date().toISOString() });
+        file: state.fileName || "", radioName: $("radioName").value.toUpperCase(), cues: state.cues.map(({ t, kind, label, prompt, count }) => ({ t: Math.round(t * 100) / 100, kind, label, ...(kind === "PHASE" ? { prompt: prompt || "", count: count | 0 } : {}) })), savedAt: new Date().toISOString() });
       $("sendStatus").textContent = "Sent as \"" + id + "\". Tell Dax to build it.";
     } catch (e) { $("sendStatus").textContent = "Couldn't send (" + ((e && e.code) || "error") + "). Copy the cue sheet instead."; }
   });
