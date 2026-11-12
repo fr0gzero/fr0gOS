@@ -1,0 +1,24 @@
+# fr0gOS song cue sheet for 6 Underground (Album version) - Sneaker Pimps.mp3
+# From the Songbook send of 2026-11-09. The two BUILDs are now EVENT CLIMB | 3 (BUILD is gone).
+# Runs from power-on, every time.
+title  6 UNDERGROUND
+artist SNEAKER PIMPS
+start  boot
+bpm    160.5
+0:22.4 DROP
+0:32.8 DROP
+1:09.5 TEXT WATCH THIS SPACE
+1:27.0 EVENT CLIMB | 3
+1:38.2 DROP
+1:59.9 TEXT DONT THINK CAUSE I UNDERSTAND
+2:04.0 TEXT I CARE
+2:22.0 DROP
+2:32.4 DROP
+2:58.2 EVENT CLIMB | 3
+2:59.4 TEXT TALK ME DOWN
+3:02.7 TEXT SAFE AND SOUND
+3:04.6 DROP
+3:21.4 CHORUS
+3:43.1 BIGDROP
+3:45.7 END
+4:04.0 END
