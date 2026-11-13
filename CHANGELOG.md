@@ -1,5 +1,12 @@
 # Changelog
 
+## R50
+- Countdown digit never scrambles (pulses red for 180 ms per tick); noise is symbols only.
+- Boot-header frog hop removed.
+- Mascot idle is random (blinks, glances, grin, breath at random gaps).
+- Frog-tag passes with unchanged text are only resent once a second (less MSP traffic; targets mid-song slowdown).
+
+
 All builds are on Betaflight 2026.6.2.
 
 Radio: `radio/` has the EdgeTX tone pack for the Pocket (deadmau5-style synth tones instead of voice). v3, 2026-11-08: half the volume, darker, shorter, single echo.
