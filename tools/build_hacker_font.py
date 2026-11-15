@@ -230,13 +230,24 @@ assert len(STICK_SLOTS) == 8, "not enough free slots for the stick code"
 
 
 def stick_cell(value, gw, gh):
+    """three stacked bands (bit 2 = top). A lit band is a pointed hexagon bar; an unlit band keeps two dim end ticks
+    so the row reads as a segmented gauge. The decoder only samples the middle 40% x 80% of each third, which the
+    bar always fills and the ticks never touch, so the data survives exactly as before."""
     cell = Image.new("RGB", (gw, gh), (0, 0, 0))
     d = ImageDraw.Draw(cell)
     band = gh // 3
     inset = max(2, gw // 8)
+    tick = max(2, gw // 8)
     for b in range(3):
-        if value & (4 >> b):                       # bit 2 = top band
-            d.rectangle([inset, b * band + inset, gw - 1 - inset, (b + 1) * band - 1 - inset], fill=STICK_GREY)
+        y0, y1 = b * band + inset, (b + 1) * band - 1 - inset
+        x0, x1 = inset, gw - 1 - inset
+        mid = (y0 + y1) / 2.0
+        c = (y1 - y0) / 2.0                          # chamfer = half the bar height -> pointed ends
+        if value & (4 >> b):
+            d.polygon([(x0 + c, y0), (x1 - c, y0), (x1, mid), (x1 - c, y1), (x0 + c, y1), (x0, mid)], fill=STICK_GREY)
+        else:
+            d.rectangle([x0, y0, x0 + tick - 1, y1], fill=(34, 34, 34))
+            d.rectangle([x1 - tick + 1, y0, x1, y1], fill=(34, 34, 34))
     return cell
 
 
