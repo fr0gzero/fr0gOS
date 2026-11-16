@@ -20,25 +20,25 @@ def a(x, y):
 
 L, R = 0, 49
 # v1.3 r07 layout options (same elements, different spacing). A is the default.
-HIDDEN = ["osd_frog_batt_pos", "osd_rssi_dbm_pos", "osd_esc_tmp_pos", "osd_core_temp_pos", "osd_total_flights_pos",
+HIDDEN = ["osd_vtx_channel_pos", "osd_frog_batt_pos", "osd_rssi_dbm_pos", "osd_esc_tmp_pos", "osd_core_temp_pos", "osd_total_flights_pos",
           "osd_custom_msg0_pos", "osd_custom_msg1_pos", "osd_custom_msg2_pos", "osd_custom_msg3_pos"]
 OPTIONS = {
     # A MIRRORED: both sides share one grid, groups start on rows 0 / 4 / 9 / 13
     "A": dict(left=dict(osd_frog_feed_pos=0, osd_vbat_pos=4, osd_mah_drawn_pos=5, osd_current_pos=6,
-                        osd_link_quality_pos=9, osd_frog_rate_pos=10, osd_vtx_channel_pos=13, osd_frog_vtxpwr_pos=14),
+                        osd_link_quality_pos=9, osd_frog_rate_pos=10, osd_frog_vtxpwr_pos=14),
               right=dict(osd_frog_craft_pos=0, osd_tim_2_pos=1, osd_warnings_pos=2, osd_disarmed_pos=4,
                          osd_flymode_pos=5, osd_frog_air_pos=6, osd_throttle_pos=9, osd_esc_rpm_pos=11,
                          osd_g_force_pos=13)),
     # B EYE LINE: the numbers you read sit in the middle third, corners stay quiet
     "B": dict(left=dict(osd_frog_feed_pos=0, osd_vbat_pos=6, osd_mah_drawn_pos=7, osd_current_pos=8,
-                        osd_link_quality_pos=10, osd_frog_rate_pos=11, osd_vtx_channel_pos=13, osd_frog_vtxpwr_pos=14),
+                        osd_link_quality_pos=10, osd_frog_rate_pos=11, osd_frog_vtxpwr_pos=14),
               right=dict(osd_frog_craft_pos=0, osd_tim_2_pos=2, osd_warnings_pos=3, osd_disarmed_pos=5,
                          osd_flymode_pos=6, osd_frog_air_pos=7, osd_throttle_pos=9, osd_esc_rpm_pos=11,
                          osd_g_force_pos=13)),
     # C CORNERS (chosen, v1.3 r08): 5-line feed under the frog, combo meter (rows 6-7, r17), a blank row, power,
     # links bottom left; name / time / warnings / state top right, THR + RPM + G cluster in the bottom right corner
     "C": dict(left=dict(osd_frog_feed_pos=0, osd_vbat_pos=9, osd_mah_drawn_pos=10, osd_current_pos=11,
-                        osd_link_quality_pos=13, osd_frog_rate_pos=14, osd_vtx_channel_pos=15, osd_frog_vtxpwr_pos=16),
+                        osd_link_quality_pos=13, osd_frog_rate_pos=14, osd_frog_vtxpwr_pos=16),
               right=dict(osd_frog_craft_pos=0, osd_tim_2_pos=1, osd_warnings_pos=2, osd_disarmed_pos=3,
                          osd_flymode_pos=4, osd_frog_air_pos=5, osd_throttle_pos=12, osd_esc_rpm_pos=14,
                          osd_g_force_pos=16)),

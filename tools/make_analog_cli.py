@@ -20,7 +20,7 @@ def a(x, y):
 
 
 L, R = 0, 29
-HIDDEN = ["osd_frog_batt_pos", "osd_rssi_dbm_pos", "osd_esc_tmp_pos", "osd_core_temp_pos", "osd_total_flights_pos",
+HIDDEN = ["osd_vtx_channel_pos", "osd_frog_batt_pos", "osd_rssi_dbm_pos", "osd_esc_tmp_pos", "osd_core_temp_pos", "osd_total_flights_pos",
           "osd_custom_msg0_pos", "osd_custom_msg1_pos", "osd_custom_msg2_pos", "osd_custom_msg3_pos",
           "osd_frog_noise_pos", "osd_rssi_pos", "osd_tim_1_pos", "osd_remaining_time_estimate_pos",
           "osd_home_dist_pos", "osd_flight_dist_pos", "osd_avg_cell_voltage_pos", "osd_pit_ang_pos", "osd_rol_ang_pos"]
@@ -28,7 +28,7 @@ OPTIONS = {
     # layout C squeezed into 13 rows: feed 0-4, combo 5-6 (automatic), power 7-9, links 10-12 on the left;
     # name / time / warnings / state top right, THR + RPM + G + VTX power bottom right
     "C": dict(left=dict(osd_frog_feed_pos=0, osd_vbat_pos=7, osd_mah_drawn_pos=8, osd_current_pos=9,
-                        osd_link_quality_pos=10, osd_frog_rate_pos=11, osd_vtx_channel_pos=12),
+                        osd_link_quality_pos=10, osd_frog_rate_pos=11),
               right=dict(osd_frog_craft_pos=0, osd_tim_2_pos=1, osd_warnings_pos=2, osd_disarmed_pos=3,
                          osd_flymode_pos=4, osd_frog_air_pos=5, osd_throttle_pos=7, osd_esc_rpm_pos=9,
                          osd_g_force_pos=11, osd_frog_vtxpwr_pos=12)),
