@@ -46,8 +46,8 @@ elif _PAL == "ds9":
 elif _PAL == "synth":
     GREEN = (80, 230, 255)      # synthwave values: cyan
     DKGREEN = (70, 96, 170)     # scramble noise: dim indigo
-    AMBER = (255, 90, 200)      # labels / warning: hot pink
-    RED = (255, 240, 80)        # alert / critical: yellow
+    AMBER = (255, 240, 80)      # warning: yellow (labels have their own pink set, bake_mascot3.py)
+    RED = (255, 64, 80)         # critical: hot red
 else:
     GREEN = (64, 214, 104)      # calm phosphor
     DKGREEN = (30, 128, 62)     # scramble noise
