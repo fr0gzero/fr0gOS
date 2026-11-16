@@ -291,7 +291,10 @@ def build(stock_path, k, out_path):
         put(code, frog_cell(img, gw, gh))
     # 6. stick code glyphs
     for v, code in enumerate(STICK_SLOTS):
-        put(code, stick_cell(v, gw, gh))
+        if os.environ.get("FROG_STICK_CODE", "1") == "0":   # R54: stick code retired, slots left empty (free)
+            put(code, Image.new("RGB", (gw, gh), TRANS))
+        else:
+            put(code, stick_cell(v, gw, gh))
     font.save(out_path, format="BMP")
     return font, gw, gh
 
