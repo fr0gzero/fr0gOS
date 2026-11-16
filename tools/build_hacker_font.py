@@ -43,6 +43,11 @@ elif _PAL == "ds9":
     DKGREEN = (120, 96, 150)    # scramble noise: dim lilac
     AMBER = (190, 162, 232)     # "warning" slot -> LCARS lavender accent (#bea2e8)
     RED = (224, 83, 60)         # critical: LCARS red (#e0533c)
+elif _PAL == "synth":
+    GREEN = (80, 230, 255)      # synthwave values: cyan
+    DKGREEN = (70, 96, 170)     # scramble noise: dim indigo
+    AMBER = (255, 90, 200)      # labels / warning: hot pink
+    RED = (255, 240, 80)        # alert / critical: yellow
 else:
     GREEN = (64, 214, 104)      # calm phosphor
     DKGREEN = (30, 128, 62)     # scramble noise
