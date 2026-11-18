@@ -91,24 +91,18 @@ set osd_flight_dist_pos = 0
 set osd_flip_arrow_pos = 0
 set osd_flymode_pos = 0
 set osd_g_force_pos = 0
-set osd_gps_lap_best3_pos = 0
-set osd_gps_lap_curr_pos = 0
-set osd_gps_lap_prev_pos = 0
 set osd_gps_lat_pos = 0
 set osd_gps_lon_pos = 0
 set osd_gps_sats_pos = 0
 set osd_gps_speed_pos = 0
 set osd_home_dir_pos = 0
 set osd_home_dist_pos = 0
-set osd_lidar_dist_pos = 0
 set osd_link_quality_pos = 0
 set osd_link_tx_power_pos = 0
 set osd_log_status_pos = 0
 set osd_mah_drawn_pos = 0
 set osd_motor_diag_pos = 0
-set osd_nav_map_pos = 0
 set osd_nheading_pos = 0
-set osd_nvario_pos = 0
 set osd_pid_pitch_pos = 0
 set osd_pid_profile_name_pos = 0
 set osd_pid_roll_pos = 0
@@ -116,7 +110,6 @@ set osd_pid_yaw_pos = 0
 set osd_pidrate_profile_pos = 0
 set osd_pilot_name_pos = 0
 set osd_pit_ang_pos = 0
-set osd_pos_hold_ready_pos = 0
 set osd_power_pos = 0
 set osd_profile_name_pos = 0
 set osd_rate_profile_name_pos = 0
@@ -149,14 +142,6 @@ set osd_up_down_reference_pos = 0
 set osd_vbat_pos = 0
 set osd_vtx_channel_pos = 0
 set osd_wh_drawn_pos = 0
-set osd_wp_current_alt_pos = 0
-set osd_wp_current_lat_pos = 0
-set osd_wp_current_lon_pos = 0
-set osd_wp_direction_pos = 0
-set osd_wp_distance_pos = 0
-set osd_wp_eta_pos = 0
-set osd_wp_next_number_pos = 0
-set osd_wp_number_pos = 0
 set osd_warnings_pos = 0
 
 profile 0
@@ -202,3 +187,4 @@ set vbat_warning_cell_voltage = 335
 
 batch end
 save
+
